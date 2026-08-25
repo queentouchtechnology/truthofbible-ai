@@ -57,12 +57,25 @@ def seed_default_prompts():
 		)
 		if existing:
 			continue
-		frappe.get_doc(
-			{
-				"doctype": "TOB AI Prompt",
-				"task": entry["task"],
-				"system_prompt": entry["system_prompt"],
-				"active": 1,
-				"version": 1,
-			}
-		).insert(ignore_permissions=True)
+		try:
+			frappe.get_doc(
+				{
+					"doctype": "TOB AI Prompt",
+					"task": entry["task"],
+					"system_prompt": entry["system_prompt"],
+					"active": 1,
+					"version": 1,
+				}
+			).insert(ignore_permissions=True)
+			# `after_install` and `after_migrate` can both fire within the
+			# same `bench install-app` run — commit each row immediately
+			# so the next hook's own exists() check (and this loop's next
+			# iteration) reliably sees it, rather than relying on an
+			# uncommitted read within the same request.
+			frappe.db.commit()
+		except frappe.ValidationError:
+			# TOB AI Prompt.validate()'s own duplicate check caught a race
+			# between the two hook firings above — the row already exists
+			# in every way that matters, so this is a benign no-op, not a
+			# real failure. Never let a seeding function break `migrate`.
+			frappe.db.rollback()
