@@ -25,7 +25,7 @@ def resolve_prompt(task: str, language: str | None) -> str:
 			return override
 
 	default = frappe.db.get_value(
-		"TOB AI Prompt", {"task": task, "language_override": ["in", ["", None]], "active": 1}, "system_prompt"
+		"TOB AI Prompt", {"task": task, "language_override": ["is", "not set"], "active": 1}, "system_prompt"
 	)
 	if not default:
 		frappe.throw(_("No active prompt configured for task '{0}'.").format(task))

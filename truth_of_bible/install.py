@@ -53,7 +53,7 @@ _DEFAULT_PROMPTS = [
 def seed_default_prompts():
 	for entry in _DEFAULT_PROMPTS:
 		existing = frappe.db.exists(
-			"TOB AI Prompt", {"task": entry["task"], "language_override": ["in", ["", None]]}
+			"TOB AI Prompt", {"task": entry["task"], "language_override": ["is", "not set"]}
 		)
 		if existing:
 			continue
