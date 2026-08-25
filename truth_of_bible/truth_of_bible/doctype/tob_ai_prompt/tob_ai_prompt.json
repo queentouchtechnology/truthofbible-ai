@@ -12,10 +12,10 @@
  "sort_field": "modified",
  "sort_order": "DESC",
  "engine": "InnoDB",
- "description": "Prompt text lives here, editable without a deploy, instead of hardcoded in Python. `language` is deliberately optional: leave it blank for the normal case (one robust prompt with a dynamic 'respond in {language_name}' instruction appended at call time); set it only for a task/language pair that genuinely needs different wording, not just a different output language.",
+ "description": "Prompt text lives here, editable without a deploy, instead of hardcoded in Python. `language_override` is deliberately optional: leave it blank for the normal case (one robust prompt with a dynamic 'respond in {language_name}' instruction appended at call time); set it only for a task/language pair that genuinely needs different wording, not just a different output language. Named language_override, not language — a field literally named `language` is a Frappe reserved default key that gets silently auto-populated from the site's default language even when never explicitly set, which defeats the whole point of 'blank means language-independent' (found live, not guessed: seeded rows came back with language='en' despite install.py never setting it).",
  "field_order": [
   "task",
-  "language",
+  "language_override",
   "column_break_meta",
   "output_format",
   "version",
@@ -34,7 +34,7 @@
    "description": "e.g. 'verse_explanation', 'bible_qa', 'quiz_generation' — matches AiRequest.task."
   },
   {
-   "fieldname": "language",
+   "fieldname": "language_override",
    "fieldtype": "Link",
    "label": "Language Override",
    "options": "Language",

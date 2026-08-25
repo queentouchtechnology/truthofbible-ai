@@ -1,8 +1,16 @@
 """Resolves a TOB AI Prompt for a given task/language — prefers a
 language-specific override if one exists and is active, otherwise falls
-back to the language-independent default (language left blank on the
-TOB AI Prompt row), which is the normal case per the product's own
-'one robust prompt with dynamic language instructions' preference."""
+back to the language-independent default (language_override left blank
+on the TOB AI Prompt row), which is the normal case per the product's own
+'one robust prompt with dynamic language instructions' preference.
+
+The field is named language_override, not language — deliberately, and
+not a style choice: a Link field literally named `language` is a Frappe
+reserved default key, silently auto-populated from the site's own
+default language on insert even when never explicitly set. Confirmed
+live, not guessed: this app's first deployment seeded rows came back
+with language='en' despite install.py never setting it, which would have
+silently broken every non-English request's fallback lookup below."""
 
 import frappe
 from frappe import _
@@ -11,13 +19,13 @@ from frappe import _
 def resolve_prompt(task: str, language: str | None) -> str:
 	if language:
 		override = frappe.db.get_value(
-			"TOB AI Prompt", {"task": task, "language": language, "active": 1}, "system_prompt"
+			"TOB AI Prompt", {"task": task, "language_override": language, "active": 1}, "system_prompt"
 		)
 		if override:
 			return override
 
 	default = frappe.db.get_value(
-		"TOB AI Prompt", {"task": task, "language": ["in", ["", None]], "active": 1}, "system_prompt"
+		"TOB AI Prompt", {"task": task, "language_override": ["in", ["", None]], "active": 1}, "system_prompt"
 	)
 	if not default:
 		frappe.throw(_("No active prompt configured for task '{0}'.").format(task))
