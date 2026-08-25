@@ -1,0 +1,5 @@
+# Depends on frappe and lms, both already present on the target bench.
+# No dependency on qtt_platform — see hooks.py and the README for why.
+# No third-party Python packages of its own beyond what frappe/lms already
+# pull in (requests, used by the AI provider HTTP client, is a frappe
+# dependency already).

@@ -1,0 +1,53 @@
+[
+ {
+  "name": "Language-native_name",
+  "doctype": "Custom Field",
+  "dt": "Language",
+  "fieldname": "native_name",
+  "label": "Native Name",
+  "fieldtype": "Data",
+  "insert_after": "language_name",
+  "in_list_view": 1,
+  "translatable": 0,
+  "description": "The language's own name in its own script, e.g. தமிழ் for Tamil, हिन्दी for Hindi — shown to end users instead of the English language_name."
+ },
+ {
+  "name": "Language-direction",
+  "doctype": "Custom Field",
+  "dt": "Language",
+  "fieldname": "direction",
+  "label": "Direction",
+  "fieldtype": "Select",
+  "options": "LTR\nRTL",
+  "default": "LTR",
+  "insert_after": "native_name",
+  "in_list_view": 1,
+  "in_standard_filter": 1,
+  "translatable": 0,
+  "description": "Text direction — RTL for Arabic/Hebrew. Clients must read this rather than assuming every language is LTR."
+ },
+ {
+  "name": "Language-script",
+  "doctype": "Custom Field",
+  "dt": "Language",
+  "fieldname": "script",
+  "label": "Script",
+  "fieldtype": "Data",
+  "insert_after": "direction",
+  "translatable": 0,
+  "description": "Optional — the writing system's own name, e.g. 'Tamil', 'Devanagari', 'Arabic', for admin reference only. Not used by any code path."
+ },
+ {
+  "name": "Language-is_default",
+  "doctype": "Custom Field",
+  "dt": "Language",
+  "fieldname": "is_default",
+  "label": "Is Default",
+  "fieldtype": "Check",
+  "default": "0",
+  "insert_after": "enabled",
+  "in_list_view": 1,
+  "translatable": 0,
+  "description": "At most one language may be flagged — enforced in truth_of_bible.language.enforce_single_default(). The site-wide fallback when a caller specifies no language at all."
+ }
+]

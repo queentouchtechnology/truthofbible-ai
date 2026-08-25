@@ -1,0 +1,73 @@
+{
+ "doctype": "DocType",
+ "name": "TOB AI Provider",
+ "module": "Truth Of Bible",
+ "custom": 0,
+ "istable": 0,
+ "issingle": 0,
+ "quick_entry": 0,
+ "track_changes": 1,
+ "autoname": "field:provider_key",
+ "naming_rule": "By fieldname",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "engine": "InnoDB",
+ "description": "Platform config, not per-user data — one row per AI vendor integration (deepseek, openai, mock, ...). System-Manager-only; api_key is never returned by any REST response (Password fieldtype). Mirrors qtt_platform's QTT AI Provider shape structurally — same trust boundary, same pattern, zero code dependency.",
+ "field_order": [
+  "provider_key",
+  "enabled",
+  "is_fallback",
+  "base_url",
+  "api_key"
+ ],
+ "fields": [
+  {
+   "fieldname": "provider_key",
+   "fieldtype": "Data",
+   "label": "Provider Key",
+   "reqd": 1,
+   "in_list_view": 1,
+   "description": "Matches the Python provider class's own provider_key/name constant, e.g. 'deepseek', 'openai', 'mock'."
+  },
+  {
+   "fieldname": "enabled",
+   "fieldtype": "Check",
+   "label": "Enabled",
+   "default": "1",
+   "in_list_view": 1,
+   "description": "Toggling this off routes around a misbehaving provider without a deploy."
+  },
+  {
+   "fieldname": "is_fallback",
+   "fieldtype": "Check",
+   "label": "Is Fallback Provider",
+   "default": "0",
+   "in_list_view": 1,
+   "description": "At most one provider may be flagged — enforced in validate()."
+  },
+  {
+   "fieldname": "base_url",
+   "fieldtype": "Data",
+   "label": "Base URL",
+   "description": "Optional override — each provider class has its own sensible default."
+  },
+  {
+   "fieldname": "api_key",
+   "fieldtype": "Password",
+   "label": "API Key",
+   "description": "Server-side only. Read via frappe.utils.password.get_decrypted_password() from provider code — never exposed through any whitelisted method's return value."
+  }
+ ],
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "report": 1,
+   "export": 1
+  }
+ ],
+ "links": []
+}

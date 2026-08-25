@@ -1,0 +1,92 @@
+{
+ "doctype": "DocType",
+ "name": "TOB AI Prompt",
+ "module": "Truth Of Bible",
+ "custom": 0,
+ "istable": 0,
+ "issingle": 0,
+ "quick_entry": 0,
+ "track_changes": 1,
+ "autoname": "hash",
+ "naming_rule": "Random",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "engine": "InnoDB",
+ "description": "Prompt text lives here, editable without a deploy, instead of hardcoded in Python. `language` is deliberately optional: leave it blank for the normal case (one robust prompt with a dynamic 'respond in {language_name}' instruction appended at call time); set it only for a task/language pair that genuinely needs different wording, not just a different output language.",
+ "field_order": [
+  "task",
+  "language",
+  "column_break_meta",
+  "output_format",
+  "version",
+  "active",
+  "section_break_prompt",
+  "system_prompt"
+ ],
+ "fields": [
+  {
+   "fieldname": "task",
+   "fieldtype": "Data",
+   "label": "Task",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "description": "e.g. 'verse_explanation', 'bible_qa', 'quiz_generation' — matches AiRequest.task."
+  },
+  {
+   "fieldname": "language",
+   "fieldtype": "Link",
+   "label": "Language Override",
+   "options": "Language",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "description": "Leave blank for the language-independent default prompt (recommended). Only set this for a task/language pair whose prompt genuinely needs different wording, not just a different response language."
+  },
+  {
+   "fieldname": "column_break_meta",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "output_format",
+   "fieldtype": "Select",
+   "label": "Output Format",
+   "options": "text\njson",
+   "default": "text"
+  },
+  {
+   "fieldname": "version",
+   "fieldtype": "Int",
+   "label": "Version",
+   "default": "1"
+  },
+  {
+   "fieldname": "active",
+   "fieldtype": "Check",
+   "label": "Active",
+   "default": "1",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "section_break_prompt",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "system_prompt",
+   "fieldtype": "Long Text",
+   "label": "System Prompt",
+   "reqd": 1
+  }
+ ],
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "report": 1,
+   "export": 1
+  }
+ ],
+ "links": []
+}

@@ -1,0 +1,87 @@
+{
+ "doctype": "DocType",
+ "name": "TOB Bible Topic Translation",
+ "module": "Truth Of Bible",
+ "custom": 0,
+ "istable": 0,
+ "issingle": 0,
+ "quick_entry": 0,
+ "track_changes": 1,
+ "autoname": "hash",
+ "naming_rule": "Random",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "engine": "InnoDB",
+ "description": "One localized name/description for a TOB Bible Topic, one row per language. This is the doctype topics.search actually searches against.",
+ "field_order": [
+  "topic",
+  "language",
+  "column_break_unique",
+  "name_local",
+  "section_break_desc",
+  "description_local",
+  "translation_status"
+ ],
+ "fields": [
+  {
+   "fieldname": "topic",
+   "fieldtype": "Link",
+   "label": "Topic",
+   "options": "TOB Bible Topic",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "language",
+   "fieldtype": "Link",
+   "label": "Language",
+   "options": "Language",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "column_break_unique",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "name_local",
+   "fieldtype": "Data",
+   "label": "Name (Localized)",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "section_break_desc",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "description_local",
+   "fieldtype": "Small Text",
+   "label": "Description (Localized)"
+  },
+  {
+   "fieldname": "translation_status",
+   "fieldtype": "Select",
+   "label": "Translation Status",
+   "options": "Draft\nMachine Translated\nHuman Reviewed\nApproved\nPublished\nNeeds Revision",
+   "default": "Draft",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "description": "Per the product's own translation workflow requirement — only Published rows should normally be surfaced to end users; earlier statuses are review-in-progress."
+  }
+ ],
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "report": 1,
+   "export": 1
+  }
+ ],
+ "links": []
+}

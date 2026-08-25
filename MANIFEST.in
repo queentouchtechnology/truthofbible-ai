@@ -1,0 +1,8 @@
+include MANIFEST.in
+include requirements.txt
+include *.json
+recursive-include truth_of_bible *.json
+recursive-include truth_of_bible *.md
+recursive-include truth_of_bible *.py
+recursive-include truth_of_bible *.txt
+recursive-exclude truth_of_bible *.pyc

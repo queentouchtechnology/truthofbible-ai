@@ -1,0 +1,64 @@
+{
+ "doctype": "DocType",
+ "name": "TOB AI Settings",
+ "module": "Truth Of Bible",
+ "custom": 0,
+ "istable": 0,
+ "issingle": 1,
+ "quick_entry": 0,
+ "track_changes": 1,
+ "engine": "InnoDB",
+ "description": "Single, global defaults for AI generation — a whitelisted method's own default parameters when a caller doesn't override them. Not a per-request override mechanism.",
+ "field_order": [
+  "default_max_output_tokens",
+  "default_temperature",
+  "column_break_safety",
+  "default_language",
+  "disclaimer_footer_enabled"
+ ],
+ "fields": [
+  {
+   "fieldname": "default_max_output_tokens",
+   "fieldtype": "Int",
+   "label": "Default Max Output Tokens",
+   "default": "1024"
+  },
+  {
+   "fieldname": "default_temperature",
+   "fieldtype": "Float",
+   "label": "Default Temperature",
+   "default": "0.4",
+   "description": "Kept low by default — Bible explanation/Q&A content should be consistent and grounded, not creative."
+  },
+  {
+   "fieldname": "column_break_safety",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "default_language",
+   "fieldtype": "Link",
+   "label": "Default Language",
+   "options": "Language",
+   "description": "Used when a caller specifies no language at all — normally the Language row with Is Default checked, but overridable here independently."
+  },
+  {
+   "fieldname": "disclaimer_footer_enabled",
+   "fieldtype": "Check",
+   "label": "Append AI-Generated Disclaimer",
+   "default": "1",
+   "description": "Whether generated Bible content should carry a footer distinguishing it from Scripture text itself, matching the product's own 'never present speculation as biblical fact' requirement."
+  }
+ ],
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "report": 1,
+   "export": 1
+  }
+ ],
+ "links": []
+}

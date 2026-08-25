@@ -1,0 +1,3 @@
+# No data migrations — this app defines its own DocTypes (created directly,
+# not via patches) plus one Custom Field fixture on Frappe's core Language
+# doctype (applied by `bench migrate` from fixtures/custom_field.json).

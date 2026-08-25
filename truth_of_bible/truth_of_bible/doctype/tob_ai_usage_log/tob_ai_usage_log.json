@@ -1,0 +1,139 @@
+{
+ "doctype": "DocType",
+ "name": "TOB AI Usage Log",
+ "module": "Truth Of Bible",
+ "custom": 0,
+ "istable": 0,
+ "issingle": 0,
+ "quick_entry": 0,
+ "track_changes": 0,
+ "autoname": "hash",
+ "naming_rule": "Random",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "engine": "InnoDB",
+ "description": "Append-only observability log — one row per AI generation call, covering both usage accounting and request/response auditing (kept as one doctype for Phase 1; splitting into a separate raw-request-audit doctype is a later refinement if actually needed, not built speculatively). No credit deduction happens against this — this site has no billing/credit system, this is pure logging.",
+ "field_order": [
+  "user",
+  "task",
+  "language",
+  "column_break_provider",
+  "provider",
+  "model",
+  "was_fallback",
+  "section_break_tokens",
+  "input_tokens",
+  "output_tokens",
+  "total_tokens",
+  "estimated_cost_usd",
+  "column_break_status",
+  "status",
+  "duration_ms",
+  "error_message"
+ ],
+ "fields": [
+  {
+   "fieldname": "user",
+   "fieldtype": "Link",
+   "label": "User",
+   "options": "User",
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "task",
+   "fieldtype": "Data",
+   "label": "Task",
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "language",
+   "fieldtype": "Link",
+   "label": "Language",
+   "options": "Language",
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "column_break_provider",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "provider",
+   "fieldtype": "Data",
+   "label": "Provider",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "model",
+   "fieldtype": "Data",
+   "label": "Model"
+  },
+  {
+   "fieldname": "was_fallback",
+   "fieldtype": "Check",
+   "label": "Was Fallback",
+   "default": "0"
+  },
+  {
+   "fieldname": "section_break_tokens",
+   "fieldtype": "Section Break",
+   "label": "Tokens & Cost"
+  },
+  {
+   "fieldname": "input_tokens",
+   "fieldtype": "Int",
+   "label": "Input Tokens"
+  },
+  {
+   "fieldname": "output_tokens",
+   "fieldtype": "Int",
+   "label": "Output Tokens"
+  },
+  {
+   "fieldname": "total_tokens",
+   "fieldtype": "Int",
+   "label": "Total Tokens"
+  },
+  {
+   "fieldname": "estimated_cost_usd",
+   "fieldtype": "Currency",
+   "label": "Estimated Cost (USD)"
+  },
+  {
+   "fieldname": "column_break_status",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "success\nerror",
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "duration_ms",
+   "fieldtype": "Int",
+   "label": "Duration (ms)"
+  },
+  {
+   "fieldname": "error_message",
+   "fieldtype": "Small Text",
+   "label": "Error Message"
+  }
+ ],
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "report": 1,
+   "export": 1
+  }
+ ],
+ "links": []
+}

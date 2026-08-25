@@ -1,0 +1,80 @@
+{
+ "doctype": "DocType",
+ "name": "TOB Bible Conversation",
+ "module": "Truth Of Bible",
+ "custom": 0,
+ "istable": 0,
+ "issingle": 0,
+ "quick_entry": 0,
+ "track_changes": 1,
+ "autoname": "hash",
+ "naming_rule": "Random",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "engine": "InnoDB",
+ "description": "One Bible Q&A conversation thread — messages live in TOB Bible Conversation Message, linked back here. A user's own conversations are theirs alone (see permissions).",
+ "field_order": [
+  "user",
+  "title",
+  "language",
+  "column_break_refs",
+  "primary_reference"
+ ],
+ "fields": [
+  {
+   "fieldname": "user",
+   "fieldtype": "Link",
+   "label": "User",
+   "options": "User",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "title",
+   "fieldtype": "Data",
+   "label": "Title",
+   "in_list_view": 1,
+   "description": "e.g. 'Bible Study: Romans 8' — set from the first question, or editable by the user."
+  },
+  {
+   "fieldname": "language",
+   "fieldtype": "Link",
+   "label": "Language",
+   "options": "Language",
+   "reqd": 1,
+   "in_list_view": 1,
+   "description": "The conversation's language, held consistent across follow-ups unless the user explicitly asks to switch."
+  },
+  {
+   "fieldname": "column_break_refs",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "primary_reference",
+   "fieldtype": "Data",
+   "label": "Primary Reference",
+   "description": "The main verse/passage this conversation is about, if any, e.g. 'Romans 8:28' — set from the first question when one is detected."
+  }
+ ],
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "report": 1,
+   "export": 1
+  },
+  {
+   "role": "All",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "if_owner": 1
+  }
+ ],
+ "links": []
+}

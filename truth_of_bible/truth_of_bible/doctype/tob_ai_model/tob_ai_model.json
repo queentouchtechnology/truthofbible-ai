@@ -1,0 +1,80 @@
+{
+ "doctype": "DocType",
+ "name": "TOB AI Model",
+ "module": "Truth Of Bible",
+ "custom": 0,
+ "istable": 0,
+ "issingle": 0,
+ "quick_entry": 0,
+ "track_changes": 1,
+ "autoname": "hash",
+ "naming_rule": "Random",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "engine": "InnoDB",
+ "description": "Model + pricing + task routing — an admin can change which model handles which task without a deploy. See ai/core/routing.py for how default_for_task is used.",
+ "field_order": [
+  "provider",
+  "model_id",
+  "default_for_task",
+  "column_break_pricing",
+  "cost_input_per_1m",
+  "cost_output_per_1m"
+ ],
+ "fields": [
+  {
+   "fieldname": "provider",
+   "fieldtype": "Link",
+   "label": "Provider",
+   "options": "TOB AI Provider",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "model_id",
+   "fieldtype": "Data",
+   "label": "Model ID",
+   "reqd": 1,
+   "in_list_view": 1,
+   "description": "The vendor's own model identifier, e.g. 'deepseek-chat'."
+  },
+  {
+   "fieldname": "default_for_task",
+   "fieldtype": "Data",
+   "label": "Default For Task",
+   "in_list_view": 1,
+   "description": "e.g. 'verse_explanation', 'bible_qa', 'quiz_generation' — at most one TOB AI Model may claim a given task, enforced in validate()."
+  },
+  {
+   "fieldname": "column_break_pricing",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "cost_input_per_1m",
+   "fieldtype": "Currency",
+   "label": "Cost — Input (USD / 1M tokens)",
+   "reqd": 1,
+   "default": "0"
+  },
+  {
+   "fieldname": "cost_output_per_1m",
+   "fieldtype": "Currency",
+   "label": "Cost — Output (USD / 1M tokens)",
+   "reqd": 1,
+   "default": "0"
+  }
+ ],
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "report": 1,
+   "export": 1
+  }
+ ],
+ "links": []
+}

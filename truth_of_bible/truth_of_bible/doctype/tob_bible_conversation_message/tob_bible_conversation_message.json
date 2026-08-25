@@ -1,0 +1,85 @@
+{
+ "doctype": "DocType",
+ "name": "TOB Bible Conversation Message",
+ "module": "Truth Of Bible",
+ "custom": 0,
+ "istable": 0,
+ "issingle": 0,
+ "quick_entry": 0,
+ "track_changes": 0,
+ "autoname": "hash",
+ "naming_rule": "Random",
+ "sort_field": "creation",
+ "sort_order": "ASC",
+ "engine": "InnoDB",
+ "description": "One turn in a TOB Bible Conversation — a regular (not child-table) doctype since a conversation can grow long and each message benefits from its own creation timestamp/ordering rather than a fixed-order child table row.",
+ "field_order": [
+  "conversation",
+  "role",
+  "content",
+  "column_break_refs",
+  "references_cited",
+  "feedback"
+ ],
+ "fields": [
+  {
+   "fieldname": "conversation",
+   "fieldtype": "Link",
+   "label": "Conversation",
+   "options": "TOB Bible Conversation",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "role",
+   "fieldtype": "Select",
+   "label": "Role",
+   "options": "user\nassistant",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "content",
+   "fieldtype": "Long Text",
+   "label": "Content",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_refs",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "references_cited",
+   "fieldtype": "Small Text",
+   "label": "References Cited",
+   "description": "Comma-separated plain reference strings this answer drew on, e.g. 'Romans 8:28, Romans 8:29' — source attribution, per the product's own requirement to show which passages influenced an answer."
+  },
+  {
+   "fieldname": "feedback",
+   "fieldtype": "Select",
+   "label": "User Feedback",
+   "options": "\nhelpful\nnot_helpful\nincorrect\nneeds_review",
+   "description": "Only meaningful on assistant messages — set by the user via a separate feedback endpoint, not at creation time."
+  }
+ ],
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "report": 1,
+   "export": 1
+  },
+  {
+   "role": "All",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "if_owner": 1
+  }
+ ],
+ "links": []
+}
