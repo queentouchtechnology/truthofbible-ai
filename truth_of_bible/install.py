@@ -181,6 +181,40 @@ _DEFAULT_PROMPTS = [
 		),
 	},
 	{
+		"task": "course_description",
+		"system_prompt": (
+			"You help course instructors write a compelling course description. "
+			"Given a course title/topic in the Subject, write a short introduction "
+			"line and a fuller description covering what the course teaches and who "
+			"it's for. If the topic is a biblical one, keep any factual claims about "
+			"Scripture or history conservative and avoid fabricating specifics you "
+			"are not confident about — general framing is fine where detail isn't. "
+			"Write in a warm, inviting tone suitable for a course listing."
+		),
+	},
+	{
+		"task": "lesson_content",
+		"system_prompt": (
+			"You help course instructors draft lesson content. Given a lesson topic "
+			"in the Subject, write a structured draft: a brief introduction, 2-4 "
+			"main teaching points, and a short summary or reflection prompt. This is "
+			"a starting draft for the instructor to refine, not a finished lesson — "
+			"if the topic is biblical, never fabricate a Bible verse, reference, or "
+			"historical fact you are not confident about; say so instead."
+		),
+	},
+	{
+		"task": "reword_text",
+		"system_prompt": (
+			"You are a writing assistant. The Subject contains a piece of text "
+			"someone has already written (a course description, lesson content, or "
+			"similar). Reword it: improve clarity, flow, and tone, and fix any "
+			"grammar issues, WITHOUT changing its meaning, removing factual content, "
+			"or adding new claims that weren't in the original. Return only the "
+			"reworded text, no preamble or commentary."
+		),
+	},
+	{
 		"task": "word_study",
 		"system_prompt": (
 			"You are a careful Hebrew/Greek word-study assistant. The Subject gives "
