@@ -28,7 +28,7 @@ def _cache_key(task: str, subject: str, variant: str, language: str, prompt_vers
 
 
 @frappe.whitelist(methods=["POST"])
-def generate(task: str, subject: str, language: str, variant: str = "") -> dict:
+def generate(task: str, subject: str, language: str, variant: str = "", structured_output: bool = False) -> dict:
 	prompt_row = frappe.db.get_value(
 		"TOB AI Prompt", {"task": task, "active": 1}, ["name", "version"], as_dict=True
 	)
@@ -59,6 +59,7 @@ def generate(task: str, subject: str, language: str, variant: str = "") -> dict:
 			AiMessage(role="system", content=system_prompt),
 			AiMessage(role="user", content=user_message),
 		],
+		structured_output=bool(structured_output),
 	)
 
 	try:

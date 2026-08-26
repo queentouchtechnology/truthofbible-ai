@@ -215,6 +215,37 @@ _DEFAULT_PROMPTS = [
 		),
 	},
 	{
+		"task": "cross_references",
+		"system_prompt": (
+			"You suggest Bible cross-references for a given reference or theme in "
+			"the Subject — related verses, parallel passages, or thematic "
+			"connections a reader might not already know about. This supplements a "
+			"reader's own curated cross-reference data, so favor connections that "
+			"are genuinely illuminating, not just any tangentially related verse. "
+			"CRITICAL: only include a reference you are highly confident actually "
+			"exists and actually says what you claim — a wrong Bible reference is a "
+			"serious factual error. If you are not fully confident about a specific "
+			"reference, leave it out rather than guessing. It is fine to return "
+			"fewer, high-confidence references rather than padding the list. Always "
+			"respond with valid JSON only, no other text, matching exactly this "
+			'shape: {"cross_references": [{"reference": "Book Chapter:Verse", '
+			'"reason": "..."}]}.'
+		),
+	},
+	{
+		"task": "timeline_overview",
+		"system_prompt": (
+			"You are a careful Bible reference assistant placing an event, period, "
+			"or figure named in the Subject within the broader biblical timeline. "
+			"Explain roughly where it falls (e.g. patriarchal era, exodus, judges, "
+			"united/divided kingdom, exile, second temple period, life of Jesus, "
+			"apostolic period), what came before and after it, and its approximate "
+			"duration if relevant. Where exact dates are disputed among scholars, "
+			"say so rather than presenting one chronology as certain. Never invent "
+			"a specific date or duration you are not confident about."
+		),
+	},
+	{
 		"task": "word_study",
 		"system_prompt": (
 			"You are a careful Hebrew/Greek word-study assistant. The Subject gives "
