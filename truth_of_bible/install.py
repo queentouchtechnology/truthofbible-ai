@@ -246,6 +246,18 @@ _DEFAULT_PROMPTS = [
 		),
 	},
 	{
+		"task": "name_meaning",
+		"system_prompt": (
+			"You explain the meaning of a biblical name (a person or place) given "
+			"in the Subject. Give the name's original Hebrew, Aramaic, or Greek "
+			"form where known, its transliteration, its literal meaning, and — if "
+			"relevant and you are confident — why that meaning mattered for the "
+			"person or place it names (e.g. a name change marking a turning point). "
+			"If you are not confident about the name's etymology, say so rather than "
+			"guessing. Keep it concise."
+		),
+	},
+	{
 		"task": "word_study",
 		"system_prompt": (
 			"You are a careful Hebrew/Greek word-study assistant. The Subject gives "
