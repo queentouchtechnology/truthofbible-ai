@@ -1,6 +1,12 @@
 """Regression tests for call_openai_compatible_chat's HTTP error
 normalization (see the fix/ai-provider-error-diagnostics-417 branch).
 
+This code path is shared by every OpenAI-compatible provider (OpenAI,
+DeepSeek, OpenRouter, ...), so the tests deliberately use a generic
+placeholder provider/model/key rather than any real vendor's name or
+credential format — nothing here is specific to OpenAI, and none of
+these values are (or resemble) a real secret.
+
 Pure logic, no live Frappe site required: `requests.post` is replaced
 with a fake response, and `frappe.log_error` is monkeypatched — this
 module never touches the database, the network, or frappe.session. If
@@ -27,7 +33,10 @@ from truth_of_bible.ai.core.exceptions import AiProviderException
 from truth_of_bible.ai.core.request import AiMessage, AiRequest
 from truth_of_bible.ai.providers import openai_compatible
 
-_FAKE_API_KEY = "sk-should-never-appear-in-any-message-or-log"
+_PLACEHOLDER_PROVIDER = "test-provider"
+_PLACEHOLDER_MODEL = "test-model-id"
+_PLACEHOLDER_BASE_URL = "https://api.example-provider.test/v1"
+_PLACEHOLDER_CREDENTIAL = "PLACEHOLDER-CREDENTIAL-MUST-NEVER-BE-LOGGED"
 
 
 class _FakeHttpResponse:
@@ -40,7 +49,7 @@ class _FakeHttpResponse:
 		return self._json_data
 
 
-def _make_request(model="gpt-5-mini"):
+def _make_request(model=_PLACEHOLDER_MODEL):
 	return AiRequest(
 		task="verse_explanation",
 		messages=[AiMessage(role="user", content="hi")],
@@ -54,13 +63,13 @@ class CallOpenAiCompatibleChatErrorTests(unittest.TestCase):
 		self.mock_log_error = patcher.start()
 		self.addCleanup(patcher.stop)
 
-	def _call(self, fake_response, base_url="https://api.openai.com/v1"):
+	def _call(self, fake_response, base_url=_PLACEHOLDER_BASE_URL):
 		with mock.patch.object(openai_compatible.requests, "post", return_value=fake_response):
 			with self.assertRaises(AiProviderException) as ctx:
 				openai_compatible.call_openai_compatible_chat(
 					base_url=base_url,
-					api_key=_FAKE_API_KEY,
-					provider_name="openai",
+					api_key=_PLACEHOLDER_CREDENTIAL,
+					provider_name=_PLACEHOLDER_PROVIDER,
 					request=_make_request(),
 				)
 		return ctx.exception
@@ -68,9 +77,10 @@ class CallOpenAiCompatibleChatErrorTests(unittest.TestCase):
 	def test_verse_explanation_payload_has_no_temperature_max_tokens_or_response_format(self):
 		"""verse_explanation never sets temperature/max_output_tokens/
 		structured_output (see truth_of_bible/api/bible.py), so none of
-		those optional keys should end up in the outgoing payload — rules
-		out 'unsupported parameter' as the cause of a verse_explanation
-		failure specifically."""
+		those optional keys should end up in the outgoing payload — this is
+		what rules out 'unsupported parameter' as a cause of a
+		verse_explanation failure, regardless of which provider/model is
+		configured for that task."""
 		captured = {}
 
 		def fake_post(url, headers, json, timeout):
@@ -83,16 +93,16 @@ class CallOpenAiCompatibleChatErrorTests(unittest.TestCase):
 
 		with mock.patch.object(openai_compatible.requests, "post", side_effect=fake_post):
 			openai_compatible.call_openai_compatible_chat(
-				base_url="https://api.openai.com/v1",
-				api_key=_FAKE_API_KEY,
-				provider_name="openai",
+				base_url=_PLACEHOLDER_BASE_URL,
+				api_key=_PLACEHOLDER_CREDENTIAL,
+				provider_name=_PLACEHOLDER_PROVIDER,
 				request=_make_request(),
 			)
 
 		self.assertNotIn("temperature", captured["payload"])
 		self.assertNotIn("max_tokens", captured["payload"])
 		self.assertNotIn("response_format", captured["payload"])
-		self.assertEqual(captured["payload"]["model"], "gpt-5-mini")
+		self.assertEqual(captured["payload"]["model"], _PLACEHOLDER_MODEL)
 
 	def test_400_is_not_transient_and_message_carries_diagnostics(self):
 		body = '{"error": {"message": "some provider-side validation failure"}}'
@@ -102,15 +112,15 @@ class CallOpenAiCompatibleChatErrorTests(unittest.TestCase):
 		self.assertFalse(exc.is_transient)
 		self.assertTrue(exc.is_fallback_eligible)
 		message = str(exc)
-		self.assertIn("provider=openai", message)
-		self.assertIn("model=gpt-5-mini", message)
+		self.assertIn(f"provider={_PLACEHOLDER_PROVIDER}", message)
+		self.assertIn(f"model={_PLACEHOLDER_MODEL}", message)
 		self.assertIn("status=400", message)
-		self.assertIn("https://api.openai.com/v1/chat/completions", message)
+		self.assertIn(f"{_PLACEHOLDER_BASE_URL}/chat/completions", message)
 		# v1/chat/completions must appear exactly once — no doubled path
 		# segment even when base_url already ends without/with a slash.
 		self.assertEqual(message.count("/chat/completions"), 1)
 		self.assertIn(body, message)
-		self.assertNotIn(_FAKE_API_KEY, message)
+		self.assertNotIn(_PLACEHOLDER_CREDENTIAL, message)
 
 	def test_429_is_transient_and_carries_diagnostics(self):
 		exc = self._call(_FakeHttpResponse(429, text="rate limit exceeded for this project"))
@@ -126,8 +136,8 @@ class CallOpenAiCompatibleChatErrorTests(unittest.TestCase):
 		self.assertIn("status=503", str(exc))
 
 	def test_base_url_trailing_slash_does_not_duplicate_path(self):
-		exc = self._call(_FakeHttpResponse(400, text="bad request"), base_url="https://api.openai.com/v1/")
-		self.assertIn("endpoint=https://api.openai.com/v1/chat/completions", str(exc))
+		exc = self._call(_FakeHttpResponse(400, text="bad request"), base_url=f"{_PLACEHOLDER_BASE_URL}/")
+		self.assertIn(f"endpoint={_PLACEHOLDER_BASE_URL}/chat/completions", str(exc))
 		self.assertNotIn("//chat/completions", str(exc))
 
 	def test_error_is_logged_server_side_without_the_api_key(self):
@@ -135,8 +145,8 @@ class CallOpenAiCompatibleChatErrorTests(unittest.TestCase):
 		self.assertTrue(self.mock_log_error.called)
 		_, kwargs = self.mock_log_error.call_args
 		logged_text = " ".join(str(v) for v in kwargs.values())
-		self.assertNotIn(_FAKE_API_KEY, logged_text)
-		self.assertIn("openai", logged_text)
+		self.assertNotIn(_PLACEHOLDER_CREDENTIAL, logged_text)
+		self.assertIn(_PLACEHOLDER_PROVIDER, logged_text)
 		self.assertIn("400", logged_text)
 
 
