@@ -39,8 +39,17 @@ class OpenAiCompatibleProvider(AiProvider):
 
 	def generate(self, request: AiRequest) -> AiResponse:
 		provider_row = frappe.db.get_value("TOB AI Provider", self.provider_key, ["base_url"], as_dict=True)
-		api_key = get_decrypted_password("TOB AI Provider", self.provider_key, "api_key")
-		base_url = (provider_row.base_url if provider_row else None) or self.default_base_url
+		# .strip() guards against the single most common real-world cause of
+		# a provider's own "incorrect/invalid API key" 401 — a stray
+		# leading/trailing space or newline picked up when the key was
+		# copy-pasted into the Password field via Desk. Frappe does not
+		# trim Data/Password field input, and a whitespace-corrupted key
+		# looks identical to a valid one everywhere except at the provider,
+		# where it's silently rejected. This is a no-op for an already-clean
+		# key/base_url, so it can't change behavior for a correctly
+		# configured provider.
+		api_key = (get_decrypted_password("TOB AI Provider", self.provider_key, "api_key") or "").strip()
+		base_url = ((provider_row.base_url if provider_row else None) or self.default_base_url).strip()
 		return call_openai_compatible_chat(
 			base_url=base_url, api_key=api_key, provider_name=self.provider_key, request=request
 		)
