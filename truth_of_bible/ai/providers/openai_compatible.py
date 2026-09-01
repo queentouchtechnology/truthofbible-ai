@@ -15,6 +15,41 @@ from truth_of_bible.ai.core.response import AiResponse, AiUsage
 
 DEFAULT_TIMEOUT_SECONDS = 60
 
+#: Error Log message / exception text is capped so a very large provider
+#: error body (rare, but seen with some gateways/proxies) can't bloat the
+#: Error Log or the TOB AI Usage Log row it ends up copied into.
+_MAX_LOGGED_BODY_CHARS = 4000
+
+
+def _describe_error(provider_name: str, endpoint: str, model: str, status_code: int, body: str) -> str:
+	"""Secret-free summary of a failed provider call. Deliberately takes
+	only the provider's response body (`body`) — never the request headers
+	or api_key — so this can safely go into both the raised exception's
+	message (which ends up in TOB AI Usage Log.error_message and in
+	Frappe's error traceback) and the server-side Error Log, without ever
+	risking a leaked credential."""
+	safe_body = (body or "")[:_MAX_LOGGED_BODY_CHARS]
+	return f"provider={provider_name} model={model} status={status_code} endpoint={endpoint}\n\n{safe_body}"
+
+
+def _log_provider_error(provider_name: str, endpoint: str, model: str, status_code: int, body: str) -> str:
+	"""Writes a searchable Frappe Error Log entry for a failed provider
+	call and returns the same description to use as the exception message.
+	Previously the raised AiProviderException carried only the raw
+	response body — with no status code, model, or endpoint attached, a
+	site admin reading the Error Log (or the generic 'Could not generate
+	an explanation' ValidationError Flutter receives) had no way to tell
+	*which* provider/model/endpoint failed or why, short of re-deriving it
+	from a truncated traceback. A logging failure here must never mask the
+	real provider error, so it's swallowed — matching AiGateway._record's
+	same defensive pattern for its own on_call recorder."""
+	description = _describe_error(provider_name, endpoint, model, status_code, body)
+	try:
+		frappe.log_error(title=f"AI provider error: {provider_name} ({status_code})", message=description)
+	except Exception:
+		pass
+	return description
+
 
 def call_openai_compatible_chat(
 	*,
@@ -36,9 +71,11 @@ def call_openai_compatible_chat(
 	if request.structured_output:
 		payload["response_format"] = {"type": "json_object"}
 
+	endpoint = f"{base_url.rstrip('/')}/chat/completions"
+
 	try:
 		http_response = requests.post(
-			f"{base_url.rstrip('/')}/chat/completions",
+			endpoint,
 			headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
 			json=payload,
 			timeout=timeout,
@@ -53,14 +90,25 @@ def call_openai_compatible_chat(
 	duration_ms = int((time.monotonic() - start) * 1000)
 
 	if http_response.status_code == 429:
-		raise AiProviderException("RateLimited", provider_name, "Rate limited", is_transient=True)
+		raise AiProviderException(
+			"RateLimited",
+			provider_name,
+			_log_provider_error(provider_name, endpoint, request.model, http_response.status_code, http_response.text),
+			is_transient=True,
+		)
 	if http_response.status_code >= 500:
 		raise AiProviderException(
-			"ProviderServerError", provider_name, http_response.text, is_transient=True
+			"ProviderServerError",
+			provider_name,
+			_log_provider_error(provider_name, endpoint, request.model, http_response.status_code, http_response.text),
+			is_transient=True,
 		)
 	if http_response.status_code >= 400:
 		raise AiProviderException(
-			"ProviderRequestError", provider_name, http_response.text, is_transient=False
+			"ProviderRequestError",
+			provider_name,
+			_log_provider_error(provider_name, endpoint, request.model, http_response.status_code, http_response.text),
+			is_transient=False,
 		)
 
 	data = http_response.json()
