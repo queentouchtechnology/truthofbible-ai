@@ -14,10 +14,10 @@ keyed to a plain reference string the client already resolves locally.
   fallback). Ported from `qtt_platform.ai.core` (read directly, not
   guessed) — same proven design, zero import coupling. `AiGateway.generate()`
   has no knowledge of tenants, credits, or what a "quiz" is.
-- **`truth_of_bible/ai/providers/`** — `mock`, `deepseek`, `openai`
-  (OpenAI-compatible chat completions). `openrouter`/`gemini`/`anthropic`
-  follow the identical `OpenAiCompatibleProvider` pattern and can be added
-  the same way once actually needed.
+- **`truth_of_bible/ai/providers/`** — `mock`, `deepseek`, `openai`,
+  `openrouter` (all OpenAI-compatible chat completions). `gemini`/
+  `anthropic` follow the identical `OpenAiCompatibleProvider` pattern and
+  can be added the same way once actually needed.
 - **`truth_of_bible/ai/service.py`** — the one function every API endpoint
   calls: builds the gateway, generates, logs usage. No credit reservation
   (this site has no billing system) — pure observability via
@@ -35,10 +35,14 @@ keyed to a plain reference string the client already resolves locally.
 
 1. Configure at least one `TOB AI Provider` (System Manager, Desk UI) —
    `provider_key` must match a registered provider class (`mock`,
-   `deepseek`, `openai`), `enabled` checked, real `api_key`.
+   `deepseek`, `openai`, `openrouter`), `enabled` checked, real `api_key`.
+   For `openrouter`, `base_url` defaults to
+   `https://openrouter.ai/api/v1` if left blank.
 2. Configure a `TOB AI Model` per task you'll use — `provider` (link),
-   real `model_id` (e.g. `deepseek-chat`), `default_for_task` (e.g.
-   `verse_explanation`, `bible_qa`, `quiz_generation`).
+   real `model_id` (e.g. `deepseek-chat`, or for `openrouter` a
+   vendor-prefixed id such as `deepseek/deepseek-chat` or `openai/gpt-4o`),
+   `default_for_task` (e.g. `verse_explanation`, `bible_qa`,
+   `quiz_generation`).
 3. Default prompts for those three tasks are seeded automatically on
    install/migrate (`install.py::seed_default_prompts`) — edit them via
    `TOB AI Prompt` in the Desk once real content review has happened.
@@ -73,6 +77,6 @@ changed.
   own fixture if/when Open Ended support is actually needed.
 - No Bible verse/cross-reference database — deliberate, see the
   architecture note above.
-- `openrouter`/`gemini`/`anthropic` provider classes aren't wired into
-  `ai/bootstrap.py` yet — trivial to add (same pattern as `deepseek.py`)
+- `gemini`/`anthropic` provider classes aren't wired into `ai/bootstrap.py`
+  yet — trivial to add (same pattern as `deepseek.py`/`openrouter.py`)
   once there's a real account to configure.

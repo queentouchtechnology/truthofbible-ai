@@ -4,21 +4,23 @@ function, called once per gateway construction, deliberately not a
 module-level singleton (Frappe request workers shouldn't share mutable
 state across requests).
 
-Only mock/deepseek/openai are wired for Phase 1 — openrouter/gemini/
-anthropic would follow the identical OpenAiCompatibleProvider (or a new
-subclass) pattern if/when needed; not built speculatively ahead of an
-actual provider account existing.
+mock/deepseek/openai/openrouter are wired for Phase 1 — gemini/anthropic
+would follow the identical OpenAiCompatibleProvider (or a new subclass)
+pattern if/when needed; not built speculatively ahead of an actual
+provider account existing.
 """
 
 from truth_of_bible.ai.core.registry import AiProviderRegistry
 from truth_of_bible.ai.providers.deepseek import DeepSeekProvider
 from truth_of_bible.ai.providers.mock import MockProvider
 from truth_of_bible.ai.providers.openai_provider import OpenAiProvider
+from truth_of_bible.ai.providers.openrouter import OpenRouterProvider
 
 _PROVIDER_CLASSES = (
 	MockProvider,
 	DeepSeekProvider,
 	OpenAiProvider,
+	OpenRouterProvider,
 )
 
 
