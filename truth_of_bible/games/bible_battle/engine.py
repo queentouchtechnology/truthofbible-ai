@@ -252,7 +252,7 @@ def battle_state(battle, slot: str) -> dict:
 		"opponent_score": battle.get(f"{opp_slot}_score"),
 		"my_ready": bool(battle.get(f"{slot}_ready")),
 		"opponent_ready": bool(battle.get(f"{opp_slot}_ready")),
-		"opponent": user_display(battle.get(opp_slot)),
+		"opponent": user_display(battle.get(opp_slot), include_bir=True),
 		"winner": battle.winner,
 	}
 

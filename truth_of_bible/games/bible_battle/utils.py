@@ -41,16 +41,22 @@ def opponent_slot(slot: str) -> str:
 	return "player_2" if slot == "player_1" else "player_1"
 
 
-def user_display(user: str | None) -> dict | None:
+def user_display(user: str | None, *, include_bir: bool = False) -> dict | None:
 	"""Battle/Answer/Queue docs only ever store a bare User name (email) —
 	this resolves the bit of profile the client actually needs to render an
-	opponent (name + avatar), without exposing the full User document."""
+	opponent (name + avatar, optionally their current BIR for the lobby/live
+	screens), without exposing the full User document."""
 	if not user:
 		return None
 	info = frappe.db.get_value("User", user, ["full_name", "user_image"], as_dict=True)
-	if not info:
-		return {"user": user, "name": user, "image": None}
-	return {"user": user, "name": info.full_name or user, "image": info.user_image}
+	result = (
+		{"user": user, "name": info.full_name or user, "image": info.user_image}
+		if info
+		else {"user": user, "name": user, "image": None}
+	)
+	if include_bir:
+		result["bir"] = get_or_create_rating(user).bir
+	return result
 
 
 def touch_last_seen(battle, slot: str) -> None:
