@@ -24,6 +24,7 @@ from truth_of_bible.games.bible_battle.utils import (
 	require_participant,
 	select_question_sequence,
 	touch_last_seen,
+	user_display,
 )
 
 #: How long a player's last-seen timestamp can go stale before they're
@@ -191,7 +192,7 @@ def get_battle_result(battle_name: str, user: str) -> dict:
 		"winner": battle.winner,
 		"my_score": battle.get(f"{slot}_score"),
 		"opponent_score": battle.get(f"{opp_slot}_score"),
-		"opponent": battle.get(opp_slot),
+		"opponent": user_display(battle.get(opp_slot)),
 		"total_questions": battle.total_questions,
 		"correct_count": correct_count,
 		"wrong_count": max(0, len(answers) - correct_count),
@@ -229,7 +230,7 @@ def get_battle_history(user: str, limit: int = 20) -> list[dict]:
 				"status": row.status,
 				"did_i_win": bool(row.winner) and row.winner == user,
 				"my_score": row.player_1_score if is_p1 else row.player_2_score,
-				"opponent": row.player_2 if is_p1 else row.player_1,
+				"opponent": user_display(row.player_2 if is_p1 else row.player_1),
 				"opponent_score": row.player_2_score if is_p1 else row.player_1_score,
 				"my_bir_before": row.player_1_bir_before if is_p1 else row.player_2_bir_before,
 				"my_bir_after": row.player_1_bir_after if is_p1 else row.player_2_bir_after,
@@ -251,7 +252,7 @@ def battle_state(battle, slot: str) -> dict:
 		"opponent_score": battle.get(f"{opp_slot}_score"),
 		"my_ready": bool(battle.get(f"{slot}_ready")),
 		"opponent_ready": bool(battle.get(f"{opp_slot}_ready")),
-		"opponent": battle.get(opp_slot),
+		"opponent": user_display(battle.get(opp_slot)),
 		"winner": battle.winner,
 	}
 
