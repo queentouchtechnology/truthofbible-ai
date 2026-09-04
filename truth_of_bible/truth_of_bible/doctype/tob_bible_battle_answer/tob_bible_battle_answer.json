@@ -1,0 +1,115 @@
+{
+ "doctype": "DocType",
+ "name": "TOB Bible Battle Answer",
+ "module": "Truth Of Bible",
+ "custom": 0,
+ "istable": 0,
+ "issingle": 0,
+ "quick_entry": 0,
+ "track_changes": 1,
+ "autoname": "hash",
+ "naming_rule": "Random",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "engine": "InnoDB",
+ "description": "One row = one player's answer to one question in one battle. Written only by truth_of_bible.api.bible_battle.submit_answer after server-side validation (participant, battle in progress, question matches current index, not already answered, within the time window) — is_correct/points are always computed server-side, never accepted from the client. System-Manager-only permissions; players never read this via direct REST, only through get_battle_status/get_battle_result.",
+ "field_order": [
+  "battle",
+  "player",
+  "question",
+  "question_index",
+  "column_break_answer",
+  "selected_option",
+  "is_correct",
+  "response_time_ms",
+  "points",
+  "answered_at"
+ ],
+ "fields": [
+  {
+   "fieldname": "battle",
+   "fieldtype": "Link",
+   "label": "Battle",
+   "options": "TOB Bible Battle",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "player",
+   "fieldtype": "Link",
+   "label": "Player",
+   "options": "User",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "question",
+   "fieldtype": "Link",
+   "label": "Question",
+   "options": "TOB Bible Battle Question",
+   "reqd": 1
+  },
+  {
+   "fieldname": "question_index",
+   "fieldtype": "Int",
+   "label": "Question Index",
+   "reqd": 1,
+   "description": "Which of the battle's questions (1-10) this answers — kept alongside the question link for audit even if question_sequence changes shape later."
+  },
+  {
+   "fieldname": "column_break_answer",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "selected_option",
+   "fieldtype": "Select",
+   "label": "Selected Option",
+   "options": "\nA\nB\nC\nD",
+   "description": "Blank means the player did not answer within the time window."
+  },
+  {
+   "fieldname": "is_correct",
+   "fieldtype": "Check",
+   "label": "Is Correct",
+   "default": "0",
+   "read_only": 1
+  },
+  {
+   "fieldname": "response_time_ms",
+   "fieldtype": "Int",
+   "label": "Response Time (ms)",
+   "read_only": 1,
+   "description": "Server-computed: answered_at minus the battle's question_start_time at submission — never a client-reported duration."
+  },
+  {
+   "fieldname": "points",
+   "fieldtype": "Int",
+   "label": "Points",
+   "default": "0",
+   "read_only": 1,
+   "description": "100 + speed bonus (0-50) if correct, else 0 — always computed server-side."
+  },
+  {
+   "fieldname": "answered_at",
+   "fieldtype": "Datetime",
+   "label": "Answered At",
+   "reqd": 1
+  }
+ ],
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "report": 1,
+   "export": 1
+  }
+ ],
+ "links": []
+}

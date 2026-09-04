@@ -1,0 +1,176 @@
+{
+ "doctype": "DocType",
+ "name": "TOB Bible Battle Question",
+ "module": "Truth Of Bible",
+ "custom": 0,
+ "istable": 0,
+ "issingle": 0,
+ "quick_entry": 0,
+ "track_changes": 1,
+ "autoname": "hash",
+ "naming_rule": "Random",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "engine": "InnoDB",
+ "description": "Bible Battle's controlled question bank. Never exposed to players via direct REST (System-Manager-only permissions, see the doctype's permissions table) — a battling player only ever sees a redacted view of one question at a time, returned by the whitelisted truth_of_bible.api.bible_battle.get_current_question, which strips correct_option entirely. AI is deliberately not involved in authoring or grading these; the competitive answer is always this admin-curated row.",
+ "field_order": [
+  "question",
+  "section_break_options",
+  "option_a",
+  "option_b",
+  "column_break_options",
+  "option_c",
+  "option_d",
+  "correct_option",
+  "section_break_meta",
+  "difficulty",
+  "language",
+  "status",
+  "column_break_ref",
+  "bible_book",
+  "chapter",
+  "verse",
+  "reference",
+  "section_break_explanation",
+  "explanation"
+ ],
+ "fields": [
+  {
+   "fieldname": "question",
+   "fieldtype": "Text",
+   "label": "Question",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "section_break_options",
+   "fieldtype": "Section Break",
+   "label": "Answer Options"
+  },
+  {
+   "fieldname": "option_a",
+   "fieldtype": "Data",
+   "label": "Option A",
+   "reqd": 1
+  },
+  {
+   "fieldname": "option_b",
+   "fieldtype": "Data",
+   "label": "Option B",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_options",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "option_c",
+   "fieldtype": "Data",
+   "label": "Option C",
+   "reqd": 1
+  },
+  {
+   "fieldname": "option_d",
+   "fieldtype": "Data",
+   "label": "Option D",
+   "reqd": 1
+  },
+  {
+   "fieldname": "correct_option",
+   "fieldtype": "Select",
+   "label": "Correct Option",
+   "options": "A\nB\nC\nD",
+   "reqd": 1,
+   "in_list_view": 1,
+   "description": "Never returned to a player — only read server-side by submit_answer to compute is_correct/points."
+  },
+  {
+   "fieldname": "section_break_meta",
+   "fieldtype": "Section Break",
+   "label": "Classification"
+  },
+  {
+   "fieldname": "difficulty",
+   "fieldtype": "Select",
+   "label": "Difficulty",
+   "options": "Easy\nMedium\nHard",
+   "reqd": 1,
+   "default": "Medium",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "language",
+   "fieldtype": "Link",
+   "label": "Language",
+   "options": "Language",
+   "default": "en",
+   "in_standard_filter": 1,
+   "search_index": 1,
+   "description": "V1 only seeds English questions; this field exists now so per-language question banks can be added later without a schema change (same canonical-question-translated-later approach as the AI content module)."
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Draft\nPublished\nArchived",
+   "default": "Draft",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "search_index": 1,
+   "description": "Only Published questions are eligible for battle selection."
+  },
+  {
+   "fieldname": "column_break_ref",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "bible_book",
+   "fieldtype": "Data",
+   "label": "Bible Book"
+  },
+  {
+   "fieldname": "chapter",
+   "fieldtype": "Int",
+   "label": "Chapter"
+  },
+  {
+   "fieldname": "verse",
+   "fieldtype": "Data",
+   "label": "Verse",
+   "description": "A single verse or a range, e.g. '14' or '6-8'."
+  },
+  {
+   "fieldname": "reference",
+   "fieldtype": "Data",
+   "label": "Reference",
+   "in_list_view": 1,
+   "description": "Display string, e.g. 'Genesis 6:14'."
+  },
+  {
+   "fieldname": "section_break_explanation",
+   "fieldtype": "Section Break",
+   "label": "Explanation",
+   "collapsible": 1
+  },
+  {
+   "fieldname": "explanation",
+   "fieldtype": "Small Text",
+   "label": "Explanation",
+   "description": "Short educational note shown after a player answers, e.g. 'God instructed Noah to build the ark.'"
+  }
+ ],
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "report": 1,
+   "export": 1
+  }
+ ],
+ "links": []
+}

@@ -42,5 +42,23 @@ doc_events = {
 # Idempotent — safe to run on every migrate, matching qmp_lms_bridge's own
 # documented reasoning for why this is a plain function call and not a
 # Frappe patch (patches.txt).
-after_install = "truth_of_bible.install.seed_default_prompts"
-after_migrate = "truth_of_bible.install.seed_default_prompts"
+after_install = [
+	"truth_of_bible.install.seed_default_prompts",
+	"truth_of_bible.install.seed_bible_battle_questions",
+]
+after_migrate = [
+	"truth_of_bible.install.seed_default_prompts",
+	"truth_of_bible.install.seed_bible_battle_questions",
+]
+
+# Bible Battle's only background-job-shaped mechanism: a cron backstop for
+# question advancement/forfeit, used only when nobody has polled an
+# In Progress battle recently enough for check_and_advance() to run
+# opportunistically (both apps died mid-question). Mirrors qtt_platform's
+# own scheduler_events convention — the only cron precedent in this
+# codebase; frappe.enqueue has none, so V1 deliberately doesn't introduce it.
+scheduler_events = {
+	"cron": {
+		"* * * * *": ["truth_of_bible.games.bible_battle.engine.sweep_stale_battles"],
+	},
+}

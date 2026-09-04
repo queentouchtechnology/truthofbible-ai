@@ -1,0 +1,82 @@
+{
+ "doctype": "DocType",
+ "name": "TOB Bible Battle Queue",
+ "module": "Truth Of Bible",
+ "custom": 0,
+ "istable": 0,
+ "issingle": 0,
+ "quick_entry": 0,
+ "track_changes": 1,
+ "autoname": "hash",
+ "naming_rule": "Random",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "engine": "InnoDB",
+ "description": "Server-side matchmaking queue row, one per player currently searching for an opponent. Exists as its own doctype (beyond the core Battle/Answer/Rating set) specifically so matchmaking has persistent, row-lockable state for race-safe opponent claiming (see truth_of_bible.games.bible_battle.matchmaking) rather than relying on in-memory/cache state. System-Manager-only permissions; players only ever touch this through start_matchmaking/cancel_matchmaking/get_match_status.",
+ "field_order": [
+  "player",
+  "bir_snapshot",
+  "queued_at",
+  "column_break_status",
+  "status",
+  "matched_battle"
+ ],
+ "fields": [
+  {
+   "fieldname": "player",
+   "fieldtype": "Link",
+   "label": "Player",
+   "options": "User",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "bir_snapshot",
+   "fieldtype": "Int",
+   "label": "BIR Snapshot",
+   "reqd": 1,
+   "description": "The player's BIR at the moment they joined the queue — cached so matchmaking doesn't re-read Rating on every scan, and so tolerance widening is computed against a stable baseline."
+  },
+  {
+   "fieldname": "queued_at",
+   "fieldtype": "Datetime",
+   "label": "Queued At",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_status",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Searching\nMatched\nCancelled",
+   "default": "Searching",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "matched_battle",
+   "fieldtype": "Link",
+   "label": "Matched Battle",
+   "options": "TOB Bible Battle"
+  }
+ ],
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "report": 1,
+   "export": 1
+  }
+ ],
+ "links": []
+}

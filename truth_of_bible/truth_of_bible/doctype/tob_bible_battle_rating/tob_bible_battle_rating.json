@@ -1,0 +1,117 @@
+{
+ "doctype": "DocType",
+ "name": "TOB Bible Battle Rating",
+ "module": "Truth Of Bible",
+ "custom": 0,
+ "istable": 0,
+ "issingle": 0,
+ "quick_entry": 0,
+ "track_changes": 1,
+ "autoname": "field:user",
+ "naming_rule": "By fieldname",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "engine": "InnoDB",
+ "description": "One row per user's Bible Battle competitive stats (BIR = Biblical Intelligence Rating), kept separate from the core User doctype. autoname=user so truth_of_bible.games.bible_battle.rating can get-or-create with a single frappe.get_doc('TOB Bible Battle Rating', user) call. System-Manager-only permissions — always read/written through truth_of_bible.api.bible_battle, never direct REST, so a player can never inflate their own bir/wins by PUTting this doctype.",
+ "field_order": [
+  "user",
+  "bir",
+  "column_break_counts",
+  "games_played",
+  "wins",
+  "losses",
+  "draws",
+  "section_break_streak",
+  "current_streak",
+  "best_streak",
+  "total_points"
+ ],
+ "fields": [
+  {
+   "fieldname": "user",
+   "fieldtype": "Link",
+   "label": "User",
+   "options": "User",
+   "reqd": 1,
+   "unique": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "bir",
+   "fieldtype": "Int",
+   "label": "BIR",
+   "default": "1000",
+   "in_list_view": 1,
+   "description": "Biblical Intelligence Rating. Every player starts at 1000; updated via an Elo-style formula after each completed battle (see games/bible_battle/rating.py)."
+  },
+  {
+   "fieldname": "column_break_counts",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "games_played",
+   "fieldtype": "Int",
+   "label": "Games Played",
+   "default": "0"
+  },
+  {
+   "fieldname": "wins",
+   "fieldtype": "Int",
+   "label": "Wins",
+   "default": "0",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "losses",
+   "fieldtype": "Int",
+   "label": "Losses",
+   "default": "0",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "draws",
+   "fieldtype": "Int",
+   "label": "Draws",
+   "default": "0"
+  },
+  {
+   "fieldname": "section_break_streak",
+   "fieldtype": "Section Break",
+   "label": "Streak",
+   "collapsible": 1
+  },
+  {
+   "fieldname": "current_streak",
+   "fieldtype": "Int",
+   "label": "Current Streak",
+   "default": "0",
+   "description": "Positive = consecutive wins, reset to 0 on a loss or draw."
+  },
+  {
+   "fieldname": "best_streak",
+   "fieldtype": "Int",
+   "label": "Best Streak",
+   "default": "0"
+  },
+  {
+   "fieldname": "total_points",
+   "fieldtype": "Int",
+   "label": "Total Points",
+   "default": "0",
+   "description": "Lifetime sum of in-battle points scored, not a factor in bir itself — bir reflects competitive strength (wins/losses against opponent strength), not raw activity."
+  }
+ ],
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "report": 1,
+   "export": 1
+  }
+ ],
+ "links": []
+}

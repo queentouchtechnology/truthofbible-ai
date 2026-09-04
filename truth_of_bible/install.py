@@ -304,3 +304,188 @@ def seed_default_prompts():
 			# in every way that matters, so this is a benign no-op, not a
 			# real failure. Never let a seeding function break `migrate`.
 			frappe.db.rollback()
+
+
+# V1 Bible Battle seed bank: 18 hand-verified, unambiguous, well-known
+# Bible facts (6 Easy / 8 Medium / 4 Hard — a battle needs 3/5/2, so this
+# gives a little rotation before repeats). Per the spec: no invented or
+# borderline trivia — every reference below was checked against the text.
+_BIBLE_BATTLE_QUESTIONS = [
+	# Easy
+	{
+		"question": "Who built the ark?",
+		"options": ("Moses", "Noah", "Abraham", "David"),
+		"correct": "B",
+		"difficulty": "Easy",
+		"book": "Genesis", "chapter": 6, "verse": "14", "reference": "Genesis 6:14",
+		"explanation": "God instructed Noah to build the ark to save his family and the animals from the flood.",
+	},
+	{
+		"question": "Who was swallowed by a great fish after fleeing from God?",
+		"options": ("Jonah", "Elijah", "Jeremiah", "Amos"),
+		"correct": "A",
+		"difficulty": "Easy",
+		"book": "Jonah", "chapter": 1, "verse": "17", "reference": "Jonah 1:17",
+		"explanation": "Jonah was swallowed by a great fish and spent three days and nights inside it.",
+	},
+	{
+		"question": "Who led the Israelites out of slavery in Egypt?",
+		"options": ("Aaron", "Joshua", "Moses", "Abraham"),
+		"correct": "C",
+		"difficulty": "Easy",
+		"book": "Exodus", "chapter": 3, "verse": "10", "reference": "Exodus 3:10",
+		"explanation": "God called Moses at the burning bush and sent him to lead Israel out of Egypt.",
+	},
+	{
+		"question": "Who was the first man God created?",
+		"options": ("Cain", "Abel", "Seth", "Adam"),
+		"correct": "D",
+		"difficulty": "Easy",
+		"book": "Genesis", "chapter": 2, "verse": "7", "reference": "Genesis 2:7",
+		"explanation": "God formed Adam from the dust of the ground and breathed life into him.",
+	},
+	{
+		"question": "How many days did God take to create the world before resting?",
+		"options": ("5", "6", "7", "8"),
+		"correct": "B",
+		"difficulty": "Easy",
+		"book": "Genesis", "chapter": 1, "verse": "31", "reference": "Genesis 1:31; 2:2",
+		"explanation": "God created the world in six days and rested on the seventh.",
+	},
+	{
+		"question": "Who betrayed Jesus for thirty pieces of silver?",
+		"options": ("Peter", "Thomas", "Judas Iscariot", "Philip"),
+		"correct": "C",
+		"difficulty": "Easy",
+		"book": "Matthew", "chapter": 26, "verse": "15", "reference": "Matthew 26:15",
+		"explanation": "Judas Iscariot agreed to betray Jesus to the chief priests for thirty pieces of silver.",
+	},
+	# Medium
+	{
+		"question": "Who defeated the giant Goliath with a sling and a stone?",
+		"options": ("Saul", "David", "Jonathan", "Samuel"),
+		"correct": "B",
+		"difficulty": "Medium",
+		"book": "1 Samuel", "chapter": 17, "verse": "49", "reference": "1 Samuel 17:49",
+		"explanation": "David struck Goliath in the forehead with a stone from his sling.",
+	},
+	{
+		"question": "How many plagues did God send on Egypt through Moses?",
+		"options": ("7", "9", "10", "12"),
+		"correct": "C",
+		"difficulty": "Medium",
+		"book": "Exodus", "chapter": 7, "verse": "14-12:30", "reference": "Exodus 7-12",
+		"explanation": "God sent ten plagues on Egypt, ending with the death of the firstborn, before Pharaoh let Israel go.",
+	},
+	{
+		"question": "Who was thrown into a den of lions for praying to God?",
+		"options": ("Daniel", "Shadrach", "Ezekiel", "Nehemiah"),
+		"correct": "A",
+		"difficulty": "Medium",
+		"book": "Daniel", "chapter": 6, "verse": "16", "reference": "Daniel 6:16",
+		"explanation": "Daniel was thrown into the lions' den for continuing to pray to God, and God shut the lions' mouths.",
+	},
+	{
+		"question": "What was the name of Abraham and Sarah's son, born in their old age?",
+		"options": ("Ishmael", "Isaac", "Jacob", "Esau"),
+		"correct": "B",
+		"difficulty": "Medium",
+		"book": "Genesis", "chapter": 21, "verse": "3", "reference": "Genesis 21:3",
+		"explanation": "God fulfilled his promise to Abraham and Sarah with the birth of Isaac.",
+	},
+	{
+		"question": "On the road to which city did Saul encounter a blinding light and hear Jesus' voice?",
+		"options": ("Jerusalem", "Antioch", "Damascus", "Caesarea"),
+		"correct": "C",
+		"difficulty": "Medium",
+		"book": "Acts", "chapter": 9, "verse": "3", "reference": "Acts 9:3",
+		"explanation": "Saul (later Paul) was converted on the road to Damascus after a light from heaven shone around him.",
+	},
+	{
+		"question": "Who was the mother of Jesus?",
+		"options": ("Martha", "Elizabeth", "Mary", "Anna"),
+		"correct": "C",
+		"difficulty": "Medium",
+		"book": "Luke", "chapter": 1, "verse": "31", "reference": "Luke 1:31",
+		"explanation": "The angel Gabriel told Mary she would conceive and give birth to Jesus.",
+	},
+	{
+		"question": "How many disciples did Jesus choose as his closest followers, the Twelve?",
+		"options": ("7", "10", "12", "14"),
+		"correct": "C",
+		"difficulty": "Medium",
+		"book": "Matthew", "chapter": 10, "verse": "1-4", "reference": "Matthew 10:1-4",
+		"explanation": "Jesus called twelve disciples and sent them out with authority to teach and heal.",
+	},
+	{
+		"question": "Who was the first king of Israel?",
+		"options": ("Samuel", "Saul", "David", "Solomon"),
+		"correct": "B",
+		"difficulty": "Medium",
+		"book": "1 Samuel", "chapter": 10, "verse": "1", "reference": "1 Samuel 10:1",
+		"explanation": "Samuel anointed Saul as Israel's first king at God's direction.",
+	},
+	# Hard
+	{
+		"question": "In the Book of Ruth, what is the name of Ruth's mother-in-law?",
+		"options": ("Orpah", "Deborah", "Naomi", "Rachel"),
+		"correct": "C",
+		"difficulty": "Hard",
+		"book": "Ruth", "chapter": 1, "verse": "4", "reference": "Ruth 1:4",
+		"explanation": "Naomi was Ruth's mother-in-law; Ruth famously chose to stay with her after both their husbands died.",
+	},
+	{
+		"question": "Which Old Testament prophet was taken up to heaven in a whirlwind, without dying?",
+		"options": ("Isaiah", "Elisha", "Elijah", "Enoch"),
+		"correct": "C",
+		"difficulty": "Hard",
+		"book": "2 Kings", "chapter": 2, "verse": "11", "reference": "2 Kings 2:11",
+		"explanation": "Elijah was taken up to heaven in a whirlwind, with Elisha as witness (Enoch was also taken without dying, but earlier and not by whirlwind — Genesis 5:24).",
+	},
+	{
+		"question": "According to Galatians, what is listed first among the 'fruit of the Spirit'?",
+		"options": ("Joy", "Peace", "Love", "Patience"),
+		"correct": "C",
+		"difficulty": "Hard",
+		"book": "Galatians", "chapter": 5, "verse": "22", "reference": "Galatians 5:22",
+		"explanation": "Paul lists love first among the fruit of the Spirit: love, joy, peace, patience, kindness, goodness, faithfulness, gentleness, self-control.",
+	},
+	{
+		"question": "How many churches does John address at the start of the Book of Revelation?",
+		"options": ("5", "7", "9", "12"),
+		"correct": "B",
+		"difficulty": "Hard",
+		"book": "Revelation", "chapter": 1, "verse": "11", "reference": "Revelation 1:11",
+		"explanation": "John addresses the seven churches of Asia: Ephesus, Smyrna, Pergamum, Thyatira, Sardis, Philadelphia, and Laodicea.",
+	},
+]
+
+
+def seed_bible_battle_questions():
+	for entry in _BIBLE_BATTLE_QUESTIONS:
+		if frappe.db.exists("TOB Bible Battle Question", {"question": entry["question"]}):
+			continue
+		option_a, option_b, option_c, option_d = entry["options"]
+		try:
+			frappe.get_doc(
+				{
+					"doctype": "TOB Bible Battle Question",
+					"question": entry["question"],
+					"option_a": option_a,
+					"option_b": option_b,
+					"option_c": option_c,
+					"option_d": option_d,
+					"correct_option": entry["correct"],
+					"difficulty": entry["difficulty"],
+					"language": "en",
+					"status": "Published",
+					"bible_book": entry["book"],
+					"chapter": entry["chapter"],
+					"verse": entry["verse"],
+					"reference": entry["reference"],
+					"explanation": entry["explanation"],
+				}
+			).insert(ignore_permissions=True)
+			frappe.db.commit()
+		except frappe.ValidationError:
+			frappe.db.rollback()

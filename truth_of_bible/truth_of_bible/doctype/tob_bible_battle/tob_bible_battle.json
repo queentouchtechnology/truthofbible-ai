@@ -1,0 +1,243 @@
+{
+ "doctype": "DocType",
+ "name": "TOB Bible Battle",
+ "module": "Truth Of Bible",
+ "custom": 0,
+ "istable": 0,
+ "issingle": 0,
+ "quick_entry": 0,
+ "track_changes": 1,
+ "autoname": "hash",
+ "naming_rule": "Random",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "engine": "InnoDB",
+ "description": "One document = one Bible Battle match. Created once a TOB Bible Battle Queue match is found (status starts at Waiting for both players to ready up); 'Searching' state lives on the Queue doctype, not here. System-Manager-only permissions — even this battle's own two players cannot read it via direct REST, because question_sequence holds the full ordered list of question names, including ones not yet asked. Players interact with this doc exclusively through the whitelisted methods in truth_of_bible.api.bible_battle, which validate participation/state before touching it and use ignore_permissions=True to write.",
+ "field_order": [
+  "player_1",
+  "player_2",
+  "column_break_players",
+  "status",
+  "winner",
+  "section_break_ready",
+  "player_1_ready",
+  "player_2_ready",
+  "section_break_scores",
+  "player_1_score",
+  "column_break_scores",
+  "player_2_score",
+  "section_break_questions",
+  "current_question_index",
+  "total_questions",
+  "question_sequence",
+  "question_start_time",
+  "section_break_timing",
+  "started_at",
+  "completed_at",
+  "column_break_seen",
+  "player_1_last_seen",
+  "player_2_last_seen",
+  "section_break_bir",
+  "player_1_bir_before",
+  "player_1_bir_after",
+  "column_break_bir",
+  "player_2_bir_before",
+  "player_2_bir_after"
+ ],
+ "fields": [
+  {
+   "fieldname": "player_1",
+   "fieldtype": "Link",
+   "label": "Player 1",
+   "options": "User",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "player_2",
+   "fieldtype": "Link",
+   "label": "Player 2",
+   "options": "User",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "column_break_players",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Waiting\nIn Progress\nCompleted\nCancelled\nAbandoned",
+   "default": "Waiting",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "winner",
+   "fieldtype": "Link",
+   "label": "Winner",
+   "options": "User",
+   "description": "Blank until Completed. Null after a finished-but-tied battle (draw)."
+  },
+  {
+   "fieldname": "section_break_ready",
+   "fieldtype": "Section Break",
+   "label": "Ready State",
+   "collapsible": 1
+  },
+  {
+   "fieldname": "player_1_ready",
+   "fieldtype": "Check",
+   "label": "Player 1 Ready",
+   "default": "0"
+  },
+  {
+   "fieldname": "player_2_ready",
+   "fieldtype": "Check",
+   "label": "Player 2 Ready",
+   "default": "0"
+  },
+  {
+   "fieldname": "section_break_scores",
+   "fieldtype": "Section Break",
+   "label": "Scores"
+  },
+  {
+   "fieldname": "player_1_score",
+   "fieldtype": "Int",
+   "label": "Player 1 Score",
+   "default": "0",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "column_break_scores",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "player_2_score",
+   "fieldtype": "Int",
+   "label": "Player 2 Score",
+   "default": "0",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "section_break_questions",
+   "fieldtype": "Section Break",
+   "label": "Questions",
+   "collapsible": 1
+  },
+  {
+   "fieldname": "current_question_index",
+   "fieldtype": "Int",
+   "label": "Current Question Index",
+   "default": "0",
+   "description": "0 before the battle starts; 1-10 (total_questions) once In Progress."
+  },
+  {
+   "fieldname": "total_questions",
+   "fieldtype": "Int",
+   "label": "Total Questions",
+   "default": "10"
+  },
+  {
+   "fieldname": "question_sequence",
+   "fieldtype": "Long Text",
+   "label": "Question Sequence",
+   "read_only": 1,
+   "description": "JSON-encoded ordered list of TOB Bible Battle Question names selected for this match, set once when both players ready up. Never returned to a client directly — get_current_question only ever returns the single entry at current_question_index."
+  },
+  {
+   "fieldname": "question_start_time",
+   "fieldtype": "Datetime",
+   "label": "Question Start Time",
+   "read_only": 1,
+   "description": "Server timestamp when current_question_index was presented. The authoritative clock for the 10-second answer window and response_time_ms — never trust a client-reported time."
+  },
+  {
+   "fieldname": "section_break_timing",
+   "fieldtype": "Section Break",
+   "label": "Timing",
+   "collapsible": 1
+  },
+  {
+   "fieldname": "started_at",
+   "fieldtype": "Datetime",
+   "label": "Started At"
+  },
+  {
+   "fieldname": "completed_at",
+   "fieldtype": "Datetime",
+   "label": "Completed At"
+  },
+  {
+   "fieldname": "column_break_seen",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "player_1_last_seen",
+   "fieldtype": "Datetime",
+   "label": "Player 1 Last Seen",
+   "description": "Updated on every whitelisted call this player makes against this battle — used to detect disconnect/abandonment."
+  },
+  {
+   "fieldname": "player_2_last_seen",
+   "fieldtype": "Datetime",
+   "label": "Player 2 Last Seen"
+  },
+  {
+   "fieldname": "section_break_bir",
+   "fieldtype": "Section Break",
+   "label": "BIR Change",
+   "collapsible": 1,
+   "description": "Set once, together, when the battle finalizes — lets the result screen show 'before -> after' (spec: '1120 -> 1144')."
+  },
+  {
+   "fieldname": "player_1_bir_before",
+   "fieldtype": "Int",
+   "label": "Player 1 BIR Before",
+   "read_only": 1
+  },
+  {
+   "fieldname": "player_1_bir_after",
+   "fieldtype": "Int",
+   "label": "Player 1 BIR After",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_bir",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "player_2_bir_before",
+   "fieldtype": "Int",
+   "label": "Player 2 BIR Before",
+   "read_only": 1
+  },
+  {
+   "fieldname": "player_2_bir_after",
+   "fieldtype": "Int",
+   "label": "Player 2 BIR After",
+   "read_only": 1
+  }
+ ],
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "report": 1,
+   "export": 1
+  }
+ ],
+ "links": []
+}
