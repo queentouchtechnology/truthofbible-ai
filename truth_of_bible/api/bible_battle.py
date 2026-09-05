@@ -27,6 +27,23 @@ def cancel_matchmaking() -> dict:
 	return matchmaking.cancel_matchmaking(frappe.session.user)
 
 
+@frappe.whitelist(methods=["POST"])
+def create_challenge() -> dict:
+	"""Direct challenge — bypasses BIR matchmaking. Returns a short code
+	the caller shares out-of-band (share sheet) with a specific friend."""
+	return matchmaking.create_challenge(frappe.session.user)
+
+
+@frappe.whitelist(methods=["POST"])
+def join_challenge(code: str) -> dict:
+	return matchmaking.join_challenge(code, frappe.session.user)
+
+
+@frappe.whitelist(methods=["POST"])
+def cancel_challenge(battle: str) -> dict:
+	return matchmaking.cancel_challenge(battle, frappe.session.user)
+
+
 @frappe.whitelist(methods=["GET", "POST"])
 def get_match_status() -> dict:
 	return matchmaking.get_match_status(frappe.session.user)

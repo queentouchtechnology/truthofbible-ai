@@ -12,11 +12,20 @@ transaction blocks on the row lock until the first commits, then re-reads
 and sees the row already Matched.
 """
 
+import random
+import string
+
 import frappe
+from frappe import _
 from frappe.utils import now_datetime, time_diff_in_seconds
 
 from truth_of_bible.games.bible_battle.matchmaking_rules import STALE_QUEUE_SECONDS, is_compatible
 from truth_of_bible.games.bible_battle.utils import get_or_create_rating
+
+#: Excludes ambiguous characters (0/O, 1/I) so a code is easy to read aloud
+#: or retype after sharing via a plain-text share sheet.
+_CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
+_CODE_LENGTH = 6
 
 
 def start_matchmaking(user: str) -> dict:
@@ -83,6 +92,70 @@ def cancel_matchmaking(user: str) -> dict:
 	rows = frappe.get_all("TOB Bible Battle Queue", filters={"player": user, "status": "Searching"}, pluck="name")
 	for name in rows:
 		frappe.db.set_value("TOB Bible Battle Queue", name, "status", "Cancelled")
+	return {"status": "cancelled"}
+
+
+def _generate_invite_code() -> str:
+	for _attempt in range(20):
+		code = "".join(random.choices(_CODE_ALPHABET, k=_CODE_LENGTH))
+		if not frappe.db.exists("TOB Bible Battle", {"invite_code": code, "status": "Pending"}):
+			return code
+	frappe.throw(_("Could not generate an invite code — please try again."))
+
+
+def create_challenge(user: str) -> dict:
+	"""Direct challenge: bypasses BIR matchmaking entirely. player_1 is set
+	immediately; player_2 stays blank until someone calls join_challenge
+	with the code, at which point the battle moves from Pending to Waiting
+	and the normal ready-up/battle flow takes over unchanged."""
+	get_or_create_rating(user)
+	code = _generate_invite_code()
+	battle = frappe.get_doc(
+		{
+			"doctype": "TOB Bible Battle",
+			"player_1": user,
+			"status": "Pending",
+			"invite_code": code,
+		}
+	)
+	battle.insert(ignore_permissions=True)
+	return {"battle": battle.name, "invite_code": code}
+
+
+def join_challenge(code: str, user: str) -> dict:
+	code = (code or "").strip().upper()
+	if not code:
+		frappe.throw(_("Enter an invite code."))
+
+	# Row lock so two people racing to use the same code can't both join it.
+	locked = frappe.db.sql(
+		"""
+		SELECT name, player_1, status
+		FROM `tabTOB Bible Battle`
+		WHERE invite_code = %s
+		FOR UPDATE
+		""",
+		(code,),
+		as_dict=True,
+	)
+	if not locked or locked[0].status != "Pending":
+		frappe.throw(_("That invite code is invalid or has already been used."))
+
+	row = locked[0]
+	if row.player_1 == user:
+		frappe.throw(_("You can't join your own challenge."))
+
+	get_or_create_rating(user)
+	frappe.db.set_value("TOB Bible Battle", row.name, {"player_2": user, "status": "Waiting"})
+	return {"battle": row.name}
+
+
+def cancel_challenge(battle_name: str, user: str) -> dict:
+	battle = frappe.get_doc("TOB Bible Battle", battle_name)
+	if battle.player_1 != user or battle.status != "Pending":
+		frappe.throw(_("This challenge can't be cancelled."), frappe.PermissionError)
+	battle.status = "Cancelled"
+	battle.save(ignore_permissions=True)
 	return {"status": "cancelled"}
 
 
