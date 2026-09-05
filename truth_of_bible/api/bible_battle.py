@@ -57,12 +57,12 @@ def get_battle_result(battle: str) -> dict:
 	return engine.get_battle_result(battle, frappe.session.user)
 
 
-@frappe.whitelist(methods=["GET"])
+@frappe.whitelist(methods=["GET", "POST"])
 def get_battle_history(limit: int = 20) -> list:
 	return engine.get_battle_history(frappe.session.user, int(limit))
 
 
-@frappe.whitelist(methods=["GET"])
+@frappe.whitelist(methods=["GET", "POST"])
 def get_my_rating() -> dict:
 	rating = get_or_create_rating(frappe.session.user)
 	return {
