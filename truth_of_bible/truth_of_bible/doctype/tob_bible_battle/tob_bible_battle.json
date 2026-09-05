@@ -18,6 +18,7 @@
   "player_2",
   "column_break_players",
   "status",
+  "invite_code",
   "winner",
   "section_break_ready",
   "player_1_ready",
@@ -60,10 +61,10 @@
    "fieldtype": "Link",
    "label": "Player 2",
    "options": "User",
-   "reqd": 1,
    "in_list_view": 1,
    "in_standard_filter": 1,
-   "search_index": 1
+   "search_index": 1,
+   "description": "Blank while status=Pending — a direct-challenge battle exists with only player_1 until someone joins via invite_code."
   },
   {
    "fieldname": "column_break_players",
@@ -73,12 +74,21 @@
    "fieldname": "status",
    "fieldtype": "Select",
    "label": "Status",
-   "options": "Waiting\nIn Progress\nCompleted\nCancelled\nAbandoned",
+   "options": "Pending\nWaiting\nIn Progress\nCompleted\nCancelled\nAbandoned",
    "default": "Waiting",
    "reqd": 1,
    "in_list_view": 1,
    "in_standard_filter": 1,
-   "search_index": 1
+   "search_index": 1,
+   "description": "Pending = direct-challenge battle created by player_1, waiting for someone to join via invite_code (player_2 still blank). Waiting = both players present, waiting to ready up (matchmade battles start here directly)."
+  },
+  {
+   "fieldname": "invite_code",
+   "fieldtype": "Data",
+   "label": "Invite Code",
+   "in_standard_filter": 1,
+   "search_index": 1,
+   "description": "Short code shared out-of-band (share sheet) for a direct challenge. Only set for Pending/since-joined challenge battles, blank for normal matchmade ones. Deliberately NOT a DB-unique field (Frappe would reject a second blank value) — uniqueness among live Pending codes is enforced in matchmaking.create_challenge()."
   },
   {
    "fieldname": "winner",
