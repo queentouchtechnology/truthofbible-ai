@@ -6,6 +6,8 @@ result is honestly AI-generated content, never presented as Scripture
 text itself.
 """
 
+from datetime import date
+
 import frappe
 from frappe import _
 
@@ -156,4 +158,33 @@ def _ask(conversation_name: str, question: str, language: str) -> dict:
 		"answer": response.content,
 		"provider": response.provider,
 		"model": response.model,
+	}
+
+
+@frappe.whitelist(methods=["GET", "POST"])
+def get_blessing_verse() -> dict:
+	"""One reference from the curated TOB Blessing Verse bank -- the same
+	pick for every user on a given day (deterministic by day-of-year), so
+	it reads as a real "verse of the day" rather than a fresh random pick
+	per request. Never returns verse text -- the client resolves that
+	on-device from whatever Bible translation it has installed (see the
+	doctype's own description for why). Used by the Daily Verse screen and
+	as the anchor reference the daily_devotional AI task writes around.
+	"""
+	names = frappe.get_all(
+		"TOB Blessing Verse", filters={"status": "Published"}, order_by="creation asc", pluck="name"
+	)
+	if not names:
+		frappe.throw(_("No blessing verses are configured yet."))
+
+	index = date.today().timetuple().tm_yday % len(names)
+	verse = frappe.get_doc("TOB Blessing Verse", names[index])
+
+	return {
+		"reference": verse.reference,
+		"bible_book": verse.bible_book,
+		"chapter": verse.chapter,
+		"verse_start": verse.verse_start,
+		"verse_end": verse.verse_end,
+		"theme": verse.theme,
 	}

@@ -1,0 +1,107 @@
+{
+ "doctype": "DocType",
+ "name": "TOB Blessing Verse",
+ "module": "Truth Of Bible",
+ "custom": 0,
+ "istable": 0,
+ "issingle": 0,
+ "quick_entry": 0,
+ "track_changes": 1,
+ "autoname": "hash",
+ "naming_rule": "Random",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "engine": "InnoDB",
+ "description": "A small, hand-curated bank of encouraging/blessing verse REFERENCES — deliberately never stores verse text itself, matching this app's standing rule that Scripture text lives only in the Flutter client's own on-device SQLite Bible (see HANDOFF.md §5.7). The client resolves the actual verse text locally, in whatever language/version it already has installed, from bible_book/chapter/verse_start/verse_end. Used by two features: the Daily Verse screen (verse card, no AI involved) and the AI daily_devotional task (this reference is passed in as the anchor the AI writes its reflection around — the AI never invents which verse to use). System-Manager-only permissions, same as every other Bible Battle/content doctype in this app — read only through whitelisted API methods.",
+ "field_order": [
+  "reference",
+  "column_break_ref",
+  "theme",
+  "status",
+  "section_break_location",
+  "bible_book",
+  "chapter",
+  "column_break_verses",
+  "verse_start",
+  "verse_end"
+ ],
+ "fields": [
+  {
+   "fieldname": "reference",
+   "fieldtype": "Data",
+   "label": "Reference",
+   "reqd": 1,
+   "in_list_view": 1,
+   "description": "Display string, e.g. 'Numbers 6:24-26'."
+  },
+  {
+   "fieldname": "column_break_ref",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "theme",
+   "fieldtype": "Data",
+   "label": "Theme",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "search_index": 1,
+   "description": "e.g. Blessing, Comfort, Hope, Strength, Peace, Provision, Guidance."
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Draft\nPublished",
+   "default": "Draft",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "section_break_location",
+   "fieldtype": "Section Break",
+   "label": "Location"
+  },
+  {
+   "fieldname": "bible_book",
+   "fieldtype": "Data",
+   "label": "Bible Book",
+   "reqd": 1,
+   "description": "English book name, e.g. 'Numbers' — the client matches this against its own Book table to resolve real verse text, so it must exactly match the client's canonical English book names."
+  },
+  {
+   "fieldname": "chapter",
+   "fieldtype": "Int",
+   "label": "Chapter",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_verses",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "verse_start",
+   "fieldtype": "Int",
+   "label": "Verse Start",
+   "reqd": 1
+  },
+  {
+   "fieldname": "verse_end",
+   "fieldtype": "Int",
+   "label": "Verse End",
+   "description": "Leave blank for a single-verse reference."
+  }
+ ],
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "report": 1,
+   "export": 1
+  }
+ ],
+ "links": []
+}

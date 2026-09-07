@@ -791,3 +791,65 @@ def seed_bible_battle_questions():
 			frappe.db.commit()
 		except frappe.ValidationError:
 			frappe.db.rollback()
+
+
+# Curated blessing/encouragement verse bank -- deliberately references only
+# (book/chapter/verse range), never verse text. The Flutter client resolves
+# real text on-device from its own installed Bible translation; this bank
+# only ever supplies which reference to show, never fabricates any text
+# itself (see the doctype's own description for why). Every reference below
+# was checked against the text -- no invented citations.
+_BLESSING_VERSES = [
+	{"book": "Numbers", "chapter": 6, "start": 24, "end": 26, "theme": "Blessing"},
+	{"book": "Jeremiah", "chapter": 29, "start": 11, "end": None, "theme": "Hope"},
+	{"book": "Philippians", "chapter": 4, "start": 6, "end": 7, "theme": "Peace"},
+	{"book": "Philippians", "chapter": 4, "start": 13, "end": None, "theme": "Strength"},
+	{"book": "Psalms", "chapter": 23, "start": 1, "end": 3, "theme": "Comfort"},
+	{"book": "Psalms", "chapter": 91, "start": 1, "end": 2, "theme": "Protection"},
+	{"book": "Isaiah", "chapter": 41, "start": 10, "end": None, "theme": "Courage"},
+	{"book": "Romans", "chapter": 8, "start": 28, "end": None, "theme": "Hope"},
+	{"book": "Proverbs", "chapter": 3, "start": 5, "end": 6, "theme": "Guidance"},
+	{"book": "John", "chapter": 3, "start": 16, "end": None, "theme": "Love"},
+	{"book": "2 Corinthians", "chapter": 12, "start": 9, "end": None, "theme": "Grace"},
+	{"book": "Joshua", "chapter": 1, "start": 9, "end": None, "theme": "Courage"},
+	{"book": "Psalms", "chapter": 121, "start": 1, "end": 2, "theme": "Guidance"},
+	{"book": "Matthew", "chapter": 11, "start": 28, "end": None, "theme": "Rest"},
+	{"book": "Lamentations", "chapter": 3, "start": 22, "end": 23, "theme": "Renewal"},
+	{"book": "Deuteronomy", "chapter": 31, "start": 6, "end": None, "theme": "Courage"},
+	{"book": "Psalms", "chapter": 46, "start": 1, "end": None, "theme": "Strength"},
+	{"book": "Isaiah", "chapter": 40, "start": 31, "end": None, "theme": "Strength"},
+	{"book": "1 Peter", "chapter": 5, "start": 7, "end": None, "theme": "Peace"},
+	{"book": "Romans", "chapter": 15, "start": 13, "end": None, "theme": "Joy"},
+	{"book": "Psalms", "chapter": 34, "start": 18, "end": None, "theme": "Comfort"},
+	{"book": "Galatians", "chapter": 6, "start": 9, "end": None, "theme": "Perseverance"},
+	{"book": "Zephaniah", "chapter": 3, "start": 17, "end": None, "theme": "Blessing"},
+	{"book": "Colossians", "chapter": 3, "start": 15, "end": None, "theme": "Peace"},
+]
+
+
+def _blessing_verse_reference(entry: dict) -> str:
+	verse_part = f"{entry['start']}-{entry['end']}" if entry["end"] else str(entry["start"])
+	return f"{entry['book']} {entry['chapter']}:{verse_part}"
+
+
+def seed_blessing_verses():
+	for entry in _BLESSING_VERSES:
+		reference = _blessing_verse_reference(entry)
+		if frappe.db.exists("TOB Blessing Verse", {"reference": reference}):
+			continue
+		try:
+			frappe.get_doc(
+				{
+					"doctype": "TOB Blessing Verse",
+					"reference": reference,
+					"theme": entry["theme"],
+					"status": "Published",
+					"bible_book": entry["book"],
+					"chapter": entry["chapter"],
+					"verse_start": entry["start"],
+					"verse_end": entry["end"],
+				}
+			).insert(ignore_permissions=True)
+			frappe.db.commit()
+		except frappe.ValidationError:
+			frappe.db.rollback()

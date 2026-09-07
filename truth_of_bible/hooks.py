@@ -45,10 +45,12 @@ doc_events = {
 after_install = [
 	"truth_of_bible.install.seed_default_prompts",
 	"truth_of_bible.install.seed_bible_battle_questions",
+	"truth_of_bible.install.seed_blessing_verses",
 ]
 after_migrate = [
 	"truth_of_bible.install.seed_default_prompts",
 	"truth_of_bible.install.seed_bible_battle_questions",
+	"truth_of_bible.install.seed_blessing_verses",
 ]
 
 # Bible Battle's only background-job-shaped mechanism: a cron backstop for
