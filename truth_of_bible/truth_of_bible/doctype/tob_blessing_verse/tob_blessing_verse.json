@@ -40,12 +40,12 @@
   },
   {
    "fieldname": "theme",
-   "fieldtype": "Data",
+   "fieldtype": "Select",
    "label": "Theme",
+   "options": "\nBlessing\nComfort\nCourage\nGrace\nGuidance\nHope\nJoy\nLove\nPeace\nPerseverance\nProtection\nRenewal\nRest\nStrength",
    "in_list_view": 1,
    "in_standard_filter": 1,
-   "search_index": 1,
-   "description": "e.g. Blessing, Comfort, Hope, Strength, Peace, Provision, Guidance."
+   "search_index": 1
   },
   {
    "fieldname": "status",
@@ -64,10 +64,11 @@
   },
   {
    "fieldname": "bible_book",
-   "fieldtype": "Data",
+   "fieldtype": "Select",
    "label": "Bible Book",
+   "options": "Genesis\nExodus\nLeviticus\nNumbers\nDeuteronomy\nJoshua\nJudges\nRuth\n1 Samuel\n2 Samuel\n1 Kings\n2 Kings\n1 Chronicles\n2 Chronicles\nEzra\nNehemiah\nEsther\nJob\nPsalms\nProverbs\nEcclesiastes\nSong of Solomon\nIsaiah\nJeremiah\nLamentations\nEzekiel\nDaniel\nHosea\nJoel\nAmos\nObadiah\nJonah\nMicah\nNahum\nHabakkuk\nZephaniah\nHaggai\nZechariah\nMalachi\nMatthew\nMark\nLuke\nJohn\nActs\nRomans\n1 Corinthians\n2 Corinthians\nGalatians\nEphesians\nPhilippians\nColossians\n1 Thessalonians\n2 Thessalonians\n1 Timothy\n2 Timothy\nTitus\nPhilemon\nHebrews\nJames\n1 Peter\n2 Peter\n1 John\n2 John\n3 John\nJude\nRevelation",
    "reqd": 1,
-   "description": "English book name, e.g. 'Numbers' — the client matches this against its own Book table to resolve real verse text, so it must exactly match the client's canonical English book names."
+   "description": "Must exactly match the client's canonical English book names — the client matches this against its own Book table to resolve real verse text."
   },
   {
    "fieldname": "chapter",
