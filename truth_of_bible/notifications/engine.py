@@ -101,8 +101,18 @@ def _handle_event(event_code: str, user: str | None, variables: dict, force: boo
 		for admin in admin_users():
 			if not _passes_checks(event_code, admin, template, force, _ADMIN_CATEGORY_PREFERENCE_FIELD):
 				continue
-			if _send_one(template, admin, variables, event_code):
-				sent_any = True
+			# One admin's send must never abort the rest of the fan-out — a
+			# failure here (see _send_one's own try/except note) would
+			# otherwise propagate out of this loop and silently skip every
+			# admin after the one that failed.
+			try:
+				if _send_one(template, admin, variables, event_code):
+					sent_any = True
+			except Exception:
+				frappe.log_error(
+					title=f"Notification engine: admin fan-out ({event_code}, {admin})",
+					message=frappe.get_traceback(),
+				)
 		return sent_any
 
 	return False
@@ -116,7 +126,21 @@ def _send_one(template: dict, user: str, variables: dict, event_code: str) -> bo
 
 	route_id = variables.get(template.deeplink_id_field) if template.deeplink_id_field else None
 
-	_write_notification_log(user, title, body)
+	# Writing the in-app Notification Log row can trigger OTHER doc_events/
+	# Server Scripts on that core doctype that this app doesn't own or
+	# control (e.g. a legacy, framework-patched "FCM on insert" Server
+	# Script found live on 2026-09-22, independently calling
+	# frappe.api.fcm_api.send_fcm — see this module's own docstring for why
+	# that function isn't depended on here). A failure in someone else's
+	# hook must never block the actual push below, which is this app's own,
+	# independent, already-proven-working delivery path.
+	try:
+		_write_notification_log(user, title, body)
+	except Exception:
+		frappe.log_error(
+			title=f"Notification engine: writing Notification Log failed ({event_code})",
+			message=frappe.get_traceback(),
+		)
 
 	delivery.send_push(
 		user=user,
