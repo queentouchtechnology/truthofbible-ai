@@ -50,6 +50,17 @@ doc_events = {
 	"Communication": {
 		"after_insert": "truth_of_bible.notifications.triggers.on_communication_created",
 	},
+	# Admin-audience events (engine.py fans these out to admin_users()).
+	"Issue": {
+		"after_insert": "truth_of_bible.notifications.triggers.on_issue_created",
+		"on_update": "truth_of_bible.notifications.triggers.on_issue_updated",
+	},
+	"User": {
+		"after_insert": "truth_of_bible.notifications.triggers.on_user_created",
+	},
+	"LMS Enrollment": {
+		"after_insert": "truth_of_bible.notifications.triggers.on_enrollment_created",
+	},
 }
 
 # Idempotent — safe to run on every migrate, matching qmp_lms_bridge's own

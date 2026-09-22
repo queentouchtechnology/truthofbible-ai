@@ -1,7 +1,10 @@
 """Doc-event triggers that fan out into the notification engine
-(engine.handle_event) for Quiz and Support-Ticket events — the second
-User-audience slice of NOTIFICATION_ENGINE_PLAN.md, after the spiritual/
-Bible-reading reminders in reading.py.
+(engine.handle_event) — Quiz and Support-Ticket User-audience events (the
+second slice, after the spiritual/Bible-reading reminders in reading.py),
+plus the first Frappe-native Admin-audience events (New Support Ticket,
+Ticket Escalated, New User, New Enrollment — see engine.py's `admin_users`
+fan-out). Admin-audience triggers pass `user=None`: `handle_event` resolves
+its own recipients for an Admin-audience template.
 
 Every trigger here is deliberately defensive: a notification is a
 side-effect of a real save (a quiz being created, a submission being
@@ -122,3 +125,68 @@ def _on_communication_created(doc):
 	# it, matching this codebase's existing defensive style.
 	user = frappe.db.get_value("User", {"email": raised_by}, "name") or raised_by
 	handle_event("TICKET_AGENT_REPLIED", user, {"ticket_id": doc.reference_name})
+
+
+# ───────────────────────── Admin-audience events ─────────────────────────
+
+
+def on_issue_created(doc, method=None):
+	try:
+		handle_event(
+			"NEW_SUPPORT_TICKET",
+			None,
+			{"ticket_id": doc.name, "subject": doc.get("subject") or ""},
+		)
+	except Exception:
+		frappe.log_error(title="Notification trigger: on_issue_created", message=frappe.get_traceback())
+
+
+def on_issue_updated(doc, method=None):
+	try:
+		_on_issue_updated(doc)
+	except Exception:
+		frappe.log_error(title="Notification trigger: on_issue_updated", message=frappe.get_traceback())
+
+
+def _on_issue_updated(doc):
+	if not doc.has_value_changed("priority"):
+		return
+	if doc.get("priority") not in ("High", "Urgent"):
+		return
+	handle_event(
+		"TICKET_HIGH_PRIORITY",
+		None,
+		{"ticket_id": doc.name, "subject": doc.get("subject") or "", "priority": doc.get("priority")},
+	)
+
+
+def on_user_created(doc, method=None):
+	try:
+		_on_user_created(doc)
+	except Exception:
+		frappe.log_error(title="Notification trigger: on_user_created", message=frappe.get_traceback())
+
+
+def _on_user_created(doc):
+	# Only real app sign-ups, not System User accounts created from Desk
+	# (an admin adding a colleague, a framework-created service account,
+	# etc.) — those aren't "a new user joined the app" in any sense an
+	# admin would want a push about.
+	if doc.get("user_type") != "Website User":
+		return
+	handle_event(
+		"NEW_USER_REGISTERED",
+		None,
+		{"user_name": doc.get("full_name") or doc.name, "email": doc.name},
+	)
+
+
+def on_enrollment_created(doc, method=None):
+	try:
+		handle_event(
+			"NEW_ENROLLMENT",
+			None,
+			{"member": doc.get("member") or "", "course": doc.get("course") or ""},
+		)
+	except Exception:
+		frappe.log_error(title="Notification trigger: on_enrollment_created", message=frappe.get_traceback())

@@ -1,14 +1,23 @@
 """The one entry point every event source (doc_events, scheduler jobs, a
-future webhook receiver) calls: `handle_event(event_code, user, variables)`.
+webhook receiver) calls: `handle_event(event_code, user, variables)`.
 
 Everything downstream of "an event happened" lives here: does a template
-exist and is it enabled, does this user even want this category, are we
-inside their quiet hours, have they already hit today's cap, have we
+exist and is it enabled, does this recipient even want this category, are
+we inside their quiet hours, have they already hit today's cap, have we
 already sent this exact event today — only after all of that does it
 render the template and hand off to `delivery.send_push` (this app's own,
 fully independent FCM sender — see delivery.py's module docstring for why
 it doesn't call the framework-patched `frappe.api.fcm_api.send_fcm`) and
 record the send.
+
+Two audiences, one pipeline: `template.audience == "User"` sends to the
+single `user` the caller passed in; `template.audience == "Admin"` fans
+out internally to every admin (`admin_audience.admin_users()`) and applies
+the same per-recipient checks to each — callers of an Admin-audience event
+pass `user=None` (see `triggers.py`'s admin-event functions). Both paths
+share the same preference-row shape (`TOB Notification Preference`, one
+row per user) and the same quiet-hours/daily-cap/dedup logic — only the
+category → preference-field map differs.
 
 Deliberately NOT a generic data-driven rules engine — each check below is
 a short, readable Python function, matching this codebase's existing
@@ -20,6 +29,7 @@ import frappe
 from frappe.utils import get_datetime, now_datetime, nowdate
 
 from truth_of_bible.notifications import delivery, timeutils
+from truth_of_bible.notifications.admin_audience import admin_users
 from truth_of_bible.notifications.preferences import get_or_create_preference
 
 _CATEGORY_PREFERENCE_FIELD = {
@@ -35,11 +45,29 @@ _CATEGORY_PREFERENCE_FIELD = {
 	"Announcements": "announcements",
 }
 
+# Admin-audience categories → the admin-side preference toggle. A separate
+# map (not merged with the one above) because "Orders" means something
+# different for an admin (a new order came in) than for a user (my order
+# shipped) — they'd share a category *label* in TOB Notification Template
+# but must not share a preference field. "Moderation" (not "Community") is
+# the admin-side category for community-report events, deliberately
+# distinct from the User-audience "Community" category above.
+_ADMIN_CATEGORY_PREFERENCE_FIELD = {
+	"Users": "admin_new_user",
+	"Support": "admin_support",
+	"Orders": "admin_orders",
+	"Moderation": "admin_moderation",
+	"LMS": "admin_lms",
+	"System": "admin_system",
+}
 
-def handle_event(event_code: str, user: str, variables: dict | None = None, force: bool = False) -> bool:
+
+def handle_event(event_code: str, user: str | None = None, variables: dict | None = None, force: bool = False) -> bool:
 	"""Never raises — a bad template or a transient failure here must never
-	break whatever save/scan/webhook triggered it. Returns True only if a
-	notification was actually created and (attempted to be) pushed."""
+	break whatever save/scan/webhook triggered it. Returns True only if at
+	least one notification was actually created and (attempted to be)
+	pushed. `user` is required for a User-audience event and ignored (pass
+	`None`) for an Admin-audience one, which resolves its own recipients."""
 	try:
 		return _handle_event(event_code, user, variables or {}, force)
 	except Exception:
@@ -47,10 +75,7 @@ def handle_event(event_code: str, user: str, variables: dict | None = None, forc
 		return False
 
 
-def _handle_event(event_code: str, user: str, variables: dict, force: bool) -> bool:
-	if not user or user in ("Guest", "Administrator"):
-		return False
-
+def _handle_event(event_code: str, user: str | None, variables: dict, force: bool) -> bool:
 	template = frappe.db.get_value(
 		"TOB Notification Template",
 		event_code,
@@ -60,16 +85,26 @@ def _handle_event(event_code: str, user: str, variables: dict, force: bool) -> b
 	if not template or not template.enabled:
 		return False
 
-	if template.audience == "User" and not _passes_user_checks(event_code, user, template, force):
-		return False
-	# Admin-audience resolution (role lookup, per-admin-category prefs) is
-	# intentionally not implemented in this slice — see
-	# NOTIFICATION_ENGINE_PLAN.md's sequencing. An Admin-audience template
-	# with no resolver yet is simply not actionable, so it's skipped rather
-	# than guessed at.
-	if template.audience != "User":
-		return False
+	if template.audience == "User":
+		if not user or user in ("Guest", "Administrator"):
+			return False
+		if not _passes_checks(event_code, user, template, force, _CATEGORY_PREFERENCE_FIELD):
+			return False
+		return _send_one(template, user, variables, event_code)
 
+	if template.audience == "Admin":
+		sent_any = False
+		for admin in admin_users():
+			if not _passes_checks(event_code, admin, template, force, _ADMIN_CATEGORY_PREFERENCE_FIELD):
+				continue
+			if _send_one(template, admin, variables, event_code):
+				sent_any = True
+		return sent_any
+
+	return False
+
+
+def _send_one(template: dict, user: str, variables: dict, event_code: str) -> bool:
 	title = frappe.render_template(template.title or "", variables).strip()
 	if not title:
 		return False
@@ -91,10 +126,10 @@ def _handle_event(event_code: str, user: str, variables: dict, force: bool) -> b
 	return True
 
 
-def _passes_user_checks(event_code: str, user: str, template: dict, force: bool) -> bool:
+def _passes_checks(event_code: str, user: str, template: dict, force: bool, field_map: dict) -> bool:
 	pref = get_or_create_preference(user)
 
-	field = _CATEGORY_PREFERENCE_FIELD.get(template.category)
+	field = field_map.get(template.category)
 	if field and not pref.get(field):
 		return False
 

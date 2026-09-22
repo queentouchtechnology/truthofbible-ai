@@ -38,7 +38,9 @@ def update_notification_preferences(
 	quiz=None, courses=None, community=None, shopping=None, account=None,
 	announcements=None, marketing_opt_in=None, daily_reminder_time=None,
 	quiet_hours_start=None, quiet_hours_end=None, max_daily_notifications=None,
-	timezone=None, preferred_prayer_time=None,
+	timezone=None, preferred_prayer_time=None, admin_new_user=None,
+	admin_support=None, admin_orders=None, admin_moderation=None,
+	admin_lms=None, admin_system=None,
 ) -> dict:
 	values = {
 		"bible_reading": bible_reading, "spiritual_growth": spiritual_growth,
@@ -48,6 +50,9 @@ def update_notification_preferences(
 		"daily_reminder_time": daily_reminder_time, "quiet_hours_start": quiet_hours_start,
 		"quiet_hours_end": quiet_hours_end, "max_daily_notifications": max_daily_notifications,
 		"timezone": timezone, "preferred_prayer_time": preferred_prayer_time,
+		"admin_new_user": admin_new_user, "admin_support": admin_support,
+		"admin_orders": admin_orders, "admin_moderation": admin_moderation,
+		"admin_lms": admin_lms, "admin_system": admin_system,
 	}
 	values = {k: v for k, v in values.items() if v is not None}
 	doc = preferences.update_preference(frappe.session.user, values)

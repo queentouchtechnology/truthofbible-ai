@@ -1067,6 +1067,55 @@ _NOTIFICATION_TEMPLATES = [
 		"body": "Take a few quiet moments with God.",
 		"description": "Daily-eligible prayer variant framed around the user's own chosen time.",
 	},
+	# --- Admin-audience events (engine.py fans these out to
+	# admin_audience.admin_users() — Batch Evaluator / Moderator / Course
+	# Creator role holders, matching the Flutter app's own admin-access
+	# check). No dedicated admin deep-link routes exist yet in the Flutter
+	# app (only user-facing routes are registered in deepLink_routes.dart),
+	# so these deliberately deep-link to /dashboard as a safe, always-real
+	# interim target — same honest-interim-route pattern already used for
+	# the Bible-reading templates' /todayVerse, ahead of a real admin
+	# screen route being added later.
+	{
+		"event_code": "NEW_SUPPORT_TICKET",
+		"audience": "Admin",
+		"category": "Support",
+		"priority": "High",
+		"deeplink_route": "/dashboard",
+		"title": "New support ticket",
+		"body": "{{ subject }}",
+		"description": "Fired when a new Issue (support ticket) is raised, to every admin.",
+	},
+	{
+		"event_code": "TICKET_HIGH_PRIORITY",
+		"audience": "Admin",
+		"category": "Support",
+		"priority": "High",
+		"deeplink_route": "/dashboard",
+		"title": "Ticket escalated to {{ priority }}",
+		"body": "{{ subject }}",
+		"description": "Fired when an existing Issue's priority changes to High or Urgent.",
+	},
+	{
+		"event_code": "NEW_USER_REGISTERED",
+		"audience": "Admin",
+		"category": "Users",
+		"priority": "Normal",
+		"deeplink_route": "/dashboard",
+		"title": "New user joined",
+		"body": "{{ user_name }}",
+		"description": "Fired when a new Website User account is created (a real app sign-up, not a Desk-created System User).",
+	},
+	{
+		"event_code": "NEW_ENROLLMENT",
+		"audience": "Admin",
+		"category": "LMS",
+		"priority": "Low",
+		"deeplink_route": "/dashboard",
+		"title": "New course enrollment",
+		"body": "{{ member }} enrolled in {{ course }}",
+		"description": "Fired when a new LMS Enrollment is created.",
+	},
 ]
 
 

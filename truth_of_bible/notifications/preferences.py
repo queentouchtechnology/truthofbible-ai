@@ -24,6 +24,17 @@ DEFAULTS = {
 	"max_daily_notifications": 6,
 	"timezone": "Asia/Kolkata",
 	"preferred_prayer_time": "12:00:00",
+	# Admin-audience category toggles — only meaningful for a user holding
+	# an admin role (admin_audience.ADMIN_ROLES), but harmless to default
+	# on for everyone: a non-admin's row having these set to 1 has no
+	# effect, since engine.py only ever fans an Admin-audience event out to
+	# admin_users() in the first place.
+	"admin_new_user": 1,
+	"admin_support": 1,
+	"admin_orders": 1,
+	"admin_moderation": 1,
+	"admin_lms": 1,
+	"admin_system": 1,
 }
 
 EDITABLE_FIELDS = set(DEFAULTS.keys())

@@ -37,7 +37,15 @@
   "quiet_hours_start",
   "quiet_hours_end",
   "max_daily_notifications",
-  "preferred_prayer_time"
+  "preferred_prayer_time",
+  "section_break_admin",
+  "admin_new_user",
+  "admin_support",
+  "admin_orders",
+  "column_break_admin",
+  "admin_moderation",
+  "admin_lms",
+  "admin_system"
  ],
  "fields": [
   {
@@ -180,6 +188,52 @@
    "label": "Preferred Prayer Time",
    "default": "12:00:00",
    "description": "The hour the gentle prayer nudge (notifications/prayer.py) fires, when the Prayer category is enabled — wording rotates across a small set of variants rather than repeating the same message daily."
+  },
+  {
+   "fieldname": "section_break_admin",
+   "fieldtype": "Section Break",
+   "label": "Admin Notifications",
+   "description": "Only meaningful for a user holding an admin role (Batch Evaluator / Moderator / Course Creator) — the Flutter app only shows this section to those accounts."
+  },
+  {
+   "fieldname": "admin_new_user",
+   "fieldtype": "Check",
+   "label": "New User Registered",
+   "default": "1"
+  },
+  {
+   "fieldname": "admin_support",
+   "fieldtype": "Check",
+   "label": "Support Tickets",
+   "default": "1"
+  },
+  {
+   "fieldname": "admin_orders",
+   "fieldtype": "Check",
+   "label": "Orders",
+   "default": "1"
+  },
+  {
+   "fieldname": "column_break_admin",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "admin_moderation",
+   "fieldtype": "Check",
+   "label": "Community Moderation",
+   "default": "1"
+  },
+  {
+   "fieldname": "admin_lms",
+   "fieldtype": "Check",
+   "label": "New Enrollments",
+   "default": "1"
+  },
+  {
+   "fieldname": "admin_system",
+   "fieldtype": "Check",
+   "label": "System Alerts",
+   "default": "1"
   }
  ],
  "permissions": [
