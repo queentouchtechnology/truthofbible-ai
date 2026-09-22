@@ -68,12 +68,14 @@ doc_events = {
 # Frappe patch (patches.txt).
 after_install = [
 	"truth_of_bible.install.seed_default_prompts",
+	"truth_of_bible.install.seed_ai_model_routing",
 	"truth_of_bible.install.seed_bible_battle_questions",
 	"truth_of_bible.install.seed_blessing_verses",
 	"truth_of_bible.install.seed_notification_templates",
 ]
 after_migrate = [
 	"truth_of_bible.install.seed_default_prompts",
+	"truth_of_bible.install.seed_ai_model_routing",
 	"truth_of_bible.install.seed_bible_battle_questions",
 	"truth_of_bible.install.seed_blessing_verses",
 	"truth_of_bible.install.seed_notification_templates",

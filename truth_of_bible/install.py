@@ -272,6 +272,42 @@ _DEFAULT_PROMPTS = [
 			"study-focused and concise."
 		),
 	},
+	# --- Communication Center (admin Campaign Composer's "Generate with AI"
+	# button, lib/src/users/admin/communication/view/campaign_composer_
+	# screen.dart) — deliberately inherit the SAME gentle tone rules as
+	# notifications/prayer.py and install.py's own _NOTIFICATION_TEMPLATES:
+	# never shames inactivity, never claims to know God's will, never
+	# invents urgency. JSON-only output so the Composer can populate two
+	# fields (title+body / subject+body) from one generation.
+	{
+		"task": "campaign_push_copy",
+		"system_prompt": (
+			"You write short push notification copy for a Christian Bible-study "
+			"app's admin Communication Center. Given a topic or occasion in the "
+			"Subject, write one push notification: a short, warm title (under 50 "
+			"characters) and a concise body (under 120 characters) that invites the "
+			"reader to open the app. Never shame inactivity, never claim to know "
+			"God's will, never invent a Bible verse or fact you are not confident "
+			"about, never use aggressive marketing language or manufactured "
+			"urgency. Always respond with valid JSON only, no other text, matching "
+			'exactly this shape: {"title": "...", "body": "..."}.'
+		),
+	},
+	{
+		"task": "campaign_email_copy",
+		"system_prompt": (
+			"You write short campaign email copy for a Christian Bible-study app's "
+			"admin Communication Center. Given a topic or occasion in the Subject, "
+			"write one email: a clear, warm subject line and a short plain-text body "
+			"(2-4 short paragraphs, no HTML). You may naturally include the "
+			"personalization tag {{first_name}} (e.g. in a greeting) but do not "
+			"invent any other tag. Never shame inactivity, never claim to know "
+			"God's will, never invent a Bible verse or fact you are not confident "
+			"about, never use aggressive marketing language or manufactured "
+			"urgency. Always respond with valid JSON only, no other text, matching "
+			'exactly this shape: {"subject": "...", "body": "..."}.'
+		),
+	},
 ]
 
 
@@ -303,6 +339,45 @@ def seed_default_prompts():
 			# between the two hook firings above — the row already exists
 			# in every way that matters, so this is a benign no-op, not a
 			# real failure. Never let a seeding function break `migrate`.
+			frappe.db.rollback()
+
+
+# A prompt alone isn't enough to make a task usable — resolve_routing()
+# (ai/core/routing.py) hard-throws "No AI model configured for task '{0}'"
+# unless a TOB AI Model row has default_for_task set. Every existing task
+# on this site already routes through deepseek/deepseek-chat (confirmed
+# live, 2026-09-22 — all 21 pre-existing tasks use this exact provider/
+# model), so the two new Communication Center tasks are seeded onto the
+# same, already-proven-working combination rather than guessing at a
+# different one.
+_AI_MODEL_ROUTING = [
+	{"task": "campaign_push_copy", "provider": "deepseek", "model_id": "deepseek-chat"},
+	{"task": "campaign_email_copy", "provider": "deepseek", "model_id": "deepseek-chat"},
+]
+
+
+def seed_ai_model_routing():
+	for entry in _AI_MODEL_ROUTING:
+		if frappe.db.exists("TOB AI Model", {"default_for_task": entry["task"]}):
+			continue
+		try:
+			frappe.get_doc(
+				{
+					"doctype": "TOB AI Model",
+					"provider": entry["provider"],
+					"model_id": entry["model_id"],
+					"default_for_task": entry["task"],
+					# Matches the cost this site already has configured for every
+					# other deepseek-chat-routed task (confirmed live) — this
+					# field only affects usage-cost reporting, never routing
+					# itself, so an approximate match is enough; correct it in
+					# Desk if deepseek's actual pricing has since changed.
+					"cost_input_per_1m": 0.27,
+					"cost_output_per_1m": 1.1,
+				}
+			).insert(ignore_permissions=True)
+			frappe.db.commit()
+		except frappe.ValidationError:
 			frappe.db.rollback()
 
 
