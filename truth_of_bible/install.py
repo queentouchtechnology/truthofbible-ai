@@ -970,6 +970,103 @@ _NOTIFICATION_TEMPLATES = [
 			"users can toggle yet."
 		),
 	},
+	# --- Prayer nudge slice (notifications/prayer.py). One nudge per user
+	# per day at their own preferred_prayer_time; the wording below is
+	# rotated by prayer.py's _pick_variant rather than always using the
+	# same template — see that module's docstring for the exact weighting.
+	# All deeplink to /prayer (BiblePrayerScreen, the app's existing
+	# no-argument AI-prayer front door) — confirmed against
+	# deepLink_routes.dart before use.
+	{
+		"event_code": "PRAYER_DAILY",
+		"audience": "User",
+		"category": "Prayer",
+		"priority": "Low",
+		"deeplink_route": "/prayer",
+		"title": "Take a moment to pray today",
+		"body": "",
+		"description": "Daily-eligible prayer variant — general, time-of-day-agnostic.",
+	},
+	{
+		"event_code": "PRAYER_MORNING",
+		"audience": "User",
+		"category": "Prayer",
+		"priority": "Low",
+		"deeplink_route": "/prayer",
+		"title": "Begin your day with a moment of prayer",
+		"body": "",
+		"description": "Picked when the user's preferred prayer hour falls in the morning (before 11am local).",
+	},
+	{
+		"event_code": "PRAYER_EVENING",
+		"audience": "User",
+		"category": "Prayer",
+		"priority": "Low",
+		"deeplink_route": "/prayer",
+		"title": "Before your day ends, take a quiet moment to pray",
+		"body": "",
+		"description": "Picked when the user's preferred prayer hour falls in the evening (6pm local or later).",
+	},
+	{
+		"event_code": "PRAYER_SCRIPTURE",
+		"audience": "User",
+		"category": "Prayer",
+		"priority": "Low",
+		"deeplink_route": "/prayer",
+		"title": "Read today's verse, then take a moment to pray",
+		"body": "",
+		"description": "Daily-eligible prayer variant pairing Scripture with prayer.",
+	},
+	{
+		"event_code": "PRAYER_REFLECTION",
+		"audience": "User",
+		"category": "Prayer",
+		"priority": "Low",
+		"deeplink_route": "/prayer",
+		"title": "Pause for a moment",
+		"body": "What would you like to bring before God today?",
+		"description": "Variety variant, roughly 2-3x/week (see prayer.py's _pick_variant weighting).",
+	},
+	{
+		"event_code": "PRAYER_PEACE",
+		"audience": "User",
+		"category": "Prayer",
+		"priority": "Low",
+		"deeplink_route": "/prayer",
+		"title": "Take a quiet moment, be still, and pray",
+		"body": "",
+		"description": "Daily-eligible prayer variant, a stillness/peace framing.",
+	},
+	{
+		"event_code": "PRAYER_THANKSGIVING",
+		"audience": "User",
+		"category": "Prayer",
+		"priority": "Low",
+		"deeplink_route": "/prayer",
+		"title": "Take a moment today to thank God for His goodness",
+		"body": "",
+		"description": "Variety variant, roughly 1-2x/week.",
+	},
+	{
+		"event_code": "PRAYER_OTHERS",
+		"audience": "User",
+		"category": "Prayer",
+		"priority": "Low",
+		"deeplink_route": "/prayer",
+		"title": "Is there someone you can remember in prayer today?",
+		"body": "",
+		"description": "Variety variant, roughly 1-2x/week — intercessory framing.",
+	},
+	{
+		"event_code": "PRAYER_ROUTINE",
+		"audience": "User",
+		"category": "Prayer",
+		"priority": "Low",
+		"deeplink_route": "/prayer",
+		"title": "It's your usual prayer time",
+		"body": "Take a few quiet moments with God.",
+		"description": "Daily-eligible prayer variant framed around the user's own chosen time.",
+	},
 ]
 
 

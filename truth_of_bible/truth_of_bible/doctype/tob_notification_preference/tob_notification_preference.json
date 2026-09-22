@@ -36,7 +36,8 @@
   "column_break_timing",
   "quiet_hours_start",
   "quiet_hours_end",
-  "max_daily_notifications"
+  "max_daily_notifications",
+  "preferred_prayer_time"
  ],
  "fields": [
   {
@@ -172,6 +173,13 @@
    "fieldtype": "Int",
    "label": "Max Notifications Per Day",
    "default": "6"
+  },
+  {
+   "fieldname": "preferred_prayer_time",
+   "fieldtype": "Time",
+   "label": "Preferred Prayer Time",
+   "default": "12:00:00",
+   "description": "The hour the gentle prayer nudge (notifications/prayer.py) fires, when the Prayer category is enabled — wording rotates across a small set of variants rather than repeating the same message daily."
   }
  ],
  "permissions": [

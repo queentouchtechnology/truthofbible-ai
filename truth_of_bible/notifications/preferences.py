@@ -23,6 +23,7 @@ DEFAULTS = {
 	"quiet_hours_end": "07:00:00",
 	"max_daily_notifications": 6,
 	"timezone": "Asia/Kolkata",
+	"preferred_prayer_time": "12:00:00",
 }
 
 EDITABLE_FIELDS = set(DEFAULTS.keys())

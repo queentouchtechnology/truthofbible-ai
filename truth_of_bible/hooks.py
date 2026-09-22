@@ -85,5 +85,6 @@ scheduler_events = {
 	},
 	"hourly": [
 		"truth_of_bible.notifications.reading.daily_scan",
+		"truth_of_bible.notifications.prayer.daily_scan",
 	],
 }
