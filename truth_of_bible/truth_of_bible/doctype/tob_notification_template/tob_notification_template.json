@@ -1,0 +1,128 @@
+{
+ "doctype": "DocType",
+ "name": "TOB Notification Template",
+ "module": "Truth Of Bible",
+ "custom": 0,
+ "istable": 0,
+ "issingle": 0,
+ "quick_entry": 0,
+ "track_changes": 1,
+ "autoname": "field:event_code",
+ "naming_rule": "By fieldname",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "engine": "InnoDB",
+ "description": "One row per notification event — the template-driven source of every notification's title/body/priority/deep-link, so no notification text is hardcoded in Python. Rendered with Jinja (frappe.render_template) against whatever variables the triggering event supplies. System-Manager-only; content is app configuration, not per-user data.",
+ "field_order": [
+  "event_code",
+  "audience",
+  "enabled",
+  "category",
+  "priority",
+  "column_break_1",
+  "deeplink_route",
+  "deeplink_id_field",
+  "section_break_1",
+  "title",
+  "body",
+  "description"
+ ],
+ "fields": [
+  {
+   "fieldname": "event_code",
+   "fieldtype": "Data",
+   "label": "Event Code",
+   "reqd": 1,
+   "unique": 1,
+   "in_list_view": 1,
+   "description": "e.g. BIBLE_READING_CONTINUE, QUIZ_RESULT_AVAILABLE, NEW_SUPPORT_TICKET — the identifier every doc_event/scheduler call passes to the engine."
+  },
+  {
+   "fieldname": "audience",
+   "fieldtype": "Select",
+   "label": "Audience",
+   "options": "User\nAdmin",
+   "default": "User",
+   "reqd": 1,
+   "in_list_view": 1,
+   "description": "Keeps user and admin notification audiences from ever mixing — the engine resolves recipients differently per audience."
+  },
+  {
+   "fieldname": "enabled",
+   "fieldtype": "Check",
+   "label": "Enabled",
+   "default": "1",
+   "in_list_view": 1,
+   "description": "Disabling this makes the engine skip the event entirely (no Notification Log row, no push) without removing the trigger wiring."
+  },
+  {
+   "fieldname": "category",
+   "fieldtype": "Select",
+   "label": "Category",
+   "options": "Bible Reading\nSpiritual Growth\nBible Study\nPrayer\nQuiz\nCourses\nCommunity\nShopping\nAccount\nAnnouncements\nUsers\nSupport\nOrders\nLMS\nModeration\nPayments\nSystem",
+   "reqd": 1,
+   "in_list_view": 1,
+   "description": "Matches one toggle on TOB Notification Preference (User audience) or an admin role bucket (Admin audience)."
+  },
+  {
+   "fieldname": "priority",
+   "fieldtype": "Select",
+   "label": "Priority",
+   "options": "Critical\nHigh\nNormal\nLow",
+   "default": "Normal",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "deeplink_route",
+   "fieldtype": "Data",
+   "label": "Deep Link Route",
+   "description": "An existing Flutter named route, e.g. /viewQuiz, /viewTicket, /batch — matches deepLink_routes.dart exactly. Sent as the FCM payload's 'route'."
+  },
+  {
+   "fieldname": "deeplink_id_field",
+   "fieldtype": "Data",
+   "label": "Deep Link Id Variable",
+   "description": "Which variable name (from the event's own variables dict) supplies the record id the route needs, e.g. 'quiz_id', 'ticket_id'. Leave blank for a route that takes no id."
+  },
+  {
+   "fieldname": "section_break_1",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "title",
+   "fieldtype": "Small Text",
+   "label": "Title",
+   "reqd": 1,
+   "description": "Jinja template, e.g. \"Continue your reading in {{ book }} {{ chapter }}.\" Rendered against the event's variables."
+  },
+  {
+   "fieldname": "body",
+   "fieldtype": "Small Text",
+   "label": "Body",
+   "description": "Optional longer body, same Jinja rules as Title."
+  },
+  {
+   "fieldname": "description",
+   "fieldtype": "Small Text",
+   "label": "Internal Note",
+   "description": "Not shown to the user — for whoever edits this row later to understand what triggers it and why the copy is worded this way (tone rules, etc.)."
+  }
+ ],
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "report": 1,
+   "export": 1
+  }
+ ],
+ "links": []
+}

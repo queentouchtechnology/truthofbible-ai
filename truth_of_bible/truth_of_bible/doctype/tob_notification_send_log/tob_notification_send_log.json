@@ -1,0 +1,60 @@
+{
+ "doctype": "DocType",
+ "name": "TOB Notification Send Log",
+ "module": "Truth Of Bible",
+ "custom": 0,
+ "istable": 0,
+ "issingle": 0,
+ "quick_entry": 0,
+ "track_changes": 0,
+ "autoname": "hash",
+ "naming_rule": "Random",
+ "sort_field": "sent_at",
+ "sort_order": "DESC",
+ "engine": "InnoDB",
+ "description": "Pure bookkeeping for the notification engine's own frequency/dedup checks (max per day, min gap, 'already sent this exact event today') — one row per successful send. Not user-facing; the user-facing record is the existing Notification Log doctype. System-Manager-only.",
+ "field_order": [
+  "user",
+  "event_code",
+  "sent_at"
+ ],
+ "fields": [
+  {
+   "fieldname": "user",
+   "fieldtype": "Link",
+   "options": "User",
+   "label": "User",
+   "reqd": 1,
+   "in_list_view": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "event_code",
+   "fieldtype": "Data",
+   "label": "Event Code",
+   "reqd": 1,
+   "in_list_view": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "sent_at",
+   "fieldtype": "Datetime",
+   "label": "Sent At",
+   "reqd": 1,
+   "in_list_view": 1,
+   "search_index": 1
+  }
+ ],
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "report": 1,
+   "export": 1
+  }
+ ],
+ "links": []
+}

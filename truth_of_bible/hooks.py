@@ -46,11 +46,13 @@ after_install = [
 	"truth_of_bible.install.seed_default_prompts",
 	"truth_of_bible.install.seed_bible_battle_questions",
 	"truth_of_bible.install.seed_blessing_verses",
+	"truth_of_bible.install.seed_notification_templates",
 ]
 after_migrate = [
 	"truth_of_bible.install.seed_default_prompts",
 	"truth_of_bible.install.seed_bible_battle_questions",
 	"truth_of_bible.install.seed_blessing_verses",
+	"truth_of_bible.install.seed_notification_templates",
 ]
 
 # Bible Battle's only background-job-shaped mechanism: a cron backstop for
@@ -59,8 +61,16 @@ after_migrate = [
 # opportunistically (both apps died mid-question). Mirrors qtt_platform's
 # own scheduler_events convention — the only cron precedent in this
 # codebase; frappe.enqueue has none, so V1 deliberately doesn't introduce it.
+#
+# "hourly" runs the spiritual/reading notification scan (see
+# notifications/reading.py) — checked every hour rather than via a finer
+# cron because a per-user reminder "hour" (not minute) is all the product
+# ever promises (see NOTIFICATION_ENGINE_PLAN.md Phase 35).
 scheduler_events = {
 	"cron": {
 		"* * * * *": ["truth_of_bible.games.bible_battle.engine.sweep_stale_battles"],
 	},
+	"hourly": [
+		"truth_of_bible.notifications.reading.daily_scan",
+	],
 }

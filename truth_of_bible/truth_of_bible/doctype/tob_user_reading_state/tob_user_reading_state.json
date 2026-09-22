@@ -1,0 +1,118 @@
+{
+ "doctype": "DocType",
+ "name": "TOB User Reading State",
+ "module": "Truth Of Bible",
+ "custom": 0,
+ "istable": 0,
+ "issingle": 0,
+ "quick_entry": 0,
+ "track_changes": 0,
+ "autoname": "field:user",
+ "naming_rule": "By fieldname",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "engine": "InnoDB",
+ "description": "One row per user — the server-side mirror of their last Bible reading activity, synced from the Flutter client's own local activity log (see truth_of_bible.api.notifications.record_reading_activity). Exists purely so the spiritual/reading notification scan (truth_of_bible.notifications.reading.daily_scan) is correct across a user's multiple devices — e.g. it must never nudge someone to 'continue reading' if they already read today on a different phone/tablet than the one this row happens to be updated from. Never stores or infers anything about the user beyond what book/chapter/verse they last opened and when.",
+ "field_order": [
+  "user",
+  "column_break_1",
+  "last_read_at",
+  "last_read_date",
+  "section_break_1",
+  "last_book",
+  "last_chapter",
+  "last_verse",
+  "column_break_2",
+  "reading_days",
+  "last_notified_continue_date",
+  "inactive_tier_notified"
+ ],
+ "fields": [
+  {
+   "fieldname": "user",
+   "fieldtype": "Link",
+   "options": "User",
+   "label": "User",
+   "reqd": 1,
+   "unique": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "last_read_at",
+   "fieldtype": "Datetime",
+   "label": "Last Read At"
+  },
+  {
+   "fieldname": "last_read_date",
+   "fieldtype": "Date",
+   "label": "Last Read Date",
+   "description": "last_read_at's calendar date in the user's own preference timezone — precomputed so 'already read today' never has to redo timezone math on every scan."
+  },
+  {
+   "fieldname": "section_break_1",
+   "fieldtype": "Section Break",
+   "label": "Last Location"
+  },
+  {
+   "fieldname": "last_book",
+   "fieldtype": "Data",
+   "label": "Last Book"
+  },
+  {
+   "fieldname": "last_chapter",
+   "fieldtype": "Int",
+   "label": "Last Chapter"
+  },
+  {
+   "fieldname": "last_verse",
+   "fieldtype": "Data",
+   "label": "Last Verse"
+  },
+  {
+   "fieldname": "column_break_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "reading_days",
+   "fieldtype": "Int",
+   "label": "Reading Days (Lifetime)",
+   "default": "0",
+   "description": "Count of distinct calendar days with at least one recorded reading — used only to pick gentler/more established copy (e.g. a first-time reader vs. a regular one), never shown to the user as a score or streak."
+  },
+  {
+   "fieldname": "last_notified_continue_date",
+   "fieldtype": "Date",
+   "label": "Last 'Continue Reading' Notified",
+   "description": "Dedup guard: the daily-continue nudge is sent at most once per calendar day per user."
+  },
+  {
+   "fieldname": "inactive_tier_notified",
+   "fieldtype": "Select",
+   "label": "Inactivity Tier Notified",
+   "options": "None\n3\n7\n14\n30",
+   "default": "None",
+   "description": "Highest inactivity tier already notified since the user's last read — reset to None as soon as they read again, so a returning user is never notified about inactivity they've already ended."
+  }
+ ],
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "report": 1,
+   "export": 1
+  },
+  {
+   "role": "All",
+   "if_owner": 1,
+   "read": 1
+  }
+ ],
+ "links": []
+}

@@ -3,3 +3,13 @@
 # No third-party Python packages of its own beyond what frappe/lms already
 # pull in (requests, used by the AI provider HTTP client, is a frappe
 # dependency already).
+#
+# truth_of_bible/notifications/delivery.py additionally imports
+# google.oauth2.service_account and google.auth.transport.requests (the
+# `google-auth` package) to call FCM's HTTP v1 API directly, independent of
+# frappe/api/fcm_api.py (a file patched directly into the frappe framework
+# on this bench, not owned by any app — see delivery.py's docstring).
+# google-auth is already present in this bench's environment (proven by
+# frappe/api/fcm_api.py itself importing it successfully), so this is not a
+# new package on the target bench, only documented here for a fresh install.
+google-auth

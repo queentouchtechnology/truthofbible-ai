@@ -1,0 +1,195 @@
+{
+ "doctype": "DocType",
+ "name": "TOB Notification Preference",
+ "module": "Truth Of Bible",
+ "custom": 0,
+ "istable": 0,
+ "issingle": 0,
+ "quick_entry": 0,
+ "track_changes": 0,
+ "autoname": "field:user",
+ "naming_rule": "By fieldname",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "engine": "InnoDB",
+ "description": "One row per user — per-category notification toggles, daily reminder time, quiet hours and a daily cap. Created lazily (get-or-create) by the notification engine/whitelisted preference API the first time it's needed, always with sensible gentle-opt-out defaults, so a user who has never opened a settings screen still gets a reasonable, non-spammy experience. Category granularity intentionally matches TOB Notification Template.category (one toggle per routing category) — a future event needing a finer per-event toggle can add one more Check field without a schema break.",
+ "field_order": [
+  "user",
+  "column_break_1",
+  "timezone",
+  "section_break_categories",
+  "bible_reading",
+  "spiritual_growth",
+  "bible_study",
+  "prayer",
+  "column_break_cat",
+  "quiz",
+  "courses",
+  "community",
+  "shopping",
+  "column_break_cat2",
+  "account",
+  "announcements",
+  "marketing_opt_in",
+  "section_break_timing",
+  "daily_reminder_time",
+  "column_break_timing",
+  "quiet_hours_start",
+  "quiet_hours_end",
+  "max_daily_notifications"
+ ],
+ "fields": [
+  {
+   "fieldname": "user",
+   "fieldtype": "Link",
+   "options": "User",
+   "label": "User",
+   "reqd": 1,
+   "unique": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "timezone",
+   "fieldtype": "Data",
+   "label": "Timezone",
+   "default": "Asia/Kolkata",
+   "description": "IANA timezone name. Reminder time and quiet hours are interpreted in this zone, not the server's."
+  },
+  {
+   "fieldname": "section_break_categories",
+   "fieldtype": "Section Break",
+   "label": "Categories"
+  },
+  {
+   "fieldname": "bible_reading",
+   "fieldtype": "Check",
+   "label": "Bible Reading",
+   "default": "1"
+  },
+  {
+   "fieldname": "spiritual_growth",
+   "fieldtype": "Check",
+   "label": "Spiritual Growth",
+   "default": "1"
+  },
+  {
+   "fieldname": "bible_study",
+   "fieldtype": "Check",
+   "label": "Bible Study",
+   "default": "1"
+  },
+  {
+   "fieldname": "prayer",
+   "fieldtype": "Check",
+   "label": "Prayer",
+   "default": "1"
+  },
+  {
+   "fieldname": "column_break_cat",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "quiz",
+   "fieldtype": "Check",
+   "label": "Quiz",
+   "default": "1"
+  },
+  {
+   "fieldname": "courses",
+   "fieldtype": "Check",
+   "label": "Courses",
+   "default": "1"
+  },
+  {
+   "fieldname": "community",
+   "fieldtype": "Check",
+   "label": "Community",
+   "default": "1"
+  },
+  {
+   "fieldname": "shopping",
+   "fieldtype": "Check",
+   "label": "Shopping",
+   "default": "1"
+  },
+  {
+   "fieldname": "column_break_cat2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "account",
+   "fieldtype": "Check",
+   "label": "Account",
+   "default": "1"
+  },
+  {
+   "fieldname": "announcements",
+   "fieldtype": "Check",
+   "label": "Announcements",
+   "default": "1"
+  },
+  {
+   "fieldname": "marketing_opt_in",
+   "fieldtype": "Check",
+   "label": "Offers / Marketing",
+   "default": "0",
+   "description": "Opt-in only, per Phase 20's rule — default off."
+  },
+  {
+   "fieldname": "section_break_timing",
+   "fieldtype": "Section Break",
+   "label": "Timing"
+  },
+  {
+   "fieldname": "daily_reminder_time",
+   "fieldtype": "Time",
+   "label": "Daily Reminder Time",
+   "default": "07:00:00"
+  },
+  {
+   "fieldname": "column_break_timing",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "quiet_hours_start",
+   "fieldtype": "Time",
+   "label": "Quiet Hours Start",
+   "default": "21:00:00"
+  },
+  {
+   "fieldname": "quiet_hours_end",
+   "fieldtype": "Time",
+   "label": "Quiet Hours End",
+   "default": "07:00:00",
+   "description": "May be earlier than Start — that's read as wrapping past midnight (e.g. 21:00 -> 07:00)."
+  },
+  {
+   "fieldname": "max_daily_notifications",
+   "fieldtype": "Int",
+   "label": "Max Notifications Per Day",
+   "default": "6"
+  }
+ ],
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "report": 1,
+   "export": 1
+  },
+  {
+   "role": "All",
+   "if_owner": 1,
+   "read": 1,
+   "write": 1
+  }
+ ],
+ "links": []
+}

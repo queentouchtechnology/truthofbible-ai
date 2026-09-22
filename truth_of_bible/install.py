@@ -853,3 +853,89 @@ def seed_blessing_verses():
 			frappe.db.commit()
 		except frappe.ValidationError:
 			frappe.db.rollback()
+
+
+# Notification engine (NOTIFICATION_ENGINE_PLAN.md) — User-audience templates
+# for the spiritual/Bible-reading nudge, the only slice wired up so far.
+# Deliberately gentle per that plan's Phase 5 tone rules: never implies
+# spiritual failure, never claims to know God's will, never shames
+# inactivity, never gamifies reading into a score. `deeplink_route` points
+# at the existing `/todayVerse` screen as a safe, always-real interim
+# target — a precise "open at exactly this book/chapter" route doesn't
+# exist in the Flutter app yet (see the plan's Phase 9), so this
+# deliberately does not invent one on the backend side ahead of the client.
+_NOTIFICATION_TEMPLATES = [
+	{
+		"event_code": "BIBLE_READING_CONTINUE",
+		"audience": "User",
+		"category": "Bible Reading",
+		"priority": "Low",
+		"deeplink_route": "/todayVerse",
+		"title": "Continue your reading in {{ book }} {{ chapter }}",
+		"body": "Pick up right where you left off.",
+		"description": "Sent at most once per day, only in the user's own configured reminder hour, only if they haven't read yet today (any device).",
+	},
+	{
+		"event_code": "BIBLE_READING_CONTINUE_GENERIC",
+		"audience": "User",
+		"category": "Bible Reading",
+		"priority": "Low",
+		"deeplink_route": "/todayVerse",
+		"title": "Take a few quiet moments in God's Word today",
+		"body": "",
+		"description": "Same trigger as BIBLE_READING_CONTINUE, used when there's no known last-read location yet (e.g. a brand new reader).",
+	},
+	{
+		"event_code": "BIBLE_READING_INACTIVE_3",
+		"audience": "User",
+		"category": "Spiritual Growth",
+		"priority": "Low",
+		"deeplink_route": "/todayVerse",
+		"title": "It's a new day. Spend a few moments in God's Word.",
+		"body": "",
+		"description": "3-day inactivity tier. Never mentions the gap in days — see the plan's Phase 12/9 tone rules.",
+	},
+	{
+		"event_code": "BIBLE_READING_INACTIVE_7",
+		"audience": "User",
+		"category": "Spiritual Growth",
+		"priority": "Low",
+		"deeplink_route": "/todayVerse",
+		"title": "Whenever you're ready, God's Word is here for you.",
+		"body": "",
+		"description": "7-day inactivity tier.",
+	},
+	{
+		"event_code": "BIBLE_READING_INACTIVE_14",
+		"audience": "User",
+		"category": "Spiritual Growth",
+		"priority": "Low",
+		"deeplink_route": "/todayVerse",
+		"title": "A quiet moment in Scripture is always waiting for you.",
+		"body": "",
+		"description": "14-day inactivity tier.",
+	},
+	{
+		"event_code": "BIBLE_READING_INACTIVE_30",
+		"audience": "User",
+		"category": "Spiritual Growth",
+		"priority": "Low",
+		"deeplink_route": "/todayVerse",
+		"title": "We'd love to walk through God's Word with you again.",
+		"body": "",
+		"description": "30-day inactivity tier — the gentlest, most welcoming copy of the four, not the most urgent.",
+	},
+]
+
+
+def seed_notification_templates():
+	for entry in _NOTIFICATION_TEMPLATES:
+		if frappe.db.exists("TOB Notification Template", entry["event_code"]):
+			continue
+		try:
+			frappe.get_doc({"doctype": "TOB Notification Template", "enabled": 1, **entry}).insert(
+				ignore_permissions=True
+			)
+			frappe.db.commit()
+		except frappe.ValidationError:
+			frappe.db.rollback()
