@@ -1,0 +1,121 @@
+"""Receives Discourse's `notification` webhook (community.truthofbible.org)
+and turns select notification types into User-audience Community
+notifications (a reply to your post, being mentioned).
+
+**UNVERIFIED — needs a live test delivery before this can be trusted.**
+Unlike `shop_webhook.py`'s WooCommerce receiver (whose payload shape is
+long-stable and well-documented), this one depends on two things that
+can't be confirmed without either checking this instance's live Discourse
+admin panel or a real test delivery: (1) that the "Notification Event"
+webhook group is even available/enabled for this Discourse version, and
+(2) the exact integer `notification_type` values this instance uses for
+"replied" and "mentioned". The values below (2 and 1 respectively) are
+Discourse's oldest, most stable core notification types — very unlikely
+to have changed — but "very unlikely" is not "confirmed", so every
+notification_type this receiver doesn't recognize gets logged
+(`_log_unmapped_notification`) rather than silently dropped: check
+Frappe's Error Log after the webhook is registered and a real reply/
+mention happens, and correct `_NOTIFICATION_TYPE_EVENTS` below if needed.
+
+**Not yet connected** — same status as `shop_webhook.py`: this endpoint
+exists and works, but nothing on the Discourse side currently calls it.
+Registering the webhook (Discourse Admin → API → Webhooks, with the
+"Notification Event" checkbox, or programmatically via
+`POST /admin/api/web_hooks.json`) is a deliberate, separate step.
+
+**Verification**: `allow_guest=True` (Discourse has no Frappe session) —
+`X-Discourse-Event-Signature` (format `sha256=<hex hmac>` of the raw
+request body, keyed with `discourse_webhook_secret` from
+`frappe.get_site_config()`) is the only thing standing between this
+endpoint and anyone on the internet POSTing forged notification data. No
+site_config key means every delivery is rejected (fails closed).
+
+**User identity**: the Flutter client creates each user's Discourse
+account with the SAME username as their Frappe user, auto-created on
+first opening Community if one doesn't already exist (confirmed by a
+full repo audit — see `community.dart`'s `getCommunityProfile`/
+`createCommunityProfile` flow — before writing this file). This receiver
+maps a notification's `username` back to a Frappe User the same way:
+`frappe.db.get_value("User", {"username": username}, "name")`.
+"""
+
+import hashlib
+import hmac
+import json
+
+import frappe
+
+from truth_of_bible.notifications.engine import handle_event
+
+_NOTIFICATION_TYPE_EVENTS = {
+	2: "COMMUNITY_REPLY",  # Discourse's "replied" notification type
+	1: "COMMUNITY_MENTION",  # Discourse's "mentioned" notification type
+}
+
+
+@frappe.whitelist(allow_guest=True, methods=["POST"])
+def notification_created():
+	if not _verify_signature():
+		frappe.throw("Invalid signature", frappe.PermissionError)
+
+	try:
+		payload = json.loads(frappe.request.data or b"{}")
+	except Exception:
+		frappe.throw("Invalid payload", frappe.ValidationError)
+
+	_handle_notification(payload.get("notification") or {})
+	return {"ok": True}
+
+
+def _handle_notification(notification: dict) -> None:
+	notif_type = notification.get("notification_type")
+	username = (notification.get("username") or "").strip()
+	if not notif_type or not username:
+		return
+
+	event = _NOTIFICATION_TYPE_EVENTS.get(notif_type)
+	if not event:
+		_log_unmapped_notification(notif_type, notification)
+		return
+
+	user = frappe.db.get_value("User", {"username": username}, "name")
+	if not user:
+		return
+
+	data = _parse_data(notification.get("data"))
+	handle_event(event, user, {"topic_title": data.get("topic_title", "")})
+
+
+def _parse_data(raw) -> dict:
+	if isinstance(raw, dict):
+		return raw
+	try:
+		return json.loads(raw or "{}")
+	except Exception:
+		return {}
+
+
+def _log_unmapped_notification(notif_type, notification) -> None:
+	frappe.log_error(
+		title=f"Notification engine: unmapped Discourse notification_type {notif_type}",
+		message=(
+			f"Raw payload: {notification}\n\n"
+			"If this is actually 'replied' or 'mentioned', update "
+			"_NOTIFICATION_TYPE_EVENTS in community_webhook.py."
+		),
+	)
+
+
+def _verify_signature() -> bool:
+	secret = frappe.get_site_config().get("discourse_webhook_secret")
+	if not secret:
+		frappe.log_error(
+			title="Notification engine: discourse_webhook_secret missing",
+			message="site_config.json has no 'discourse_webhook_secret' key — every Discourse webhook delivery is being rejected until this is set.",
+		)
+		return False
+
+	signature = frappe.get_request_header("X-Discourse-Event-Signature") or ""
+	body = frappe.request.data or b""
+	computed = "sha256=" + hmac.new(secret.encode(), body, hashlib.sha256).hexdigest()
+	return hmac.compare_digest(signature, computed)

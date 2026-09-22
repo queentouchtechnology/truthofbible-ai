@@ -56,6 +56,10 @@ _ADMIN_CATEGORY_PREFERENCE_FIELD = {
 	"Users": "admin_new_user",
 	"Support": "admin_support",
 	"Orders": "admin_orders",
+	# Shares the Orders toggle rather than getting its own preference field
+	# — a failed payment is, for an admin, an order-desk concern, not a
+	# separate thing to individually opt in/out of.
+	"Payments": "admin_orders",
 	"Moderation": "admin_moderation",
 	"LMS": "admin_lms",
 	"System": "admin_system",
