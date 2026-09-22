@@ -14,6 +14,18 @@ from truth_of_bible.communication import chatwoot
 from truth_of_bible.communication.auth import require_admin
 
 
+@frappe.whitelist(methods=["GET"])
+def list_templates():
+	"""Approved WhatsApp templates the Composer's WhatsApp channel picker
+	fetches from — Campaigns must use a template, never free text (see
+	chatwoot.py's module docstring for why)."""
+	require_admin()
+	templates, err = chatwoot.list_templates()
+	if templates is None:
+		frappe.throw(err or _("Could not load WhatsApp templates."), frappe.ValidationError)
+	return {"templates": templates}
+
+
 def _conversation_dict(c) -> dict:
 	user_name = frappe.db.get_value("User", c.user, "full_name") if c.user else ""
 	email = frappe.db.get_value("User", c.user, "email") if c.user else None

@@ -64,6 +64,11 @@ def create_campaign(name, audience_type, action, audience_user_ids=None, channel
 	whatsapp = channels.get("whatsapp")
 	if not (push or email or whatsapp):
 		frappe.throw(_("Select at least one channel."), frappe.ValidationError)
+	# Campaigns must use an approved WhatsApp template, never free text —
+	# see chatwoot.py's module docstring for why (the 24-hour customer
+	# window rule; a campaign recipient may never have messaged first).
+	if whatsapp and not (whatsapp.get("template_name") and whatsapp.get("category") and whatsapp.get("language")):
+		frappe.throw(_("Choose a WhatsApp template."), frappe.ValidationError)
 
 	users = audience_mod.resolve_audience(audience_type, audience_user_ids)
 	if not users:
@@ -87,7 +92,10 @@ def create_campaign(name, audience_type, action, audience_user_ids=None, channel
 			"email_body_html": (email or {}).get("body_html"),
 			"email_body_text": (email or {}).get("body_text"),
 			"whatsapp_enabled": 1 if whatsapp else 0,
-			"whatsapp_message": (whatsapp or {}).get("message"),
+			"whatsapp_template_name": (whatsapp or {}).get("template_name"),
+			"whatsapp_template_category": (whatsapp or {}).get("category"),
+			"whatsapp_template_language": (whatsapp or {}).get("language"),
+			"whatsapp_template_params": json.dumps((whatsapp or {}).get("params") or []),
 			"scheduled_at": get_datetime(scheduled_at) if scheduled_at else None,
 		}
 	)
@@ -209,7 +217,12 @@ def get_campaign(campaign_id):
 			"body_text": doc.email_body_text,
 		}
 	if doc.whatsapp_enabled:
-		channels["whatsapp"] = {"message": doc.whatsapp_message}
+		channels["whatsapp"] = {
+			"template_name": doc.whatsapp_template_name,
+			"category": doc.whatsapp_template_category,
+			"language": doc.whatsapp_template_language,
+			"params": json.loads(doc.whatsapp_template_params or "[]"),
+		}
 
 	page_size = 50
 	recipients = frappe.get_all(
@@ -383,7 +396,15 @@ def _process_recipient(doc, recipient_name: str):
 		if _already_sent(doc.name, user, "WHATSAPP"):
 			recipient.whatsapp_status = "SENT"
 		else:
-			ok, message_id, err = _send_whatsapp(user, recipient.user_name, doc.whatsapp_message or "")
+			params = json.loads(doc.whatsapp_template_params or "[]")
+			ok, message_id, err = _send_whatsapp(
+				user,
+				recipient.user_name,
+				doc.whatsapp_template_name,
+				doc.whatsapp_template_category,
+				doc.whatsapp_template_language,
+				params,
+			)
 			recipient.whatsapp_status = "SENT" if ok else "FAILED"
 			if message_id:
 				recipient.whatsapp_message_id = message_id
@@ -397,7 +418,13 @@ def _process_recipient(doc, recipient_name: str):
 	frappe.db.commit()
 
 
-def _send_whatsapp(user: str, user_name: str, message: str) -> tuple[bool, str | None, str | None]:
+def _send_whatsapp(
+	user: str, user_name: str, template_name: str, category: str, language: str, params: list
+) -> tuple[bool, str | None, str | None]:
+	"""Always sends via an approved template — never free text (see
+	chatwoot.py's module docstring: a campaign recipient may never have
+	messaged first, so WhatsApp's 24-hour free-text window cannot be
+	assumed open)."""
 	phone = frappe.db.get_value("User", user, "mobile_no")
 	conversation_id = frappe.db.get_value("TOB WhatsApp Conversation", {"user": user}, "chatwoot_conversation_id")
 
@@ -415,9 +442,13 @@ def _send_whatsapp(user: str, user_name: str, message: str) -> tuple[bool, str |
 			}
 		).insert(ignore_permissions=True)
 
-	ok, message_id, err = chatwoot.send_message(conversation_id, message)
+	ok, message_id, err = chatwoot.send_template_message(conversation_id, template_name, category, language, params)
 	if ok:
-		_record_outbound_whatsapp_message(conversation_id, message_id, message)
+		# The raw template body text lives in Chatwoot, not locally — a
+		# short, readable stand-in is stored in the local mirror instead of
+		# re-fetching Chatwoot's template list just to render one preview.
+		preview = f"[{template_name}] " + " | ".join(params) if params else f"[{template_name}]"
+		_record_outbound_whatsapp_message(conversation_id, message_id, preview)
 	return ok, message_id, err
 
 

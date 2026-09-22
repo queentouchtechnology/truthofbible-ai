@@ -32,7 +32,10 @@
   "email_body_text",
   "section_break_whatsapp",
   "whatsapp_enabled",
-  "whatsapp_message",
+  "whatsapp_template_name",
+  "whatsapp_template_category",
+  "whatsapp_template_language",
+  "whatsapp_template_params",
   "section_break_timing",
   "scheduled_at",
   "column_break_timing",
@@ -143,9 +146,26 @@
    "label": "WhatsApp Enabled"
   },
   {
-   "fieldname": "whatsapp_message",
-   "fieldtype": "Small Text",
-   "label": "WhatsApp Message"
+   "fieldname": "whatsapp_template_name",
+   "fieldtype": "Data",
+   "label": "WhatsApp Template Name",
+   "description": "An APPROVED template name on the configured Chatwoot inbox (see communication/chatwoot.py's list_templates). Campaigns must use a template, never free text — a campaign recipient may never have messaged first, so WhatsApp's 24-hour free-text window cannot be assumed open."
+  },
+  {
+   "fieldname": "whatsapp_template_category",
+   "fieldtype": "Data",
+   "label": "WhatsApp Template Category"
+  },
+  {
+   "fieldname": "whatsapp_template_language",
+   "fieldtype": "Data",
+   "label": "WhatsApp Template Language"
+  },
+  {
+   "fieldname": "whatsapp_template_params",
+   "fieldtype": "Long Text",
+   "label": "WhatsApp Template Params (JSON)",
+   "description": "JSON array of strings substituted into the template's numbered {{1}}, {{2}}, ... placeholders, in order — the same values for every recipient (v1 does not support per-recipient personalization of template params)."
   },
   {
    "fieldname": "section_break_timing",
