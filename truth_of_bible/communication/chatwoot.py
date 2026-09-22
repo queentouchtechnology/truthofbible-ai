@@ -103,10 +103,17 @@ def find_or_create_conversation(phone: str, contact_name: str) -> tuple[str | No
 			body = create.json()
 			contact_id = (body.get("payload") or {}).get("contact", {}).get("id") or body.get("id")
 
+		# Confirmed live (2026-09-22): a WhatsApp inbox's `source_id` must
+		# match Chatwoot's own validation regex `\A(?:\d{1,15}|...)\z` —
+		# plain digits only, no leading '+'. `phone` (E.164, e.g.
+		# "+919876543210") is correct for the *contact's* `phone_number`
+		# field above, but conversation creation's `source_id` needs it
+		# stripped, or Chatwoot returns HTTP 422 "Source invalid source id
+		# for whatsapp inbox".
 		convo = requests.post(
 			f"{base_url}/api/v1/accounts/{account_id}/conversations",
 			headers=headers,
-			json={"source_id": phone, "inbox_id": inbox_id, "contact_id": contact_id},
+			json={"source_id": phone.lstrip("+"), "inbox_id": inbox_id, "contact_id": contact_id},
 			timeout=20,
 		)
 		if convo.status_code not in (200, 201):
