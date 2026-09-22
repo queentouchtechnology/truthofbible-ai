@@ -1222,6 +1222,25 @@ _NOTIFICATION_TEMPLATES = [
 		"body": "{{ topic_title }}",
 		"description": "Discourse notification_type 'mentioned' (unverified for this instance — see community_webhook.py).",
 	},
+	# --- Communication Center (api/chatwoot_webhook.py) — nudges an admin
+	# that a new inbound WhatsApp message arrived, reusing this same
+	# Admin-audience/FCM pipeline rather than a second notification
+	# mechanism (Decision 1). Uses the 'Support' admin category/preference
+	# toggle (admin_support) — a WhatsApp reply is a support-desk concern
+	# in the same sense a new ticket is, so it doesn't need its own
+	# preference field. Deep-links to /dashboard as a safe interim target,
+	# same reasoning as every other Admin-audience template above: no
+	# dedicated admin deep-link route exists yet in the Flutter app.
+	{
+		"event_code": "NEW_WHATSAPP_MESSAGE",
+		"audience": "Admin",
+		"category": "Support",
+		"priority": "Normal",
+		"deeplink_route": "/dashboard",
+		"title": "New WhatsApp message",
+		"body": "{{ contact_name }} sent a message.",
+		"description": "Fired when api/chatwoot_webhook.py mirrors a new inbound WhatsApp message.",
+	},
 ]
 
 

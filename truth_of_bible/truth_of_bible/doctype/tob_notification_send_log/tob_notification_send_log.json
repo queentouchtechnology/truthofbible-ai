@@ -12,10 +12,11 @@
  "sort_field": "sent_at",
  "sort_order": "DESC",
  "engine": "InnoDB",
- "description": "Pure bookkeeping for the notification engine's own frequency/dedup checks (max per day, min gap, 'already sent this exact event today') — one row per successful send. Not user-facing; the user-facing record is the existing Notification Log doctype. System-Manager-only.",
+ "description": "Pure bookkeeping for the notification engine's own frequency/dedup checks (max per day, min gap, 'already sent this exact event today') — one row per successful send. Not user-facing; the user-facing record is the existing Notification Log doctype. System-Manager-only. `channel` (added for the Communication Center, Decision 14) makes this the one shared send-history table across Push/Email/WhatsApp rather than three separate counters — existing rows default to PUSH via this field's own DB-level default, since every row before this addition was a push send. The Communication Center keys its own idempotency check on (event_code=campaign_id, user, channel) against this same table, reusing it rather than adding a parallel one.",
  "field_order": [
   "user",
   "event_code",
+  "channel",
   "sent_at"
  ],
  "fields": [
@@ -33,6 +34,16 @@
    "fieldtype": "Data",
    "label": "Event Code",
    "reqd": 1,
+   "in_list_view": 1,
+   "search_index": 1,
+   "description": "An automated-engine event_code, OR (for a Communication Center channel-send row) the campaign's own name — reused as the correlating key rather than adding a separate `campaign` link field, per this doctype's 'additive only' extension."
+  },
+  {
+   "fieldname": "channel",
+   "fieldtype": "Select",
+   "label": "Channel",
+   "options": "PUSH\nEMAIL\nWHATSAPP",
+   "default": "PUSH",
    "in_list_view": 1,
    "search_index": 1
   },

@@ -1,0 +1,118 @@
+{
+ "doctype": "DocType",
+ "name": "TOB Communication Campaign Recipient",
+ "module": "Truth Of Bible",
+ "custom": 0,
+ "istable": 0,
+ "issingle": 0,
+ "quick_entry": 0,
+ "track_changes": 0,
+ "autoname": "hash",
+ "naming_rule": "Random",
+ "sort_field": "creation",
+ "sort_order": "ASC",
+ "engine": "InnoDB",
+ "description": "One row per (campaign, user) — the snapshotted recipient list a campaign actually sends to, with independent per-channel status. Deliberately its OWN top-level doctype rather than a Frappe child table, so the Flutter admin client can page through a large campaign's recipients directly via plain REST (contract SS1.6) rather than only ever seeing them nested inside the parent campaign document.",
+ "field_order": [
+  "campaign",
+  "user",
+  "user_name",
+  "column_break_1",
+  "push_status",
+  "email_status",
+  "whatsapp_status",
+  "section_break_ids",
+  "email_message_id",
+  "whatsapp_message_id",
+  "error"
+ ],
+ "fields": [
+  {
+   "fieldname": "campaign",
+   "fieldtype": "Link",
+   "options": "TOB Communication Campaign",
+   "label": "Campaign",
+   "reqd": 1,
+   "in_list_view": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "user",
+   "fieldtype": "Link",
+   "options": "User",
+   "label": "User",
+   "reqd": 1,
+   "in_list_view": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "user_name",
+   "fieldtype": "Data",
+   "label": "User Name",
+   "description": "Denormalized full name at the time the campaign was created, so the recipient list never needs a per-row User join."
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "push_status",
+   "fieldtype": "Select",
+   "label": "Push Status",
+   "options": "NOT_APPLICABLE\nQUEUED\nSENT\nFAILED",
+   "default": "NOT_APPLICABLE",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "email_status",
+   "fieldtype": "Select",
+   "label": "Email Status",
+   "options": "NOT_APPLICABLE\nQUEUED\nSENT\nDELIVERED\nOPENED\nCLICKED\nBOUNCED\nFAILED",
+   "default": "NOT_APPLICABLE",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "whatsapp_status",
+   "fieldtype": "Select",
+   "label": "WhatsApp Status",
+   "options": "NOT_APPLICABLE\nQUEUED\nSENT\nDELIVERED\nREAD\nFAILED",
+   "default": "NOT_APPLICABLE",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "section_break_ids",
+   "fieldtype": "Section Break",
+   "label": "Provider IDs",
+   "collapsible": 1
+  },
+  {
+   "fieldname": "email_message_id",
+   "fieldtype": "Data",
+   "label": "Brevo Message ID",
+   "search_index": 1,
+   "description": "Used by api/brevo_webhook.py to correlate a delivery-event webhook back to this row."
+  },
+  {
+   "fieldname": "whatsapp_message_id",
+   "fieldtype": "Data",
+   "label": "Chatwoot Message ID"
+  },
+  {
+   "fieldname": "error",
+   "fieldtype": "Small Text",
+   "label": "Error"
+  }
+ ],
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "report": 1,
+   "export": 1
+  }
+ ],
+ "links": []
+}

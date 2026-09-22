@@ -93,6 +93,12 @@ after_migrate = [
 scheduler_events = {
 	"cron": {
 		"* * * * *": ["truth_of_bible.games.bible_battle.engine.sweep_stale_battles"],
+		# Communication Center campaign queue (Decision 10): every 2 minutes
+		# is small/frequent enough that a "Send Now" campaign starts moving
+		# almost immediately, while staying a bounded, batch-per-tick job
+		# rather than the HTTP request that creates a campaign ever blocking
+		# on its own size — see communication/campaign.py's own docstring.
+		"*/2 * * * *": ["truth_of_bible.communication.campaign.process_queue"],
 	},
 	"hourly": [
 		"truth_of_bible.notifications.reading.daily_scan",

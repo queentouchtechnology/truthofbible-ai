@@ -1,0 +1,88 @@
+{
+ "doctype": "DocType",
+ "name": "TOB WhatsApp Message",
+ "module": "Truth Of Bible",
+ "custom": 0,
+ "istable": 0,
+ "issingle": 0,
+ "quick_entry": 0,
+ "track_changes": 0,
+ "autoname": "hash",
+ "naming_rule": "Random",
+ "sort_field": "creation",
+ "sort_order": "ASC",
+ "engine": "InnoDB",
+ "description": "One row per WhatsApp message (inbound, mirrored from a Chatwoot webhook; outbound, recorded when the admin/a campaign sends one) mirrored under a TOB WhatsApp Conversation. v1 sends/receives TEXT only (contract SS3.6); other message_type values are modeled so an inbound image/document from a real user renders as a labeled placeholder instead of being dropped. Never stores a Chatwoot credential, only correlation IDs.",
+ "field_order": [
+  "conversation",
+  "chatwoot_message_id",
+  "direction",
+  "column_break_1",
+  "message_type",
+  "status",
+  "message"
+ ],
+ "fields": [
+  {
+   "fieldname": "conversation",
+   "fieldtype": "Link",
+   "options": "TOB WhatsApp Conversation",
+   "label": "Conversation",
+   "reqd": 1,
+   "in_list_view": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "chatwoot_message_id",
+   "fieldtype": "Data",
+   "label": "Chatwoot Message ID",
+   "search_index": 1,
+   "description": "Used for idempotency when mirroring an inbound Chatwoot webhook delivery, which is not guaranteed exactly-once."
+  },
+  {
+   "fieldname": "direction",
+   "fieldtype": "Select",
+   "label": "Direction",
+   "options": "INBOUND\nOUTBOUND",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "message_type",
+   "fieldtype": "Select",
+   "label": "Message Type",
+   "options": "TEXT\nIMAGE\nDOCUMENT\nAUDIO\nVIDEO\nUNSUPPORTED",
+   "default": "TEXT"
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "QUEUED\nSENT\nDELIVERED\nREAD\nFAILED",
+   "default": "QUEUED",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "message",
+   "fieldtype": "Long Text",
+   "label": "Message",
+   "description": "Text content; for a non-text message_type, a caption if any. The media itself is not proxied or stored by this backend."
+  }
+ ],
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "report": 1,
+   "export": 1
+  }
+ ],
+ "links": []
+}

@@ -1,0 +1,100 @@
+{
+ "doctype": "DocType",
+ "name": "TOB WhatsApp Conversation",
+ "module": "Truth Of Bible",
+ "custom": 0,
+ "istable": 0,
+ "issingle": 0,
+ "quick_entry": 0,
+ "track_changes": 0,
+ "autoname": "field:chatwoot_conversation_id",
+ "naming_rule": "By fieldname",
+ "sort_field": "last_message_at",
+ "sort_order": "DESC",
+ "engine": "InnoDB",
+ "description": "Local mirror of one Chatwoot WhatsApp conversation (Decision 8) — this backend is not the system of record for the conversation itself (Chatwoot is), only for what the admin Flutter app needs to list/read/reply. Never stores any Chatwoot credential, only the IDs needed to correlate with Chatwoot's own API. Status mirrors Chatwoot's own OPEN/PENDING/RESOLVED exactly, no invented mapping.",
+ "field_order": [
+  "user",
+  "chatwoot_conversation_id",
+  "phone",
+  "column_break_1",
+  "status",
+  "assigned_to",
+  "unread_count",
+  "last_message_at",
+  "last_message_preview"
+ ],
+ "fields": [
+  {
+   "fieldname": "user",
+   "fieldtype": "Link",
+   "options": "User",
+   "label": "User",
+   "in_list_view": 1,
+   "search_index": 1,
+   "description": "The matched Frappe user for this conversation's phone number, if any. May be empty if no User.mobile_no matches (a WhatsApp contact who hasn't linked a known number)."
+  },
+  {
+   "fieldname": "chatwoot_conversation_id",
+   "fieldtype": "Data",
+   "label": "Chatwoot Conversation ID",
+   "reqd": 1,
+   "unique": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "phone",
+   "fieldtype": "Data",
+   "label": "Phone",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "OPEN\nPENDING\nRESOLVED",
+   "default": "OPEN",
+   "in_list_view": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "assigned_to",
+   "fieldtype": "Link",
+   "options": "User",
+   "label": "Assigned To"
+  },
+  {
+   "fieldname": "unread_count",
+   "fieldtype": "Int",
+   "label": "Unread Count",
+   "default": "0"
+  },
+  {
+   "fieldname": "last_message_at",
+   "fieldtype": "Datetime",
+   "label": "Last Message At",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "last_message_preview",
+   "fieldtype": "Small Text",
+   "label": "Last Message Preview"
+  }
+ ],
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "report": 1,
+   "export": 1
+  }
+ ],
+ "links": []
+}

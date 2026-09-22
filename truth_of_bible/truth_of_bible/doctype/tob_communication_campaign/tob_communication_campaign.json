@@ -1,0 +1,189 @@
+{
+ "doctype": "DocType",
+ "name": "TOB Communication Campaign",
+ "module": "Truth Of Bible",
+ "custom": 0,
+ "istable": 0,
+ "issingle": 0,
+ "quick_entry": 0,
+ "track_changes": 1,
+ "autoname": "hash",
+ "naming_rule": "Random",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "engine": "InnoDB",
+ "description": "One row per admin-initiated Communication Center campaign (Push/Email/WhatsApp, single/selected/all-eligible audience) — see COMMUNICATION_CENTER_API_CONTRACT.md. Deliberately separate from TOB Notification Template/the automated engine (Decision 5): this is an ad-hoc, admin-confirmed send, not an event-driven one. Status/audience_type/channel content fields store the exact wire-format values the Flutter client and this contract use directly (e.g. 'ALL_ELIGIBLE_USERS', 'PARTIALLY_SENT') rather than a friendlier Desk label, to eliminate a translation-layer bug source between backend and client.",
+ "field_order": [
+  "campaign_name",
+  "status",
+  "column_break_1",
+  "audience_type",
+  "recipient_count",
+  "section_break_audience",
+  "audience_user_ids",
+  "section_break_push",
+  "push_enabled",
+  "push_title",
+  "push_body",
+  "section_break_email",
+  "email_enabled",
+  "email_subject",
+  "email_body_html",
+  "email_body_text",
+  "section_break_whatsapp",
+  "whatsapp_enabled",
+  "whatsapp_message",
+  "section_break_timing",
+  "scheduled_at",
+  "column_break_timing",
+  "completed_at",
+  "error"
+ ],
+ "fields": [
+  {
+   "fieldname": "campaign_name",
+   "fieldtype": "Data",
+   "label": "Campaign Name",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "DRAFT\nSCHEDULED\nQUEUED\nPROCESSING\nPARTIALLY_SENT\nCOMPLETED\nFAILED\nCANCELLED",
+   "default": "DRAFT",
+   "reqd": 1,
+   "in_list_view": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "audience_type",
+   "fieldtype": "Select",
+   "label": "Audience Type",
+   "options": "SINGLE_USER\nSELECTED_USERS\nALL_ELIGIBLE_USERS",
+   "reqd": 1
+  },
+  {
+   "fieldname": "recipient_count",
+   "fieldtype": "Int",
+   "label": "Recipient Count",
+   "default": "0",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_audience",
+   "fieldtype": "Section Break",
+   "label": "Audience",
+   "collapsible": 1
+  },
+  {
+   "fieldname": "audience_user_ids",
+   "fieldtype": "Long Text",
+   "label": "Audience User IDs (JSON)",
+   "description": "JSON array of user emails as submitted at creation time. Only meaningful for SINGLE_USER/SELECTED_USERS — the actual, snapshotted recipient list lives in TOB Communication Campaign Recipient, not here."
+  },
+  {
+   "fieldname": "section_break_push",
+   "fieldtype": "Section Break",
+   "label": "Push"
+  },
+  {
+   "fieldname": "push_enabled",
+   "fieldtype": "Check",
+   "label": "Push Enabled"
+  },
+  {
+   "fieldname": "push_title",
+   "fieldtype": "Data",
+   "label": "Push Title"
+  },
+  {
+   "fieldname": "push_body",
+   "fieldtype": "Small Text",
+   "label": "Push Body"
+  },
+  {
+   "fieldname": "section_break_email",
+   "fieldtype": "Section Break",
+   "label": "Email"
+  },
+  {
+   "fieldname": "email_enabled",
+   "fieldtype": "Check",
+   "label": "Email Enabled"
+  },
+  {
+   "fieldname": "email_subject",
+   "fieldtype": "Data",
+   "label": "Email Subject"
+  },
+  {
+   "fieldname": "email_body_html",
+   "fieldtype": "Long Text",
+   "label": "Email Body (HTML)"
+  },
+  {
+   "fieldname": "email_body_text",
+   "fieldtype": "Long Text",
+   "label": "Email Body (Text)"
+  },
+  {
+   "fieldname": "section_break_whatsapp",
+   "fieldtype": "Section Break",
+   "label": "WhatsApp"
+  },
+  {
+   "fieldname": "whatsapp_enabled",
+   "fieldtype": "Check",
+   "label": "WhatsApp Enabled"
+  },
+  {
+   "fieldname": "whatsapp_message",
+   "fieldtype": "Small Text",
+   "label": "WhatsApp Message"
+  },
+  {
+   "fieldname": "section_break_timing",
+   "fieldtype": "Section Break",
+   "label": "Timing"
+  },
+  {
+   "fieldname": "scheduled_at",
+   "fieldtype": "Datetime",
+   "label": "Scheduled At"
+  },
+  {
+   "fieldname": "column_break_timing",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "completed_at",
+   "fieldtype": "Datetime",
+   "label": "Completed At",
+   "read_only": 1
+  },
+  {
+   "fieldname": "error",
+   "fieldtype": "Small Text",
+   "label": "Error",
+   "read_only": 1
+  }
+ ],
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "report": 1,
+   "export": 1
+  }
+ ],
+ "links": []
+}

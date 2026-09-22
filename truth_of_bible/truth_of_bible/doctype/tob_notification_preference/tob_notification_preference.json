@@ -45,7 +45,11 @@
   "column_break_admin",
   "admin_moderation",
   "admin_lms",
-  "admin_system"
+  "admin_system",
+  "section_break_campaigns",
+  "communication_center_push_opt_out",
+  "communication_center_email_opt_out",
+  "communication_center_whatsapp_opt_out"
  ],
  "fields": [
   {
@@ -234,6 +238,30 @@
    "fieldtype": "Check",
    "label": "System Alerts",
    "default": "1"
+  },
+  {
+   "fieldname": "section_break_campaigns",
+   "fieldtype": "Section Break",
+   "label": "Announcements & Campaigns",
+   "description": "Communication Center campaigns (Decision 13/15) — deliberately separate from the per-category toggles above: opting out here does not affect automated notifications (a quiz result, a ticket reply), and vice versa."
+  },
+  {
+   "fieldname": "communication_center_push_opt_out",
+   "fieldtype": "Check",
+   "label": "Opt out of campaign push notifications",
+   "default": "0"
+  },
+  {
+   "fieldname": "communication_center_email_opt_out",
+   "fieldtype": "Check",
+   "label": "Opt out of campaign emails",
+   "default": "0"
+  },
+  {
+   "fieldname": "communication_center_whatsapp_opt_out",
+   "fieldtype": "Check",
+   "label": "Opt out of campaign WhatsApp messages",
+   "default": "0"
   }
  ],
  "permissions": [

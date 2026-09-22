@@ -35,6 +35,12 @@ DEFAULTS = {
 	"admin_moderation": 1,
 	"admin_lms": 1,
 	"admin_system": 1,
+	# Communication Center (Decision 13/15) — deliberately separate from the
+	# per-category toggles above; see COMMUNICATION_CENTER_API_CONTRACT.md
+	# SS5. Opt-out semantics, so 0 (not opted out) is the gentle default.
+	"communication_center_push_opt_out": 0,
+	"communication_center_email_opt_out": 0,
+	"communication_center_whatsapp_opt_out": 0,
 }
 
 EDITABLE_FIELDS = set(DEFAULTS.keys())
