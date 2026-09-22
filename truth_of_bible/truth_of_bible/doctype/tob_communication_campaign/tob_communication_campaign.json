@@ -25,6 +25,8 @@
   "push_enabled",
   "push_title",
   "push_body",
+  "push_image_url",
+  "push_deeplink_route",
   "section_break_email",
   "email_enabled",
   "email_subject",
@@ -109,6 +111,18 @@
    "fieldname": "push_body",
    "fieldtype": "Small Text",
    "label": "Push Body"
+  },
+  {
+   "fieldname": "push_image_url",
+   "fieldtype": "Data",
+   "label": "Push Image URL",
+   "description": "Optional. A hosted image URL — reuses notifications/delivery.py's existing `image` parameter (already used by the automated engine's FCM sends), not a new upload mechanism. No file upload endpoint exists in this app, so v1 takes a URL the admin already has, matching the same simplicity principle as WhatsApp templates using an admin-picked existing template rather than inventing new infrastructure."
+  },
+  {
+   "fieldname": "push_deeplink_route",
+   "fieldtype": "Data",
+   "label": "Push Deep Link Route",
+   "description": "Optional. A route from the Flutter app's deepLink_routes.dart (e.g. '/dashboard', '/todayVerse') — reuses delivery.py's existing `route` parameter. No per-recipient ID param is supported (contract keeps campaigns audience-wide, not tied to one entity like a quiz/ticket)."
   },
   {
    "fieldname": "section_break_email",

@@ -87,6 +87,8 @@ def create_campaign(name, audience_type, action, audience_user_ids=None, channel
 			"push_enabled": 1 if push else 0,
 			"push_title": (push or {}).get("title"),
 			"push_body": (push or {}).get("body"),
+			"push_image_url": (push or {}).get("image_url"),
+			"push_deeplink_route": (push or {}).get("deeplink_route"),
 			"email_enabled": 1 if email else 0,
 			"email_subject": (email or {}).get("subject"),
 			"email_body_html": (email or {}).get("body_html"),
@@ -209,7 +211,12 @@ def get_campaign(campaign_id):
 
 	channels = {}
 	if doc.push_enabled:
-		channels["push"] = {"title": doc.push_title, "body": doc.push_body}
+		channels["push"] = {
+			"title": doc.push_title,
+			"body": doc.push_body,
+			"image_url": doc.push_image_url,
+			"deeplink_route": doc.push_deeplink_route,
+		}
 	if doc.email_enabled:
 		channels["email"] = {
 			"subject": doc.email_subject,
@@ -366,7 +373,12 @@ def _process_recipient(doc, recipient_name: str):
 			recipient.push_status = "SENT"
 		else:
 			ok = delivery.send_push(
-				user=user, title=doc.push_title or "", body=doc.push_body or "", notif_type="COMMUNICATION_CAMPAIGN"
+				user=user,
+				title=doc.push_title or "",
+				body=doc.push_body or "",
+				notif_type="COMMUNICATION_CAMPAIGN",
+				image=doc.push_image_url or None,
+				route=doc.push_deeplink_route or None,
 			)
 			recipient.push_status = "SENT" if ok else "FAILED"
 			_record_channel_send(doc.name, user, "PUSH")
