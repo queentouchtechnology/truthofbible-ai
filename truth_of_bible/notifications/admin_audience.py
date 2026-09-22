@@ -17,13 +17,17 @@ ADMIN_ROLES = ("Batch Evaluator", "Moderator", "Course Creator")
 
 def admin_users() -> list[str]:
 	"""Every enabled User holding at least one admin role, de-duplicated —
-	a user with more than one admin role must still be notified once."""
+	a user with more than one admin role must still be notified once.
+	Excludes `Administrator` (the Frappe superuser, which holds every role
+	including these three by default) — it's never a real app account with
+	its own FCM token, and `engine.py`'s User-audience path already
+	excludes it for the same reason."""
 	rows = frappe.get_all(
 		"Has Role",
 		filters={"role": ["in", ADMIN_ROLES], "parenttype": "User"},
 		pluck="parent",
 	)
-	users = list(dict.fromkeys(rows))
+	users = [u for u in dict.fromkeys(rows) if u not in ("Administrator", "Guest")]
 	if not users:
 		return []
 	enabled = set(frappe.get_all("User", filters={"name": ["in", users], "enabled": 1}, pluck="name"))
