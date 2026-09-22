@@ -925,6 +925,51 @@ _NOTIFICATION_TEMPLATES = [
 		"body": "",
 		"description": "30-day inactivity tier — the gentlest, most welcoming copy of the four, not the most urgent.",
 	},
+	# --- Quiz + support-ticket slice (notifications/triggers.py). Both
+	# deeplink routes and their `id` argument key were confirmed against
+	# lib/src/config/deepLink_routes.dart before being used here — `/viewQuiz`
+	# and `/viewTicket` both read `args?['id']`, which is exactly the key
+	# delivery.py's FCM payload always sends (`"id": str(ref_id or "")`), so
+	# `deeplink_id_field` below points at the matching variable name each
+	# trigger passes in (`quiz_id` / `ticket_id`).
+	{
+		"event_code": "NEW_QUIZ_AVAILABLE",
+		"audience": "User",
+		"category": "Quiz",
+		"priority": "Low",
+		"deeplink_route": "/viewQuiz",
+		"deeplink_id_field": "quiz_id",
+		"title": "New quiz available: {{ quiz_title }}",
+		"body": "Test what you've learned.",
+		"description": "Fired when a new LMS Quiz is created for a course, fanned out to that course's enrolled members.",
+	},
+	{
+		"event_code": "QUIZ_RESULT_AVAILABLE",
+		"audience": "User",
+		"category": "Quiz",
+		"priority": "Low",
+		"deeplink_route": "/viewQuiz",
+		"deeplink_id_field": "quiz_id",
+		"title": "Your result for {{ quiz_title }} is ready",
+		"body": "You scored {{ percentage }}%.",
+		"description": "Fired when an LMS Quiz Submission is created for a member.",
+	},
+	{
+		"event_code": "TICKET_AGENT_REPLIED",
+		"audience": "User",
+		"category": "Account",
+		"priority": "Normal",
+		"deeplink_route": "/viewTicket",
+		"deeplink_id_field": "ticket_id",
+		"title": "New reply on your support ticket",
+		"body": "A support agent has responded to your ticket.",
+		"description": (
+			"Fired when a Communication is created against an Issue by someone other than "
+			"the ticket's own raiser (i.e. an agent reply, not the customer's own follow-up). "
+			"Uses the 'Account' preference category — 'Support' isn't one of the categories "
+			"users can toggle yet."
+		),
+	},
 ]
 
 

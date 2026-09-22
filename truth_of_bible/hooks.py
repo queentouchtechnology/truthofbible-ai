@@ -37,6 +37,19 @@ doc_events = {
 	"Language": {
 		"validate": "truth_of_bible.language.enforce_single_default",
 	},
+	# Quiz / support-ticket User-audience notification triggers — see
+	# notifications/triggers.py's own docstring for the field-name
+	# provenance and why each trigger never lets a failure reach the real
+	# LMS/ticket save that fired it.
+	"LMS Quiz": {
+		"after_insert": "truth_of_bible.notifications.triggers.on_quiz_created",
+	},
+	"LMS Quiz Submission": {
+		"after_insert": "truth_of_bible.notifications.triggers.on_quiz_submission_created",
+	},
+	"Communication": {
+		"after_insert": "truth_of_bible.notifications.triggers.on_communication_created",
+	},
 }
 
 # Idempotent — safe to run on every migrate, matching qmp_lms_bridge's own
