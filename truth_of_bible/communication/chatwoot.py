@@ -6,11 +6,26 @@ Never logged, never included in an exception message or API response.
 v1 sends/receives TEXT only (contract SS3.6) — `send_message` always posts
 a plain text message; media is explicitly out of scope for this pass.
 
-Uses the Agent Bot access token (`chatwoot_bot_access_token`), not a
-general API token, for every call here — Chatwoot's own convention for
-automated/bot-driven sends, keeping them attributable and scoped
-separately from a human agent's own token (see WHATSAPP_CHATWOOT_SETUP.md
-SS5).
+**Two Chatwoot tokens, not one — confirmed live, not assumed.** An
+earlier version of this file used only `chatwoot_bot_access_token`
+everywhere. A live test against the real instance returned
+`HTTP 401 {"error":"Access to this endpoint is not authorized for bots"}`
+on contact search/create — Chatwoot's Agent Bot tokens are scoped to
+*acting within* a conversation (sending messages, toggling status), not to
+account-management endpoints like Contacts. So:
+
+- `chatwoot_api_token` (a regular agent/admin API access token — Chatwoot
+  Profile Settings -> Access Token, NOT the Agent Bot's token) is used for
+  contact search/create and conversation creation.
+- `chatwoot_bot_access_token` (the Agent Bot's own token) is used for
+  `send_message`/`toggle_status` — the actual bot-driven actions Chatwoot
+  intends that token for, keeping them attributable to the bot rather than
+  a human agent.
+
+This matches Decision 15's original expected config schema (which named
+both `chatwoot_api_token` and `chatwoot_bot_access_token` as separate
+keys) — the split was dropped by mistake in the first implementation pass
+and restored here after the live 401 exposed the gap.
 """
 
 import frappe
@@ -21,6 +36,7 @@ def _config():
 	conf = frappe.get_site_config()
 	return (
 		(conf.get("chatwoot_base_url") or "").rstrip("/"),
+		conf.get("chatwoot_api_token"),
 		conf.get("chatwoot_bot_access_token"),
 		conf.get("chatwoot_account_id"),
 		conf.get("chatwoot_inbox_id"),
@@ -28,8 +44,8 @@ def _config():
 
 
 def _configured() -> bool:
-	base_url, token, account_id, inbox_id = _config()
-	return bool(base_url and token and account_id and inbox_id)
+	base_url, api_token, bot_token, account_id, inbox_id = _config()
+	return bool(base_url and api_token and bot_token and account_id and inbox_id)
 
 
 def _log_not_configured():
@@ -37,8 +53,8 @@ def _log_not_configured():
 		title="Communication Center: Chatwoot not configured",
 		message=(
 			"site_config.json is missing one or more of 'chatwoot_base_url', "
-			"'chatwoot_bot_access_token', 'chatwoot_account_id', 'chatwoot_inbox_id' — "
-			"see WHATSAPP_CHATWOOT_SETUP.md."
+			"'chatwoot_api_token', 'chatwoot_bot_access_token', 'chatwoot_account_id', "
+			"'chatwoot_inbox_id' — see WHATSAPP_CHATWOOT_SETUP.md."
 		),
 	)
 
@@ -46,15 +62,17 @@ def _log_not_configured():
 def find_or_create_conversation(phone: str, contact_name: str) -> tuple[str | None, str | None]:
 	"""Returns (chatwoot_conversation_id, error). Looks up an existing
 	contact by phone number first, creating one (and a fresh conversation
-	on this inbox) if none exists. Never raises."""
-	base_url, token, account_id, inbox_id = _config()
+	on this inbox) if none exists. Uses the account-level api_token — the
+	bot token is not authorized for contact/conversation management (see
+	module docstring). Never raises."""
+	base_url, api_token, bot_token, account_id, inbox_id = _config()
 	if not _configured():
 		_log_not_configured()
 		return None, "WhatsApp is not configured on this site."
 	if not phone:
 		return None, "This recipient has no WhatsApp number on file."
 
-	headers = {"api_access_token": token, "Content-Type": "application/json"}
+	headers = {"api_access_token": api_token, "Content-Type": "application/json"}
 	try:
 		search = requests.get(
 			f"{base_url}/api/v1/accounts/{account_id}/contacts/search",
@@ -104,13 +122,15 @@ def find_or_create_conversation(phone: str, contact_name: str) -> tuple[str | No
 
 
 def send_message(chatwoot_conversation_id: str, message: str) -> tuple[bool, str | None, str | None]:
-	"""Returns (ok, chatwoot_message_id, error). Never raises."""
-	base_url, token, account_id, inbox_id = _config()
+	"""Returns (ok, chatwoot_message_id, error). Uses the Agent Bot token —
+	this is the action Chatwoot's bot tokens are actually scoped for. Never
+	raises."""
+	base_url, api_token, bot_token, account_id, inbox_id = _config()
 	if not _configured():
 		_log_not_configured()
 		return False, None, "WhatsApp is not configured on this site."
 
-	headers = {"api_access_token": token, "Content-Type": "application/json"}
+	headers = {"api_access_token": bot_token, "Content-Type": "application/json"}
 	try:
 		response = requests.post(
 			f"{base_url}/api/v1/accounts/{account_id}/conversations/{chatwoot_conversation_id}/messages",
@@ -133,14 +153,15 @@ def send_message(chatwoot_conversation_id: str, message: str) -> tuple[bool, str
 
 
 def toggle_status(chatwoot_conversation_id: str, status: str) -> bool:
-	"""status: 'resolved' or 'open'. Never raises — a failed Chatwoot-side
-	toggle is handled by the caller (whatsapp.py rolls back the local
-	status change rather than letting the two systems disagree)."""
-	base_url, token, account_id, inbox_id = _config()
+	"""status: 'resolved' or 'open'. Uses the Agent Bot token, same
+	reasoning as send_message. Never raises — a failed Chatwoot-side toggle
+	is handled by the caller (whatsapp.py rolls back the local status
+	change rather than letting the two systems disagree)."""
+	base_url, api_token, bot_token, account_id, inbox_id = _config()
 	if not _configured():
 		_log_not_configured()
 		return False
-	headers = {"api_access_token": token, "Content-Type": "application/json"}
+	headers = {"api_access_token": bot_token, "Content-Type": "application/json"}
 	try:
 		response = requests.post(
 			f"{base_url}/api/v1/accounts/{account_id}/conversations/{chatwoot_conversation_id}/toggle_status",
