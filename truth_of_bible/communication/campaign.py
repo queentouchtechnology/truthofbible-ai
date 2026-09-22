@@ -389,13 +389,20 @@ def _process_recipient(doc, recipient_name: str):
 		if _already_sent(doc.name, user, "EMAIL"):
 			recipient.email_status = "SENT"
 		else:
-			email = frappe.db.get_value("User", user, "email")
+			user_row = frappe.db.get_value(
+				"User", user, ["email", "first_name", "last_name"], as_dict=True
+			) or {}
+			merge_values = {
+				"first_name": user_row.get("first_name") or "",
+				"last_name": user_row.get("last_name") or "",
+				"email": user_row.get("email") or "",
+			}
 			ok, message_id, err = brevo.send_email(
-				to_email=email,
+				to_email=user_row.get("email"),
 				to_name=recipient.user_name,
-				subject=doc.email_subject or "",
-				html_content=doc.email_body_html or "",
-				text_content=doc.email_body_text or "",
+				subject=_render_merge_tags(doc.email_subject or "", merge_values),
+				html_content=_render_merge_tags(doc.email_body_html or "", merge_values),
+				text_content=_render_merge_tags(doc.email_body_text or "", merge_values),
 			)
 			recipient.email_status = "SENT" if ok else "FAILED"
 			if message_id:
@@ -486,6 +493,20 @@ def _record_outbound_whatsapp_message(chatwoot_conversation_id: str, chatwoot_me
 		convo_name,
 		{"last_message_at": now_datetime(), "last_message_preview": message[:140]},
 	)
+
+
+def _render_merge_tags(text: str, values: dict) -> str:
+	"""Literal `{{first_name}}`/`{{last_name}}`/`{{email}}` substitution for
+	email content — deliberately plain string replacement, not Jinja
+	(`frappe.render_template`), matching this module's "keep v1 simple"
+	principle: exactly 3 known tokens, no arbitrary template logic a
+	campaign body could otherwise exploit. Missing values become an empty
+	string rather than leaving the raw token visible."""
+	if not text:
+		return text
+	for key, value in values.items():
+		text = text.replace("{{" + key + "}}", value or "")
+	return text
 
 
 def _already_sent(campaign_id: str, user: str, channel: str) -> bool:
