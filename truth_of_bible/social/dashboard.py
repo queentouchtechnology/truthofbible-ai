@@ -16,6 +16,7 @@ import frappe
 from frappe.utils import get_datetime, now_datetime, today
 
 from truth_of_bible.communication.auth import require_admin
+from truth_of_bible.social import app_analytics as app_analytics_mod
 from truth_of_bible.social import buffer as buffer_mod
 from truth_of_bible.social import ga4 as ga4_mod
 from truth_of_bible.social import google_oauth
@@ -43,6 +44,8 @@ def get_dashboard():
 	youtube_connected = youtube_summary is not None
 	ga4_summary = ga4_mod.get_website_summary()
 	ga4_connected = ga4_summary is not None
+	app_summary = app_analytics_mod.get_app_summary()
+	app_connected = app_summary is not None
 
 	posted_today = bool(
 		frappe.db.exists(
@@ -79,11 +82,13 @@ def get_dashboard():
 				"connected": ga4_connected,
 				**({"website_summary": ga4_summary} if ga4_connected else {}),
 			},
-			"app_analytics": {"connected": False},
-			# Whether the *connector* itself is linked — GA4/deeper YouTube
-			# Analytics still report false above until their own data-fetch
-			# is actually built on top of this connection (never fabricate
-			# "connected" for a source with no real query behind it yet).
+			"app_analytics": {
+				"connected": app_connected,
+				**({"app_summary": app_summary} if app_connected else {}),
+			},
+			# Whether the shared connector itself is linked — deeper YouTube
+			# Analytics (watch time/traffic/top videos) is the one private
+			# source still not built on top of this connection yet.
 			"google_account": {"connected": google_oauth.is_connected()},
 		},
 		"channels": channels or [],

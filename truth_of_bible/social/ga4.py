@@ -28,7 +28,11 @@ def is_configured() -> bool:
 	return bool(_property_id()) and google_oauth.is_connected()
 
 
-def _run_report(token: str, property_id: str, body: dict):
+def run_report(token: str, property_id: str, body: dict):
+	"""Shared by this module and social/app_analytics.py — Firebase
+	Analytics for a mobile app IS a GA4 property (a "stream" within one),
+	so app analytics queries the exact same Data API, just against a
+	different property/filter."""
 	response = requests.post(
 		f"{_BASE_URL}/properties/{property_id}:runReport",
 		json=body,
@@ -51,7 +55,7 @@ def get_website_summary(days: int = 28):
 		return None
 
 	try:
-		data = _run_report(
+		data = run_report(
 			token,
 			property_id,
 			{
@@ -86,7 +90,7 @@ def get_website_summary(days: int = 28):
 
 def _get_top_pages(token: str, property_id: str, days: int, limit: int = 5) -> list:
 	try:
-		data = _run_report(
+		data = run_report(
 			token,
 			property_id,
 			{
