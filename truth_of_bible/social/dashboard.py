@@ -11,9 +11,11 @@ uses (communication/auth.py), reused rather than duplicated.
 """
 
 import json
+from datetime import datetime, timedelta
+from datetime import timezone as dt_timezone
 
 import frappe
-from frappe.utils import add_to_date, get_datetime, now_datetime, today
+from frappe.utils import get_datetime, now_datetime, today
 
 from truth_of_bible.communication.auth import require_admin
 from truth_of_bible.social import app_analytics as app_analytics_mod
@@ -278,13 +280,26 @@ def get_post_performance():
 	# query's exact GraphQL shape isn't published anywhere this app has
 	# seen, so summing what's already fetched here is the honest option
 	# rather than guessing a second query that might silently 400.
-	quarter_cutoff = add_to_date(now_datetime(), months=-3)
+	#
+	# Buffer's createdAt is an ISO 8601 string with a "Z" suffix, which
+	# parses as timezone-aware UTC; frappe's now_datetime()/add_to_date()
+	# return naive datetimes (Frappe's own convention — DB times are naive,
+	# in the site's system timezone). Comparing the two raw raises
+	# "can't compare offset-naive and offset-aware datetimes" (a real
+	# production error) — every parsed timestamp is normalized to naive
+	# UTC before comparing, and the cutoff is computed in UTC too rather
+	# than via frappe's local-time now_datetime().
+	quarter_cutoff = datetime.now(dt_timezone.utc).replace(tzinfo=None) - timedelta(days=90)
 	totals = {}
 	posts_in_quarter = 0
 	for row in formatted:
 		created_at = row.get("created_at")
-		if created_at and get_datetime(created_at) < quarter_cutoff:
-			continue
+		if created_at:
+			parsed = get_datetime(created_at)
+			if parsed.tzinfo is not None:
+				parsed = parsed.astimezone(dt_timezone.utc).replace(tzinfo=None)
+			if parsed < quarter_cutoff:
+				continue
 		posts_in_quarter += 1
 		for metric in row.get("metrics", []):
 			key = metric.get("name") or metric.get("type") or "metric"
