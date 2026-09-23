@@ -58,18 +58,37 @@ def _require_token() -> str:
 
 def _graphql(query: str, variables: dict = None) -> dict:
 	token = _require_token()
-	response = requests.post(
-		_GRAPHQL_URL,
-		json={"query": query, "variables": variables or {}},
-		headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"},
-		timeout=_TIMEOUT,
-	)
-	response.raise_for_status()
+	try:
+		response = requests.post(
+			_GRAPHQL_URL,
+			json={"query": query, "variables": variables or {}},
+			headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"},
+			timeout=_TIMEOUT,
+		)
+		response.raise_for_status()
+	except requests.RequestException as e:
+		# Every caller here (list_channels/create_post/...) catches this
+		# and just returns None/reports "not connected" — logging the real
+		# body is the only way to tell an auth failure apart from a wrong
+		# query shape apart from a network issue. Never logs the token
+		# itself (only Buffer's own response), so this is safe to leave on.
+		status = getattr(e.response, "status_code", "n/a")
+		body = getattr(e.response, "text", str(e))
+		frappe.log_error(
+			title="Buffer GraphQL request failed",
+			message=f"Status: {status}\nBody: {body[:2000]}",
+		)
+		raise
+
 	payload = response.json()
 	if payload.get("errors"):
-		# GraphQL returns HTTP 200 even for query-level errors — surface
-		# them as a real exception so callers' except blocks catch this
-		# the same way they'd catch a transport-level failure.
+		# GraphQL returns HTTP 200 even for query-level errors — log and
+		# surface them as a real exception so callers' except blocks catch
+		# this the same way they'd catch a transport-level failure.
+		frappe.log_error(
+			title="Buffer GraphQL returned errors",
+			message=str(payload["errors"])[:2000],
+		)
 		raise requests.RequestException(str(payload["errors"]))
 	return payload.get("data") or {}
 
