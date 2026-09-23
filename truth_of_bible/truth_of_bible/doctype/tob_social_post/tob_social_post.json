@@ -15,6 +15,7 @@
  "description": "One row per admin-created Social Intelligence post — Phase 1 (see social/dashboard.py, social/buffer.py). Buffer is the execution layer (this row's buffer_post_id is Buffer's own id); this doctype exists purely so 'has something posted today' and history can be answered without an extra Buffer API round trip on every dashboard load.",
  "field_order": [
   "content",
+  "image_url",
   "platforms",
   "column_break_1",
   "status",
@@ -31,6 +32,12 @@
    "fieldtype": "Small Text",
    "label": "Content",
    "reqd": 1
+  },
+  {
+   "fieldname": "image_url",
+   "fieldtype": "Small Text",
+   "label": "Image URL",
+   "description": "Optional. A hosted image URL passed straight through to Buffer's createPost assets — Small Text, not Data (VARCHAR 140), matching the same real truncation bug already fixed once for the Communication Center's push_image_url field."
   },
   {
    "fieldname": "platforms",

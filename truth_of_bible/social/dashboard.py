@@ -114,7 +114,7 @@ def list_posts(limit_page_length=20, limit_start=0):
 	rows = frappe.get_all(
 		"TOB Social Post",
 		fields=[
-			"name", "content", "platforms", "status",
+			"name", "content", "platforms", "status", "image_url",
 			"scheduled_at", "published_at", "error", "creation",
 		],
 		order_by="creation desc",
@@ -143,6 +143,7 @@ def list_posts(limit_page_length=20, limit_start=0):
 				}
 				for pid in platform_ids
 			],
+			"image_url": row.image_url,
 			"scheduled_at": row.scheduled_at,
 			"published_at": row.published_at,
 			"error": row.error,
@@ -152,10 +153,11 @@ def list_posts(limit_page_length=20, limit_start=0):
 
 
 @frappe.whitelist(methods=["POST"])
-def create_post(channels, text, action="draft", scheduled_at=None):
+def create_post(channels, text, action="draft", scheduled_at=None, image_url=None):
 	require_admin()
 	channel_ids = _parse_json(channels, [])
 	text = (text or "").strip()
+	image_url = (image_url or "").strip() or None
 
 	if not channel_ids:
 		frappe.throw(frappe._("Choose at least one channel."), frappe.ValidationError)
@@ -167,15 +169,15 @@ def create_post(channels, text, action="draft", scheduled_at=None):
 		frappe.throw(frappe._("scheduled_at is required to schedule a post."), frappe.ValidationError)
 
 	if action == "publish":
-		result = buffer_mod.publish_post(channel_ids, text)
+		result = buffer_mod.publish_post(channel_ids, text, image_url=image_url)
 		status = "SENT"
 	elif action == "schedule":
 		result = buffer_mod.schedule_post(
-			channel_ids, text, get_datetime(scheduled_at).timestamp()
+			channel_ids, text, get_datetime(scheduled_at).timestamp(), image_url=image_url
 		)
 		status = "SCHEDULED"
 	else:
-		result = buffer_mod.create_draft(channel_ids, text)
+		result = buffer_mod.create_draft(channel_ids, text, image_url=image_url)
 		status = "DRAFT"
 
 	doc = frappe.get_doc(
@@ -184,6 +186,7 @@ def create_post(channels, text, action="draft", scheduled_at=None):
 			"content": text,
 			"platforms": json.dumps(channel_ids),
 			"status": status,
+			"image_url": image_url,
 			"buffer_post_id": (result.get("buffer_post_ids") or [None])[0],
 			"scheduled_at": get_datetime(scheduled_at) if scheduled_at else None,
 			"published_at": now_datetime() if status == "SENT" else None,

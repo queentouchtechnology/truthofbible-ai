@@ -32,7 +32,9 @@ _TIMEOUT = 15
 _CREATE_POST_MUTATION = """
 mutation CreatePost($input: CreatePostInput!) {
 	createPost(input: $input) {
-		post { id status }
+		... on PostActionSuccess {
+			post { id status }
+		}
 	}
 }
 """
@@ -139,26 +141,40 @@ def list_channels():
 	]
 
 
-def create_draft(channel_ids: list, text: str) -> dict:
-	return _create_post(channel_ids, text, save_to_draft=True)
+def create_draft(channel_ids: list, text: str, image_url: str = None) -> dict:
+	return _create_post(channel_ids, text, save_to_draft=True, image_url=image_url)
 
 
-def schedule_post(channel_ids: list, text: str, scheduled_at) -> dict:
-	return _create_post(channel_ids, text, scheduled_at=scheduled_at)
+def schedule_post(channel_ids: list, text: str, scheduled_at, image_url: str = None) -> dict:
+	return _create_post(channel_ids, text, scheduled_at=scheduled_at, image_url=image_url)
 
 
-def publish_post(channel_ids: list, text: str) -> dict:
-	return _create_post(channel_ids, text, now=True)
+def publish_post(channel_ids: list, text: str, image_url: str = None) -> dict:
+	return _create_post(channel_ids, text, now=True, image_url=image_url)
 
 
 def _create_post(
-	channel_ids: list, text: str, now: bool = False, save_to_draft: bool = False, scheduled_at=None
+	channel_ids: list,
+	text: str,
+	now: bool = False,
+	save_to_draft: bool = False,
+	scheduled_at=None,
+	image_url: str = None,
 ) -> dict:
 	"""One `createPost` call per channel — the GraphQL mutation takes a
 	single `channelId`, unlike the old REST API's `profile_ids[]` array."""
+	assets = []
+	if image_url:
+		# Confirmed via Buffer's current docs: a direct hosted image URL,
+		# no separate upload/presigned-URL step — same "reuse an existing
+		# hosted URL, no upload endpoint in this app" convention already
+		# used for the Communication Center's push_image_url field.
+		# altText is a required ImageAssetInput field.
+		assets.append({"image": {"url": image_url, "metadata": {"altText": text[:100] or "Image"}}})
+
 	posts = []
 	for channel_id in channel_ids:
-		post_input = {"channelId": channel_id, "text": text, "assets": []}
+		post_input = {"channelId": channel_id, "text": text, "assets": assets}
 		if save_to_draft:
 			post_input["saveToDraft"] = True
 			post_input["mode"] = "shareNext"
