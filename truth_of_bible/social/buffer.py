@@ -115,7 +115,7 @@ def list_channels():
 			return None
 		data = _graphql(
 			"""
-			query GetChannels($organizationId: String!) {
+			query GetChannels($organizationId: OrganizationId!) {
 				channels(input: { organizationId: $organizationId }) {
 					id
 					service
