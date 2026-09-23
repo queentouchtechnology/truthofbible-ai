@@ -192,7 +192,7 @@
    "fieldname": "whatsapp_template_params",
    "fieldtype": "Long Text",
    "label": "WhatsApp Template Params (JSON)",
-   "description": "JSON array of strings substituted into the template's numbered {{1}}, {{2}}, ... placeholders, in order — the same values for every recipient (v1 does not support per-recipient personalization of template params)."
+   "description": "JSON array of strings substituted into the template's numbered {{1}}, {{2}}, ... placeholders, in order. May itself contain {{first_name}}/{{last_name}}/{{email}} personalization tags — campaign.py's _process_recipient renders these per recipient the same way it already does for Email, before the param values are sent to the WhatsApp template."
   },
   {
    "fieldname": "section_break_timing",

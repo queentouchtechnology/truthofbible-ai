@@ -304,6 +304,52 @@ def send_campaign(campaign_id):
 	return {"ok": True}
 
 
+def _delete_campaign_and_related(campaign_id: str) -> None:
+	# Both are standalone DocTypes linked by a plain field, not child
+	# tables — frappe.delete_doc on the campaign alone would leave these
+	# orphaned rather than cascading.
+	frappe.db.delete("TOB Communication Campaign Recipient", {"campaign": campaign_id})
+	frappe.db.delete("TOB Notification Send Log", {"event_code": campaign_id})
+	frappe.delete_doc("TOB Communication Campaign", campaign_id, ignore_permissions=True)
+
+
+@frappe.whitelist(methods=["POST"])
+def delete_campaign(campaign_id):
+	require_admin()
+	status = frappe.db.get_value("TOB Communication Campaign", campaign_id, "status")
+	if status is None:
+		frappe.throw(_("Campaign not found."), frappe.DoesNotExistError)
+	if status in _CANCELLABLE:
+		frappe.throw(_("Cancel this campaign before deleting it."), frappe.ValidationError)
+	_delete_campaign_and_related(campaign_id)
+	frappe.db.commit()
+	return {"deleted": True}
+
+
+@frappe.whitelist(methods=["POST"])
+def delete_campaigns(campaign_ids):
+	"""Bulk delete for the Composer history list's multi-select/"select
+	all" actions — one round trip instead of the client looping
+	`delete_campaign` once per row. Campaigns still in flight (SCHEDULED/
+	QUEUED/PROCESSING) are skipped rather than failing the whole batch, so
+	the admin can still clear out everything else in one go and cancel the
+	in-flight ones separately."""
+	require_admin()
+	ids = _parse_json(campaign_ids, [])
+	deleted, skipped = [], []
+	for campaign_id in ids:
+		status = frappe.db.get_value("TOB Communication Campaign", campaign_id, "status")
+		if status is None:
+			continue
+		if status in _CANCELLABLE:
+			skipped.append(campaign_id)
+			continue
+		_delete_campaign_and_related(campaign_id)
+		deleted.append(campaign_id)
+	frappe.db.commit()
+	return {"deleted": deleted, "skipped": skipped}
+
+
 # ────────────────────── Scheduler: actually sending ──────────────────────
 
 
@@ -376,6 +422,20 @@ def _process_recipient(doc, recipient_name: str):
 	user = recipient.user
 	errors = []
 
+	# Built once, reused by both Email and WhatsApp below — push needs no
+	# personalization, so it's skipped there to avoid an unnecessary query.
+	user_row = {}
+	merge_values = {"first_name": "", "last_name": "", "email": ""}
+	if doc.email_enabled or doc.whatsapp_enabled:
+		user_row = frappe.db.get_value(
+			"User", user, ["email", "first_name", "last_name"], as_dict=True
+		) or {}
+		merge_values = {
+			"first_name": user_row.get("first_name") or "",
+			"last_name": user_row.get("last_name") or "",
+			"email": user_row.get("email") or "",
+		}
+
 	if doc.push_enabled and recipient.push_status == "QUEUED":
 		if _already_sent(doc.name, user, "PUSH"):
 			recipient.push_status = "SENT"
@@ -398,14 +458,6 @@ def _process_recipient(doc, recipient_name: str):
 		if _already_sent(doc.name, user, "EMAIL"):
 			recipient.email_status = "SENT"
 		else:
-			user_row = frappe.db.get_value(
-				"User", user, ["email", "first_name", "last_name"], as_dict=True
-			) or {}
-			merge_values = {
-				"first_name": user_row.get("first_name") or "",
-				"last_name": user_row.get("last_name") or "",
-				"email": user_row.get("email") or "",
-			}
 			ok, message_id, err = brevo.send_email(
 				to_email=user_row.get("email"),
 				to_name=recipient.user_name,
@@ -424,7 +476,8 @@ def _process_recipient(doc, recipient_name: str):
 		if _already_sent(doc.name, user, "WHATSAPP"):
 			recipient.whatsapp_status = "SENT"
 		else:
-			params = json.loads(doc.whatsapp_template_params or "[]")
+			raw_params = json.loads(doc.whatsapp_template_params or "[]")
+			params = [_render_merge_tags(p, merge_values) for p in raw_params]
 			ok, message_id, err = _send_whatsapp(
 				user,
 				recipient.user_name,
