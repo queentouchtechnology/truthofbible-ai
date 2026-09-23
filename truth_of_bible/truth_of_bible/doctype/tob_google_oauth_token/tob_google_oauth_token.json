@@ -1,0 +1,63 @@
+{
+ "doctype": "DocType",
+ "name": "TOB Google OAuth Token",
+ "module": "Truth Of Bible",
+ "custom": 0,
+ "istable": 0,
+ "issingle": 1,
+ "quick_entry": 0,
+ "track_changes": 0,
+ "engine": "InnoDB",
+ "description": "Single, app-wide Google OAuth connection for the Social Intelligence Center's private-data sources (YouTube Analytics + GA4 website analytics) — see social/google_oauth.py. Only ever one row: this app connects one ministry Google account, not per-admin connections. YouTube's own public channel-summary card (social/youtube.py) does NOT use this — that's a plain API key, since subscriber/view/video counts are public data needing no consent.",
+ "field_order": [
+  "access_token",
+  "refresh_token",
+  "expires_at",
+  "scope",
+  "connected_at"
+ ],
+ "fields": [
+  {
+   "fieldname": "access_token",
+   "fieldtype": "Long Text",
+   "label": "Access Token",
+   "read_only": 1
+  },
+  {
+   "fieldname": "refresh_token",
+   "fieldtype": "Long Text",
+   "label": "Refresh Token",
+   "read_only": 1
+  },
+  {
+   "fieldname": "expires_at",
+   "fieldtype": "Datetime",
+   "label": "Access Token Expires At",
+   "read_only": 1
+  },
+  {
+   "fieldname": "scope",
+   "fieldtype": "Small Text",
+   "label": "Granted Scope",
+   "read_only": 1
+  },
+  {
+   "fieldname": "connected_at",
+   "fieldtype": "Datetime",
+   "label": "Connected At",
+   "read_only": 1
+  }
+ ],
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "report": 1,
+   "export": 1
+  }
+ ],
+ "links": []
+}

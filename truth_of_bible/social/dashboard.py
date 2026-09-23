@@ -17,6 +17,7 @@ from frappe.utils import get_datetime, now_datetime, today
 
 from truth_of_bible.communication.auth import require_admin
 from truth_of_bible.social import buffer as buffer_mod
+from truth_of_bible.social import google_oauth
 from truth_of_bible.social import youtube as youtube_mod
 
 _ACTIONS = ("draft", "schedule", "publish")
@@ -73,10 +74,21 @@ def get_dashboard():
 			},
 			"ga4": {"connected": False},
 			"app_analytics": {"connected": False},
+			# Whether the *connector* itself is linked — GA4/deeper YouTube
+			# Analytics still report false above until their own data-fetch
+			# is actually built on top of this connection (never fabricate
+			# "connected" for a source with no real query behind it yet).
+			"google_account": {"connected": google_oauth.is_connected()},
 		},
 		"channels": channels or [],
 		"top_actions": top_actions,
 	}
+
+
+@frappe.whitelist(methods=["GET"])
+def get_google_connect_url():
+	require_admin()
+	return {"url": google_oauth.get_connect_url()}
 
 
 @frappe.whitelist(methods=["GET"])

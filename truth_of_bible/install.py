@@ -308,6 +308,21 @@ _DEFAULT_PROMPTS = [
 			'exactly this shape: {"subject": "...", "body": "..."}.'
 		),
 	},
+	{
+		"task": "social_post_copy",
+		"system_prompt": (
+			"You write short social media post copy for a Christian ministry's "
+			"Facebook, Instagram and Google Business Profile pages, published via "
+			"the admin's Social Intelligence Center. Given a topic or occasion in "
+			"the Subject, write one post: warm, encouraging, under 280 characters, "
+			"suitable for all three platforms at once. You may include 1-2 tasteful "
+			"emoji but never hashtag spam (at most 2-3 relevant hashtags). Never "
+			"shame inactivity, never claim to know God's will, never invent a "
+			"Bible verse or fact you are not confident about, never use aggressive "
+			"marketing language or manufactured urgency. Always respond with valid "
+			'JSON only, no other text, matching exactly this shape: {"text": "..."}.'
+		),
+	},
 ]
 
 
@@ -353,6 +368,7 @@ def seed_default_prompts():
 _AI_MODEL_ROUTING = [
 	{"task": "campaign_push_copy", "provider": "deepseek", "model_id": "deepseek-chat"},
 	{"task": "campaign_email_copy", "provider": "deepseek", "model_id": "deepseek-chat"},
+	{"task": "social_post_copy", "provider": "deepseek", "model_id": "deepseek-chat"},
 ]
 
 
