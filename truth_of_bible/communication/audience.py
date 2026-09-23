@@ -70,9 +70,22 @@ def channel_eligible(user: str, channel: str, pref=None) -> bool:
 def estimate(audience_type: str, audience_user_ids: list) -> dict:
 	users = resolve_audience(audience_type, audience_user_ids)
 	counts = {"push": 0, "email": 0, "whatsapp": 0}
+	per_user = []
 	for user in users:
 		pref = get_or_create_preference(user)
+		row = {"user": user}
 		for channel in CHANNELS:
-			if channel_eligible(user, channel, pref):
+			ok = channel_eligible(user, channel, pref)
+			row[channel] = ok
+			if ok:
 				counts[channel] += 1
-	return {"total_users": len(users), "channel_eligible_counts": counts}
+		per_user.append(row)
+
+	result = {"total_users": len(users), "channel_eligible_counts": counts}
+	# Only for SINGLE_USER/SELECTED_USERS (a bounded, admin-picked list) —
+	# an ALL_ELIGIBLE_USERS broadcast can be thousands of rows, and the
+	# Composer only needs a per-user breakdown to annotate the individual
+	# chips it renders for a hand-picked audience.
+	if audience_type != "ALL_ELIGIBLE_USERS":
+		result["per_user"] = per_user
+	return result
