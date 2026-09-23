@@ -17,6 +17,7 @@ from frappe.utils import get_datetime, now_datetime, today
 
 from truth_of_bible.communication.auth import require_admin
 from truth_of_bible.social import buffer as buffer_mod
+from truth_of_bible.social import youtube as youtube_mod
 
 _ACTIONS = ("draft", "schedule", "publish")
 
@@ -36,6 +37,8 @@ def get_dashboard():
 
 	channels = buffer_mod.list_channels()
 	buffer_connected = channels is not None
+	youtube_summary = youtube_mod.get_channel_summary()
+	youtube_connected = youtube_summary is not None
 
 	posted_today = bool(
 		frappe.db.exists(
@@ -64,7 +67,10 @@ def get_dashboard():
 				"connected": buffer_connected,
 				"channel_count": len(channels) if channels else 0,
 			},
-			"youtube": {"connected": False},
+			"youtube": {
+				"connected": youtube_connected,
+				**({"channel_summary": youtube_summary} if youtube_connected else {}),
+			},
 			"ga4": {"connected": False},
 			"app_analytics": {"connected": False},
 		},
