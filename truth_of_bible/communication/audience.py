@@ -113,11 +113,11 @@ def estimate(audience_type: str, audience_user_ids: list = None, audience_ref: s
 		per_user.append(row)
 
 	result = {"total_users": len(users), "channel_eligible_counts": counts}
-	# Only for a bounded, individually-visible audience (SINGLE_USER/
-	# SELECTED_USERS/GROUP) — ALL_ELIGIBLE_USERS and BATCH_MEMBERS can be
-	# hundreds/thousands of rows, and the Composer only needs a per-user
-	# breakdown to annotate the individual chips it renders for a
-	# hand-picked audience.
-	if audience_type not in ("ALL_ELIGIBLE_USERS", "BATCH_MEMBERS"):
+	# Every audience type the Composer can display individual member
+	# chips for (SINGLE_USER/SELECTED_USERS/GROUP/BATCH_MEMBERS) gets a
+	# per-user breakdown — only ALL_ELIGIBLE_USERS is excluded, since that
+	# audience is never rendered as a chip list (it can be the entire
+	# Website User base) and only ever shows an aggregate count.
+	if audience_type != "ALL_ELIGIBLE_USERS":
 		result["per_user"] = per_user
 	return result
