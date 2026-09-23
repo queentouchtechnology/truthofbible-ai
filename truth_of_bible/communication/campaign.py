@@ -26,7 +26,9 @@ from truth_of_bible.notifications import delivery
 from truth_of_bible.notifications.preferences import get_or_create_preference
 
 _CANCELLABLE = ("SCHEDULED", "QUEUED", "PROCESSING")
-_AUDIENCE_TYPES = ("SINGLE_USER", "SELECTED_USERS", "ALL_ELIGIBLE_USERS")
+_AUDIENCE_TYPES = (
+	"SINGLE_USER", "SELECTED_USERS", "ALL_ELIGIBLE_USERS", "GROUP", "BATCH_MEMBERS",
+)
 _ACTIONS = ("draft", "send_now", "schedule")
 _BATCH_SIZE = 50
 
@@ -44,7 +46,9 @@ def _parse_json(value, default):
 
 
 @frappe.whitelist(methods=["POST"])
-def create_campaign(name, audience_type, action, audience_user_ids=None, channels=None, scheduled_at=None):
+def create_campaign(
+	name, audience_type, action, audience_user_ids=None, audience_ref=None, channels=None, scheduled_at=None
+):
 	require_admin()
 
 	audience_user_ids = _parse_json(audience_user_ids, [])
@@ -70,7 +74,7 @@ def create_campaign(name, audience_type, action, audience_user_ids=None, channel
 	if whatsapp and not (whatsapp.get("template_name") and whatsapp.get("category") and whatsapp.get("language")):
 		frappe.throw(_("Choose a WhatsApp template."), frappe.ValidationError)
 
-	users = audience_mod.resolve_audience(audience_type, audience_user_ids)
+	users = audience_mod.resolve_audience(audience_type, audience_user_ids, audience_ref)
 	if not users:
 		frappe.throw(_("No eligible recipients for this audience."), frappe.ValidationError)
 
@@ -83,6 +87,7 @@ def create_campaign(name, audience_type, action, audience_user_ids=None, channel
 			"status": status,
 			"audience_type": audience_type,
 			"audience_user_ids": json.dumps(audience_user_ids),
+			"audience_ref": audience_ref,
 			"recipient_count": len(users),
 			"push_enabled": 1 if push else 0,
 			"push_title": (push or {}).get("title"),
@@ -143,12 +148,12 @@ def create_campaign(name, audience_type, action, audience_user_ids=None, channel
 
 
 @frappe.whitelist(methods=["POST"])
-def estimate_audience(audience_type, audience_user_ids=None):
+def estimate_audience(audience_type, audience_user_ids=None, audience_ref=None):
 	require_admin()
 	audience_user_ids = _parse_json(audience_user_ids, [])
 	if audience_type not in _AUDIENCE_TYPES:
 		frappe.throw(_("Invalid audience_type."), frappe.ValidationError)
-	return audience_mod.estimate(audience_type, audience_user_ids)
+	return audience_mod.estimate(audience_type, audience_user_ids, audience_ref)
 
 
 @frappe.whitelist(methods=["GET"])
@@ -249,6 +254,7 @@ def get_campaign(campaign_id):
 			"campaign_name": doc.campaign_name,
 			"status": doc.status,
 			"audience_type": doc.audience_type,
+			"audience_ref": doc.audience_ref,
 			"recipient_count": doc.recipient_count,
 			"stats": _channel_stats(doc.name),
 			"created_at": doc.creation,

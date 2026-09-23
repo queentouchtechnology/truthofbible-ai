@@ -21,6 +21,7 @@
   "recipient_count",
   "section_break_audience",
   "audience_user_ids",
+  "audience_ref",
   "section_break_push",
   "push_enabled",
   "push_title",
@@ -70,7 +71,7 @@
    "fieldname": "audience_type",
    "fieldtype": "Select",
    "label": "Audience Type",
-   "options": "SINGLE_USER\nSELECTED_USERS\nALL_ELIGIBLE_USERS",
+   "options": "SINGLE_USER\nSELECTED_USERS\nALL_ELIGIBLE_USERS\nGROUP\nBATCH_MEMBERS",
    "reqd": 1
   },
   {
@@ -91,6 +92,12 @@
    "fieldtype": "Long Text",
    "label": "Audience User IDs (JSON)",
    "description": "JSON array of user emails as submitted at creation time. Only meaningful for SINGLE_USER/SELECTED_USERS — the actual, snapshotted recipient list lives in TOB Communication Campaign Recipient, not here."
+  },
+  {
+   "fieldname": "audience_ref",
+   "fieldtype": "Data",
+   "label": "Audience Reference",
+   "description": "Only meaningful for GROUP (a TOB Communication Group id) / BATCH_MEMBERS (an LMS Batch id) — which specific group/batch this campaign was resolved against at creation time, purely for display in campaign history/detail (membership itself is still snapshotted once into TOB Communication Campaign Recipient, same as every other audience type)."
   },
   {
    "fieldname": "section_break_push",

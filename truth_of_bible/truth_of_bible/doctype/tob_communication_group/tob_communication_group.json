@@ -1,0 +1,47 @@
+{
+ "doctype": "DocType",
+ "name": "TOB Communication Group",
+ "module": "Truth Of Bible",
+ "custom": 0,
+ "istable": 0,
+ "issingle": 0,
+ "quick_entry": 0,
+ "track_changes": 1,
+ "autoname": "hash",
+ "naming_rule": "Random",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "engine": "InnoDB",
+ "description": "A named, admin-curated, reusable list of users — the Communication Center Composer's 'Group' audience type (see communication/groups.py). Deliberately a flat JSON member list (member_user_ids), the same convention TOB Communication Campaign already uses for its own audience_user_ids, rather than a child table — groups are hand-curated and bounded, not a bulk-import mechanism.",
+ "field_order": [
+  "group_name",
+  "member_user_ids"
+ ],
+ "fields": [
+  {
+   "fieldname": "group_name",
+   "fieldtype": "Data",
+   "label": "Group Name",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "member_user_ids",
+   "fieldtype": "Long Text",
+   "label": "Member User IDs (JSON)",
+   "description": "JSON array of user emails. Only Website Users are ever added (see groups.py's _valid_user_ids) — resolved fresh at campaign-creation time via resolve_audience(), same snapshot-once semantics as every other audience type in this app."
+  }
+ ],
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "report": 1,
+   "export": 1
+  }
+ ],
+ "links": []
+}
