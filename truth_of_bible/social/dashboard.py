@@ -203,15 +203,44 @@ def create_post(
 
 	if action == "publish":
 		result = buffer_mod.publish_post(channel_specs, text, **post_kwargs)
-		status = "SENT"
+		requested_status = "SENT"
 	elif action == "schedule":
 		result = buffer_mod.schedule_post(
 			channel_specs, text, get_datetime(scheduled_at).timestamp(), **post_kwargs
 		)
-		status = "SCHEDULED"
+		requested_status = "SCHEDULED"
 	else:
 		result = buffer_mod.create_draft(channel_specs, text, **post_kwargs)
-		status = "DRAFT"
+		requested_status = "DRAFT"
+
+	# Buffer confirms (or rejects/times out on) each channel independently
+	# now — a real incident showed why this matters: a 3-channel publish
+	# where one channel's call timed out used to still get recorded as a
+	# blanket "SENT" the moment the whitelisted method returned without
+	# raising, even though Buffer never actually confirmed any of the
+	# three. `channel_results` is the ground truth per channel; the
+	# stored status is honest about whether the WHOLE post actually went
+	# through, matching this app's own "never fabricate" principle.
+	channel_results = result.get("channel_results") or []
+	succeeded = [r for r in channel_results if r.get("success")]
+	failed = [r for r in channel_results if not r.get("success")]
+
+	def _channel_label(channel_id):
+		ch = channels_by_id.get(channel_id) or {}
+		return ch.get("channel_name") or ch.get("platform") or channel_id
+
+	if not channel_results or not succeeded:
+		status = "FAILED"
+	elif failed:
+		status = "PARTIAL"
+	else:
+		status = requested_status
+
+	error = (
+		"; ".join(f"{_channel_label(r['channel_id'])}: {r['error']}" for r in failed)
+		if failed
+		else None
+	)
 
 	doc = frappe.get_doc(
 		{
@@ -223,11 +252,12 @@ def create_post(
 			"video_url": video_url,
 			"buffer_post_id": (result.get("buffer_post_ids") or [None])[0],
 			"scheduled_at": get_datetime(scheduled_at) if scheduled_at else None,
-			"published_at": now_datetime() if status == "SENT" else None,
+			"published_at": now_datetime() if requested_status == "SENT" and status != "FAILED" else None,
+			"error": error,
 		}
 	)
 	doc.insert(ignore_permissions=True)
-	return {"post_id": doc.name, "status": status}
+	return {"post_id": doc.name, "status": status, "error": error}
 
 
 def _format_buffer_posts(nodes, channels_by_id, with_metrics=False):

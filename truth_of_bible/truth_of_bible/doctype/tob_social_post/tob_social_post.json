@@ -60,7 +60,7 @@
    "fieldname": "status",
    "fieldtype": "Select",
    "label": "Status",
-   "options": "DRAFT\nSCHEDULED\nSENT\nFAILED",
+   "options": "DRAFT\nSCHEDULED\nSENT\nPARTIAL\nFAILED",
    "default": "DRAFT",
    "reqd": 1,
    "in_list_view": 1,

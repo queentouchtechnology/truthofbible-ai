@@ -27,13 +27,20 @@ import frappe
 import requests
 
 _GRAPHQL_URL = "https://api.buffer.com"
-_TIMEOUT = 15
+# A real production timeout (confirmed via Buffer's own request log:
+# "Read timed out. (read timeout=15)") showed 15s isn't always enough,
+# especially for a createPost call carrying an image/video asset that
+# Buffer has to fetch and process before responding.
+_TIMEOUT = 30
 
 _CREATE_POST_MUTATION = """
 mutation CreatePost($input: CreatePostInput!) {
 	createPost(input: $input) {
 		... on PostActionSuccess {
 			post { id status }
+		}
+		... on MutationError {
+			message
 		}
 	}
 }
@@ -240,7 +247,17 @@ def _create_post(
 			]
 		assets.append({"image": {"url": image_url, "metadata": image_metadata}})
 
-	posts = []
+	# Each channel gets its own try/except — a real production incident
+	# showed why: a 3-channel post where one channel's call read-timed-out
+	# used to raise straight out of this whole function, discarding
+	# whatever the OTHER channels' calls had already returned and leaving
+	# the caller (dashboard.create_post) no way to tell "all 3 failed"
+	# from "2 succeeded, 1 didn't" — it just crashed before saving
+	# anything. Per-channel results let the caller record the truth per
+	# channel instead of guessing (or worse, marking the whole post
+	# "SENT" when it wasn't), matching this app's own "never fabricate"
+	# rule from the Buffer/channel status down to a single post's result.
+	channel_results = []
 	for channel in channels:
 		if isinstance(channel, dict):
 			channel_id = channel.get("id")
@@ -276,12 +293,47 @@ def _create_post(
 			post_input["schedulingType"] = "automatic"
 			post_input["dueAt"] = _unix_to_iso(scheduled_at)
 
-		data = _graphql(_CREATE_POST_MUTATION, {"input": post_input})
-		posts.append((data.get("createPost") or {}).get("post") or {})
+		try:
+			data = _graphql(_CREATE_POST_MUTATION, {"input": post_input})
+			payload = data.get("createPost") or {}
+			post = payload.get("post")
+			if post and post.get("id"):
+				channel_results.append({
+					"channel_id": channel_id,
+					"success": True,
+					"buffer_post_id": post.get("id"),
+					"status": post.get("status"),
+					"error": None,
+				})
+			else:
+				# Buffer answered but didn't return a post — either a
+				# `MutationError` (its `message` is the real reason: bad
+				# input, permission, rate limit, ...) or a shape this
+				# module doesn't recognize. Either way, this is NOT a
+				# success: silently treating an empty `post` as "sent"
+				# (the previous behavior) is exactly how a rejected post
+				# could look identical to a real one in this app's own
+				# history.
+				channel_results.append({
+					"channel_id": channel_id,
+					"success": False,
+					"buffer_post_id": None,
+					"status": None,
+					"error": payload.get("message") or "Buffer didn't confirm this post.",
+				})
+		except requests.RequestException as e:
+			channel_results.append({
+				"channel_id": channel_id,
+				"success": False,
+				"buffer_post_id": None,
+				"status": None,
+				"error": str(e),
+			})
 
 	return {
-		"buffer_post_ids": [p.get("id") for p in posts],
-		"status": posts[0].get("status") if posts else None,
+		"channel_results": channel_results,
+		"buffer_post_ids": [r["buffer_post_id"] for r in channel_results if r["success"]],
+		"status": next((r["status"] for r in channel_results if r["success"]), None),
 	}
 
 
