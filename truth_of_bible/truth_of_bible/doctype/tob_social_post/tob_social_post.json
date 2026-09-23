@@ -1,0 +1,100 @@
+{
+ "doctype": "DocType",
+ "name": "TOB Social Post",
+ "module": "Truth Of Bible",
+ "custom": 0,
+ "istable": 0,
+ "issingle": 0,
+ "quick_entry": 0,
+ "track_changes": 1,
+ "autoname": "hash",
+ "naming_rule": "Random",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "engine": "InnoDB",
+ "description": "One row per admin-created Social Intelligence post — Phase 1 (see social/dashboard.py, social/buffer.py). Buffer is the execution layer (this row's buffer_post_id is Buffer's own id); this doctype exists purely so 'has something posted today' and history can be answered without an extra Buffer API round trip on every dashboard load.",
+ "field_order": [
+  "content",
+  "platforms",
+  "column_break_1",
+  "status",
+  "buffer_post_id",
+  "section_break_timing",
+  "scheduled_at",
+  "column_break_timing",
+  "published_at",
+  "error"
+ ],
+ "fields": [
+  {
+   "fieldname": "content",
+   "fieldtype": "Small Text",
+   "label": "Content",
+   "reqd": 1
+  },
+  {
+   "fieldname": "platforms",
+   "fieldtype": "Long Text",
+   "label": "Platforms (JSON)",
+   "description": "JSON array of Buffer channel ids this post targets."
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "DRAFT\nSCHEDULED\nSENT\nFAILED",
+   "default": "DRAFT",
+   "reqd": 1,
+   "in_list_view": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "buffer_post_id",
+   "fieldtype": "Data",
+   "label": "Buffer Post ID",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_timing",
+   "fieldtype": "Section Break",
+   "label": "Timing"
+  },
+  {
+   "fieldname": "scheduled_at",
+   "fieldtype": "Datetime",
+   "label": "Scheduled At"
+  },
+  {
+   "fieldname": "column_break_timing",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "published_at",
+   "fieldtype": "Datetime",
+   "label": "Published At",
+   "read_only": 1
+  },
+  {
+   "fieldname": "error",
+   "fieldtype": "Small Text",
+   "label": "Error",
+   "read_only": 1
+  }
+ ],
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "report": 1,
+   "export": 1
+  }
+ ],
+ "links": []
+}
