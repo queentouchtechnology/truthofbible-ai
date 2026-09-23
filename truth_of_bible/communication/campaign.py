@@ -89,6 +89,7 @@ def create_campaign(name, audience_type, action, audience_user_ids=None, channel
 			"push_body": (push or {}).get("body"),
 			"push_image_url": (push or {}).get("image_url"),
 			"push_deeplink_route": (push or {}).get("deeplink_route"),
+			"push_deeplink_id": (push or {}).get("deeplink_id"),
 			"email_enabled": 1 if email else 0,
 			"email_subject": (email or {}).get("subject"),
 			"email_body_html": (email or {}).get("body_html"),
@@ -216,6 +217,7 @@ def get_campaign(campaign_id):
 			"body": doc.push_body,
 			"image_url": doc.push_image_url,
 			"deeplink_route": doc.push_deeplink_route,
+			"deeplink_id": doc.push_deeplink_id,
 		}
 	if doc.email_enabled:
 		channels["email"] = {
@@ -379,6 +381,7 @@ def _process_recipient(doc, recipient_name: str):
 				notif_type="COMMUNICATION_CAMPAIGN",
 				image=doc.push_image_url or None,
 				route=doc.push_deeplink_route or None,
+				ref_id=doc.push_deeplink_id or None,
 			)
 			recipient.push_status = "SENT" if ok else "FAILED"
 			_record_channel_send(doc.name, user, "PUSH")

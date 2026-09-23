@@ -122,7 +122,13 @@
    "fieldname": "push_deeplink_route",
    "fieldtype": "Data",
    "label": "Push Deep Link Route",
-   "description": "Optional. A route from the Flutter app's deepLink_routes.dart (e.g. '/dashboard', '/todayVerse') — reuses delivery.py's existing `route` parameter. No per-recipient ID param is supported (contract keeps campaigns audience-wide, not tied to one entity like a quiz/ticket)."
+   "description": "Optional. A route from the Flutter app's deepLink_routes.dart (e.g. '/dashboard', '/todayVerse', or '/viewCourseDetails'/'/quiz' when push_deeplink_id below is also set) — reuses delivery.py's existing `route` parameter."
+  },
+  {
+   "fieldname": "push_deeplink_id",
+   "fieldtype": "Data",
+   "label": "Push Deep Link ID",
+   "description": "Optional. The specific course/quiz (Frappe doc name) the route above needs as its 'id' argument, e.g. when push_deeplink_route is '/viewCourseDetails' or '/quiz'. Left empty for a route that needs no id (e.g. '/dashboard') or when the admin links to the whole list ('/courseList'/'/quizList') rather than one specific item. Reuses delivery.py's existing `ref_id` parameter — the same mechanism the automated engine's own quiz/ticket notifications already use."
   },
   {
    "fieldname": "section_break_email",
