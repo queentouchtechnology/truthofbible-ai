@@ -85,6 +85,49 @@ def list_channels():
 	return buffer_mod.list_channels() or []
 
 
+@frappe.whitelist(methods=["GET"])
+def list_posts(limit_page_length=20, limit_start=0):
+	require_admin()
+	rows = frappe.get_all(
+		"TOB Social Post",
+		fields=[
+			"name", "content", "platforms", "status",
+			"scheduled_at", "published_at", "error", "creation",
+		],
+		order_by="creation desc",
+		limit_page_length=int(limit_page_length),
+		limit_start=int(limit_start),
+	)
+
+	# Buffer's own channel names, so a post's stored channel ids display
+	# as "Facebook · Truth of Bible" instead of a raw id — same channel
+	# list get_dashboard() already fetches, just resolved here too since
+	# this is its own independent call.
+	channels_by_id = {c["buffer_channel_id"]: c for c in (buffer_mod.list_channels() or [])}
+
+	posts = []
+	for row in rows:
+		platform_ids = _parse_json(row.platforms, [])
+		posts.append({
+			"post_id": row.name,
+			"content": row.content,
+			"status": row.status,
+			"platforms": [
+				{
+					"channel_id": pid,
+					"platform": (channels_by_id.get(pid) or {}).get("platform", ""),
+					"channel_name": (channels_by_id.get(pid) or {}).get("channel_name", ""),
+				}
+				for pid in platform_ids
+			],
+			"scheduled_at": row.scheduled_at,
+			"published_at": row.published_at,
+			"error": row.error,
+			"created_at": row.creation,
+		})
+	return {"posts": posts, "total_count": frappe.db.count("TOB Social Post")}
+
+
 @frappe.whitelist(methods=["POST"])
 def create_post(channels, text, action="draft", scheduled_at=None):
 	require_admin()
