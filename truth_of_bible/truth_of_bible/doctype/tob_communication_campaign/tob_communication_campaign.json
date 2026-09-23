@@ -114,9 +114,9 @@
   },
   {
    "fieldname": "push_image_url",
-   "fieldtype": "Data",
+   "fieldtype": "Small Text",
    "label": "Push Image URL",
-   "description": "Optional. A hosted image URL — reuses notifications/delivery.py's existing `image` parameter (already used by the automated engine's FCM sends), not a new upload mechanism. No file upload endpoint exists in this app, so v1 takes a URL the admin already has, matching the same simplicity principle as WhatsApp templates using an admin-picked existing template rather than inventing new infrastructure."
+   "description": "Optional. A hosted image URL — reuses notifications/delivery.py's existing `image` parameter (already used by the automated engine's FCM sends), not a new upload mechanism. No file upload endpoint exists in this app, so v1 takes a URL the admin already has, matching the same simplicity principle as WhatsApp templates using an admin-picked existing template rather than inventing new infrastructure. Small Text, not Data — a Data (VARCHAR(140)) column silently truncated real-world URLs (e.g. Google's cached-image URLs routinely exceed 140 characters), confirmed live on a real device before this fix."
   },
   {
    "fieldname": "push_deeplink_route",
