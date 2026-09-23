@@ -108,7 +108,14 @@ def _organization_id():
 def list_channels():
 	"""Returns None when Buffer isn't configured, has no organization, or
 	the API call fails — the dashboard treats that as "not connected",
-	distinct from a genuinely empty (but reachable) list of channels."""
+	distinct from a genuinely empty (but reachable) list of channels.
+
+	`avatar`/`isQueuePaused` are confirmed real `Channel` fields (seen on
+	Buffer's own "Get Channel" single-channel query) — added to this bulk
+	query too since a selection-set addition on an already-working query
+	carries far less risk than guessing a new query's argument types, and
+	it gives the composer real channel avatars + a paused-queue warning
+	for free."""
 	if not _token():
 		return None
 	try:
@@ -122,6 +129,8 @@ def list_channels():
 					id
 					service
 					displayName
+					avatar
+					isQueuePaused
 				}
 			}
 			""",
@@ -136,45 +145,126 @@ def list_channels():
 			"buffer_channel_id": c.get("id"),
 			"platform": c.get("service"),
 			"channel_name": c.get("displayName") or "",
+			"avatar": c.get("avatar"),
+			"is_queue_paused": bool(c.get("isQueuePaused")),
 		}
 		for c in channels
 	]
 
 
-def create_draft(channel_ids: list, text: str, image_url: str = None) -> dict:
-	return _create_post(channel_ids, text, save_to_draft=True, image_url=image_url)
+def create_draft(
+	channels: list,
+	text: str,
+	image_url: str = None,
+	video_url: str = None,
+	instagram_tags: list = None,
+	thread_texts: list = None,
+) -> dict:
+	return _create_post(
+		channels, text, save_to_draft=True, image_url=image_url, video_url=video_url,
+		instagram_tags=instagram_tags, thread_texts=thread_texts,
+	)
 
 
-def schedule_post(channel_ids: list, text: str, scheduled_at, image_url: str = None) -> dict:
-	return _create_post(channel_ids, text, scheduled_at=scheduled_at, image_url=image_url)
+def schedule_post(
+	channels: list,
+	text: str,
+	scheduled_at,
+	image_url: str = None,
+	video_url: str = None,
+	instagram_tags: list = None,
+	thread_texts: list = None,
+) -> dict:
+	return _create_post(
+		channels, text, scheduled_at=scheduled_at, image_url=image_url, video_url=video_url,
+		instagram_tags=instagram_tags, thread_texts=thread_texts,
+	)
 
 
-def publish_post(channel_ids: list, text: str, image_url: str = None) -> dict:
-	return _create_post(channel_ids, text, now=True, image_url=image_url)
+def publish_post(
+	channels: list,
+	text: str,
+	image_url: str = None,
+	video_url: str = None,
+	instagram_tags: list = None,
+	thread_texts: list = None,
+) -> dict:
+	return _create_post(
+		channels, text, now=True, image_url=image_url, video_url=video_url,
+		instagram_tags=instagram_tags, thread_texts=thread_texts,
+	)
 
 
 def _create_post(
-	channel_ids: list,
+	channels: list,
 	text: str,
 	now: bool = False,
 	save_to_draft: bool = False,
 	scheduled_at=None,
 	image_url: str = None,
+	video_url: str = None,
+	instagram_tags: list = None,
+	thread_texts: list = None,
 ) -> dict:
 	"""One `createPost` call per channel — the GraphQL mutation takes a
-	single `channelId`, unlike the old REST API's `profile_ids[]` array."""
+	single `channelId`, unlike the old REST API's `profile_ids[]` array.
+
+	`channels` is a list of `{"id": ..., "service": ...}` dicts (not bare
+	ids) — the per-channel `service` is what decides whether Instagram-
+	specific metadata or a service-scoped thread gets attached, so the
+	caller (social/dashboard.py) resolves it once via `list_channels()`
+	rather than this module re-fetching it per call. A bare string id is
+	also accepted for callers that don't need those extras.
+	"""
 	assets = []
-	if image_url:
+	if video_url:
+		# Confirmed shape: same as an image post, an `assets` entry with a
+		# `video` key instead of `image` — no separate upload step.
+		assets.append({"video": {"url": video_url}})
+	elif image_url:
 		# Confirmed via Buffer's current docs: a direct hosted image URL,
 		# no separate upload/presigned-URL step — same "reuse an existing
 		# hosted URL, no upload endpoint in this app" convention already
 		# used for the Communication Center's push_image_url field.
 		# altText is a required ImageAssetInput field.
-		assets.append({"image": {"url": image_url, "metadata": {"altText": text[:100] or "Image"}}})
+		image_metadata = {"altText": text[:100] or "Image"}
+		if instagram_tags:
+			# Confirmed shape: per-tag normalized x/y position. This app
+			# doesn't offer an interactive image-tagging canvas, so tags
+			# are auto-stacked down the image's lower half rather than
+			# admin-positioned — good enough for "tag these accounts",
+			# not pixel-precise placement.
+			image_metadata["userTags"] = [
+				{"handle": handle, "x": 0.5, "y": min(0.55 + 0.12 * i, 0.95)}
+				for i, handle in enumerate(instagram_tags)
+			]
+		assets.append({"image": {"url": image_url, "metadata": image_metadata}})
 
 	posts = []
-	for channel_id in channel_ids:
+	for channel in channels:
+		if isinstance(channel, dict):
+			channel_id = channel.get("id")
+			service = (channel.get("service") or "").lower()
+		else:
+			channel_id = channel
+			service = ""
+
 		post_input = {"channelId": channel_id, "text": text, "assets": assets}
+
+		metadata = {}
+		if instagram_tags and image_url and service == "instagram":
+			metadata["instagram"] = {"type": "post", "shouldShareToFeed": True}
+		if thread_texts and len(thread_texts) > 1 and service:
+			# Confirmed shape (Twitter/X example): a `thread` array nested
+			# under a metadata key named after the service itself. Only
+			# meaningful for thread-capable services (twitter/bluesky/
+			# mastodon/threads) — sent as-is for any other service would
+			# just be ignored by Buffer, not a hard error, so no extra
+			# guard is needed here beyond requiring `service` to be known.
+			metadata[service] = {"thread": [{"text": t} for t in thread_texts]}
+		if metadata:
+			post_input["metadata"] = metadata
+
 		if save_to_draft:
 			post_input["saveToDraft"] = True
 			post_input["mode"] = "shareNext"
@@ -201,22 +291,100 @@ def _unix_to_iso(timestamp) -> str:
 	return datetime.fromtimestamp(float(timestamp), tz=timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
-def get_post_status(buffer_post_id: str) -> dict:
-	"""Unverified against Buffer's current GraphQL schema (no caller in
-	this app uses it yet) — the `channels`/`createPost`/`organizations`
-	shapes above were each confirmed live against Buffer's own docs; this
-	one is a best-effort guess at the equivalent single-post query and
-	should be checked against the schema before anything relies on it."""
-	data = _graphql(
-		"""
-		query GetPost($id: String!) {
-			post(input: { id: $id }) {
-				id
-				status
+def get_post_metrics(buffer_post_id: str):
+	"""Confirmed shape (Buffer's own "Get Post Metrics" doc): a single
+	post's performance numbers — likes/comments/shares/etc, each as a
+	{type, name, value, unit} row, since Buffer reports different metric
+	sets per platform rather than one fixed schema. Returns None on any
+	failure (post not found, key not scoped for metrics, etc.) — personal
+	API keys only, per Buffer's own docs."""
+	try:
+		data = _graphql(
+			"""
+			query GetPostMetrics($id: String!) {
+				post(input: { id: $id }) {
+					id
+					text
+					channelId
+					metrics { type name value unit }
+					metricsUpdatedAt
+				}
 			}
-		}
-		""",
-		{"id": buffer_post_id},
-	)
-	post = data.get("post") or {}
-	return {"status": post.get("status"), "sent_at": None}
+			""",
+			{"id": buffer_post_id},
+		)
+	except requests.RequestException:
+		return None
+	post = data.get("post")
+	if not post:
+		return None
+	return {
+		"buffer_post_id": post.get("id"),
+		"metrics": post.get("metrics") or [],
+		"metrics_updated_at": post.get("metricsUpdatedAt"),
+	}
+
+
+def _list_posts_by_status(status: str, with_metrics: bool = False, first: int = 20):
+	"""Shared by `get_scheduled_posts()`/`get_posts_with_metrics()` — both
+	are just Buffer's confirmed `posts` query (Buffer's own "Get Paginated
+	Posts" doc) filtered to one status. `status` is always one of this
+	module's own literal values ("scheduled"/"sent"), never free-form
+	input, so it's inlined directly into the query text rather than
+	declared as a typed variable — avoids guessing the filter's enum type
+	name (the exact mistake `$organizationId: String!` made before it was
+	confirmed to need the `OrganizationId!` scalar)."""
+	if not _token():
+		return None
+	try:
+		org_id = _organization_id()
+		if not org_id:
+			return None
+		metrics_fields = (
+			"\n\t\t\t\t\tmetrics { type name value unit }\n\t\t\t\t\tmetricsUpdatedAt"
+			if with_metrics
+			else ""
+		)
+		data = _graphql(
+			f"""
+			query ListPosts($organizationId: OrganizationId!, $first: Int) {{
+				posts(
+					first: $first,
+					input: {{ organizationId: $organizationId, filter: {{ status: [{status}] }} }}
+				) {{
+					edges {{
+						node {{
+							id
+							text
+							createdAt
+							dueAt
+							channelId
+							status{metrics_fields}
+						}}
+					}}
+				}}
+			}}
+			""",
+			{"organizationId": org_id, "first": first},
+		)
+	except requests.RequestException:
+		return None
+	edges = (data.get("posts") or {}).get("edges") or []
+	return [e.get("node") or {} for e in edges]
+
+
+def get_scheduled_posts(first: int = 20):
+	"""Posts Buffer will publish in the future — Buffer's own queue, not
+	this app's local `TOB Social Post` history (which only knows about
+	posts created through this app's own composer)."""
+	return _list_posts_by_status("scheduled", first=first)
+
+
+def get_posts_with_metrics(first: int = 20):
+	"""Sent posts with their performance numbers — feeds both the "Post
+	Performance" list and the quarterly rollup, computed in
+	social/dashboard.py from these real per-post metrics rather than a
+	guessed-at Buffer "quarterly report" query (Buffer's docs describe
+	that endpoint but don't publish its actual GraphQL field/argument
+	shape anywhere this app has seen)."""
+	return _list_posts_by_status("sent", with_metrics=True, first=first)

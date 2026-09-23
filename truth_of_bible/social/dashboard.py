@@ -13,7 +13,7 @@ uses (communication/auth.py), reused rather than duplicated.
 import json
 
 import frappe
-from frappe.utils import get_datetime, now_datetime, today
+from frappe.utils import add_to_date, get_datetime, now_datetime, today
 
 from truth_of_bible.communication.auth import require_admin
 from truth_of_bible.social import app_analytics as app_analytics_mod
@@ -114,7 +114,7 @@ def list_posts(limit_page_length=20, limit_start=0):
 	rows = frappe.get_all(
 		"TOB Social Post",
 		fields=[
-			"name", "content", "platforms", "status", "image_url",
+			"name", "content", "platforms", "status", "image_url", "video_url",
 			"scheduled_at", "published_at", "error", "creation",
 		],
 		order_by="creation desc",
@@ -144,6 +144,7 @@ def list_posts(limit_page_length=20, limit_start=0):
 				for pid in platform_ids
 			],
 			"image_url": row.image_url,
+			"video_url": row.video_url,
 			"scheduled_at": row.scheduled_at,
 			"published_at": row.published_at,
 			"error": row.error,
@@ -153,11 +154,23 @@ def list_posts(limit_page_length=20, limit_start=0):
 
 
 @frappe.whitelist(methods=["POST"])
-def create_post(channels, text, action="draft", scheduled_at=None, image_url=None):
+def create_post(
+	channels,
+	text,
+	action="draft",
+	scheduled_at=None,
+	image_url=None,
+	video_url=None,
+	instagram_tags=None,
+	thread_texts=None,
+):
 	require_admin()
 	channel_ids = _parse_json(channels, [])
 	text = (text or "").strip()
 	image_url = (image_url or "").strip() or None
+	video_url = (video_url or "").strip() or None
+	instagram_tags = [t for t in _parse_json(instagram_tags, []) if t]
+	thread_texts = [t for t in _parse_json(thread_texts, []) if t]
 
 	if not channel_ids:
 		frappe.throw(frappe._("Choose at least one channel."), frappe.ValidationError)
@@ -168,16 +181,34 @@ def create_post(channels, text, action="draft", scheduled_at=None, image_url=Non
 	if action == "schedule" and not scheduled_at:
 		frappe.throw(frappe._("scheduled_at is required to schedule a post."), frappe.ValidationError)
 
+	# Resolves each channel id to its Buffer `service` (instagram/twitter/…)
+	# so buffer_mod can decide whether Instagram-tag metadata or a
+	# service-scoped thread actually applies — a post to a non-Instagram
+	# channel just never gets the instagram metadata block, no separate
+	# per-channel calls needed for this lookup.
+	channels_by_id = {c["buffer_channel_id"]: c for c in (buffer_mod.list_channels() or [])}
+	channel_specs = [
+		{"id": cid, "service": (channels_by_id.get(cid) or {}).get("platform", "")}
+		for cid in channel_ids
+	]
+
+	post_kwargs = dict(
+		image_url=image_url,
+		video_url=video_url,
+		instagram_tags=instagram_tags or None,
+		thread_texts=thread_texts or None,
+	)
+
 	if action == "publish":
-		result = buffer_mod.publish_post(channel_ids, text, image_url=image_url)
+		result = buffer_mod.publish_post(channel_specs, text, **post_kwargs)
 		status = "SENT"
 	elif action == "schedule":
 		result = buffer_mod.schedule_post(
-			channel_ids, text, get_datetime(scheduled_at).timestamp(), image_url=image_url
+			channel_specs, text, get_datetime(scheduled_at).timestamp(), **post_kwargs
 		)
 		status = "SCHEDULED"
 	else:
-		result = buffer_mod.create_draft(channel_ids, text, image_url=image_url)
+		result = buffer_mod.create_draft(channel_specs, text, **post_kwargs)
 		status = "DRAFT"
 
 	doc = frappe.get_doc(
@@ -187,6 +218,7 @@ def create_post(channels, text, action="draft", scheduled_at=None, image_url=Non
 			"platforms": json.dumps(channel_ids),
 			"status": status,
 			"image_url": image_url,
+			"video_url": video_url,
 			"buffer_post_id": (result.get("buffer_post_ids") or [None])[0],
 			"scheduled_at": get_datetime(scheduled_at) if scheduled_at else None,
 			"published_at": now_datetime() if status == "SENT" else None,
@@ -194,3 +226,71 @@ def create_post(channels, text, action="draft", scheduled_at=None, image_url=Non
 	)
 	doc.insert(ignore_permissions=True)
 	return {"post_id": doc.name, "status": status}
+
+
+def _format_buffer_posts(nodes, channels_by_id, with_metrics=False):
+	"""Shapes Buffer's own `posts` query nodes (see buffer.py's
+	`_list_posts_by_status`) the same way `list_posts()` above already
+	shapes local `TOB Social Post` rows — resolved platform/channel name,
+	not a raw Buffer channel id — so both lists render with one Flutter
+	model."""
+	if not nodes:
+		return []
+	rows = []
+	for node in nodes:
+		ch = channels_by_id.get(node.get("channelId")) or {}
+		row = {
+			"buffer_post_id": node.get("id"),
+			"content": node.get("text"),
+			"status": node.get("status"),
+			"platform": ch.get("platform", ""),
+			"channel_name": ch.get("channel_name", ""),
+			"created_at": node.get("createdAt"),
+			"due_at": node.get("dueAt"),
+		}
+		if with_metrics:
+			row["metrics"] = node.get("metrics") or []
+		rows.append(row)
+	return rows
+
+
+@frappe.whitelist(methods=["GET"])
+def get_scheduled_posts():
+	require_admin()
+	nodes = buffer_mod.get_scheduled_posts()
+	if nodes is None:
+		return {"posts": []}
+	channels_by_id = {c["buffer_channel_id"]: c for c in (buffer_mod.list_channels() or [])}
+	return {"posts": _format_buffer_posts(nodes, channels_by_id)}
+
+
+@frappe.whitelist(methods=["GET"])
+def get_post_performance():
+	require_admin()
+	nodes = buffer_mod.get_posts_with_metrics()
+	if nodes is None:
+		return {"posts": [], "quarterly_report": {"posts_count": 0, "totals": {}}}
+	channels_by_id = {c["buffer_channel_id"]: c for c in (buffer_mod.list_channels() or [])}
+	formatted = _format_buffer_posts(nodes, channels_by_id, with_metrics=True)
+
+	# A quarterly rollup computed from Buffer's own real per-post metrics
+	# rather than a separate "quarterly report" Buffer query — that
+	# query's exact GraphQL shape isn't published anywhere this app has
+	# seen, so summing what's already fetched here is the honest option
+	# rather than guessing a second query that might silently 400.
+	quarter_cutoff = add_to_date(now_datetime(), months=-3)
+	totals = {}
+	posts_in_quarter = 0
+	for row in formatted:
+		created_at = row.get("created_at")
+		if created_at and get_datetime(created_at) < quarter_cutoff:
+			continue
+		posts_in_quarter += 1
+		for metric in row.get("metrics", []):
+			key = metric.get("name") or metric.get("type") or "metric"
+			totals[key] = totals.get(key, 0) + (metric.get("value") or 0)
+
+	return {
+		"posts": formatted,
+		"quarterly_report": {"posts_count": posts_in_quarter, "totals": totals},
+	}

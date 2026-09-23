@@ -16,6 +16,7 @@
  "field_order": [
   "content",
   "image_url",
+  "video_url",
   "platforms",
   "column_break_1",
   "status",
@@ -38,6 +39,12 @@
    "fieldtype": "Small Text",
    "label": "Image URL",
    "description": "Optional. A hosted image URL passed straight through to Buffer's createPost assets — Small Text, not Data (VARCHAR 140), matching the same real truncation bug already fixed once for the Communication Center's push_image_url field."
+  },
+  {
+   "fieldname": "video_url",
+   "fieldtype": "Small Text",
+   "label": "Video URL",
+   "description": "Optional. A hosted video URL passed straight through to Buffer's createPost assets. Mutually exclusive with image_url — Buffer takes one media asset per post."
   },
   {
    "fieldname": "platforms",
