@@ -19,6 +19,19 @@ from truth_of_bible.social import google_oauth
 _BASE_URL = "https://analyticsdata.googleapis.com/v1beta"
 _TIMEOUT = 15
 
+# A property can have Web + Android + iOS streams together (or just one) —
+# filtering to `platform == web` keeps this module honestly reporting web
+# traffic only, rather than silently including/mislabeling app traffic as
+# "website" when a site has no separate web stream at all (confirmed a
+# real scenario: a property that is Android-only would otherwise have its
+# app numbers displayed under the "Website (GA4)" card).
+_WEB_PLATFORM_FILTER = {
+	"filter": {
+		"fieldName": "platform",
+		"stringFilter": {"value": "web"},
+	}
+}
+
 
 def _property_id():
 	return frappe.get_site_config().get("ga4_property_id")
@@ -65,6 +78,7 @@ def get_website_summary(days: int = 28):
 					{"name": "sessions"},
 					{"name": "screenPageViews"},
 				],
+				"dimensionFilter": _WEB_PLATFORM_FILTER,
 			},
 		)
 	except requests.RequestException:
@@ -97,6 +111,7 @@ def _get_top_pages(token: str, property_id: str, days: int, limit: int = 5) -> l
 				"dateRanges": [{"startDate": f"{days}daysAgo", "endDate": "today"}],
 				"dimensions": [{"name": "pagePath"}],
 				"metrics": [{"name": "screenPageViews"}],
+				"dimensionFilter": _WEB_PLATFORM_FILTER,
 				"orderBys": [{"metric": {"metricName": "screenPageViews"}, "desc": True}],
 				"limit": limit,
 			},
