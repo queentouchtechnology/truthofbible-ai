@@ -113,6 +113,7 @@ def _graphql(query: str, variables: dict = None) -> dict:
 
 _ORG_CACHE_KEY = "tob_buffer_org_id"
 _CHANNELS_CACHE_KEY = "tob_buffer_channels"
+_CHANNELS_STALE_KEY = "tob_buffer_channels_stale"
 
 
 def _organization_id():
@@ -172,7 +173,12 @@ def list_channels():
 			{"organizationId": org_id},
 		)
 	except requests.RequestException:
-		return None
+		# A transient failure (most often Buffer's 429 rate limit) must not
+		# flip the whole dashboard to "not connected" — fall back to the
+		# last good list (kept for 6 hours). With no prior success there is
+		# nothing to fall back on, so a genuinely bad/missing token still
+		# reports None.
+		return frappe.cache().get_value(_CHANNELS_STALE_KEY)
 
 	channels = data.get("channels") or []
 	result = [
@@ -186,6 +192,7 @@ def list_channels():
 		for c in channels
 	]
 	frappe.cache().set_value(_CHANNELS_CACHE_KEY, result, expires_in_sec=300)
+	frappe.cache().set_value(_CHANNELS_STALE_KEY, result, expires_in_sec=21600)
 	return result
 
 
