@@ -270,6 +270,13 @@ def _create_post(
 		metadata = {}
 		if post_types and service in post_types:
 			metadata.setdefault(service, {})["type"] = post_types[service]
+			if service == "instagram":
+				# Confirmed live (real GraphQL validation error):
+				# `shouldShareToFeed` is a REQUIRED Boolean whenever
+				# `metadata.instagram` is present at all, not an optional
+				# extra from the one confirmed doc example — omitting it
+				# (the earlier assumption) fails every Instagram post.
+				metadata["instagram"]["shouldShareToFeed"] = True
 		if service == "googlebusiness" and post_types and post_types.get(service) in ("offer", "event"):
 			gbp = metadata.setdefault("googlebusiness", {})
 			if gbp_title:
@@ -297,11 +304,16 @@ def _create_post(
 			post_input["mode"] = "shareNext"
 		elif now:
 			post_input["mode"] = "shareNow"
-			post_input["schedulingType"] = "automatic"
 		else:
 			post_input["mode"] = "customScheduled"
-			post_input["schedulingType"] = "automatic"
 			post_input["dueAt"] = _unix_to_iso(scheduled_at)
+
+		# Confirmed live (real GraphQL validation error): `schedulingType`
+		# is required on EVERY mode, including `saveToDraft`/`shareNext` —
+		# not just publish/schedule as first assumed. Always `automatic`;
+		# `notification` is Buffer's other documented value but nothing in
+		# this app has a use for it.
+		post_input["schedulingType"] = "automatic"
 
 		try:
 			data = _graphql(_CREATE_POST_MUTATION, {"input": post_input})
