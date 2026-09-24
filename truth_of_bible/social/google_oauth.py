@@ -17,6 +17,16 @@ Flow (standard OAuth2 authorization-code, web-app flow):
 
 Credentials are read from site_config.json's `google_clientid`/
 `google_clientsecret` — never hardcoded, never logged.
+
+Also provides `get_ga4_service_account_token()` — a second, independent
+way for GA4 specifically to get an access token, for a deployment that
+prefers a dedicated service account over per-admin OAuth consent (see
+SOCIAL_INTELLIGENCE_CONTRACT.md §5.1 for why). Same
+`service_account.Credentials` + `google.auth.transport.requests.Request`
+pattern already proven on this bench by
+truth_of_bible/notifications/delivery.py's `firebase_service_account`
+handling — independently implemented here rather than imported, same
+reasoning as that module's own docstring (this app owns its own source).
 """
 
 import secrets
@@ -25,6 +35,8 @@ import urllib.parse
 import frappe
 from frappe import _
 from frappe.utils import add_to_date, get_datetime, get_url, now_datetime
+from google.auth.transport.requests import Request
+from google.oauth2 import service_account
 import requests
 
 _TOKEN_URL = "https://oauth2.googleapis.com/token"
@@ -33,6 +45,7 @@ _SCOPES = [
 	"https://www.googleapis.com/auth/yt-analytics.readonly",
 	"https://www.googleapis.com/auth/analytics.readonly",
 ]
+_GA4_SERVICE_ACCOUNT_SCOPES = ["https://www.googleapis.com/auth/analytics.readonly"]
 _STATE_CACHE_PREFIX = "social_google_oauth_state:"
 _STATE_TTL_SECONDS = 600
 _TIMEOUT = 15
@@ -175,3 +188,30 @@ def get_valid_access_token():
 
 	_store_tokens(tokens)
 	return tokens.get("access_token")
+
+
+def get_ga4_service_account_token():
+	"""Alternative to get_valid_access_token() above, for GA4 specifically:
+	mints a short-lived access token from a dedicated service account
+	(site_config.json's `ga4_service_account`, the full JSON key dict)
+	instead of the per-admin OAuth consent flow. Returns None if
+	unconfigured — silent, not logged, since not using a service account
+	is the normal/expected state for a site that instead relies on the
+	OAuth connection above; social/ga4.py falls back to that when this
+	returns None, so the two paths are additive, not a hard switch.
+
+	Requires the service account to be separately granted Viewer access
+	on the actual GA4 property via Analytics Admin -> Property Access
+	Management — a step in Google Analytics itself, not Cloud Console
+	IAM. A service account has zero GA4 access by default even with the
+	Analytics Data API enabled on its project.
+	"""
+	config = frappe.get_site_config().get("ga4_service_account")
+	if not config:
+		return None
+
+	credentials = service_account.Credentials.from_service_account_info(
+		config, scopes=_GA4_SERVICE_ACCOUNT_SCOPES
+	)
+	credentials.refresh(Request())
+	return credentials.token
