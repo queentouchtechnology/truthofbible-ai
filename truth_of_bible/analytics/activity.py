@@ -198,3 +198,32 @@ def get_activity_summary():
 		as_dict=True,
 	)
 	return {"events": rows}
+
+
+@frappe.whitelist(methods=["GET"])
+def get_event_users(event, limit=50):
+	"""Admin-only — which users performed one event, with how many times
+	and when last (real names/avatars from the core User doctype). The
+	"which user did which event" view: the summary strip lists event
+	types, tapping one lands here."""
+	require_admin()
+
+	rows = frappe.db.sql(
+		"""
+		select
+			a.user as user,
+			u.full_name as full_name,
+			u.user_image as user_image,
+			count(*) as event_count,
+			max(a.event_time) as last_active
+		from `tabTOB User Activity Event` a
+		left join `tabUser` u on u.name = a.user
+		where a.event = %(event)s
+		group by a.user
+		order by event_count desc, last_active desc
+		limit %(limit)s
+		""",
+		{"event": event, "limit": int(limit)},
+		as_dict=True,
+	)
+	return {"event": event, "users": rows}

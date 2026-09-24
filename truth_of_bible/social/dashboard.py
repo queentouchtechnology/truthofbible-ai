@@ -117,7 +117,7 @@ def list_posts(limit_page_length=20, limit_start=0):
 		"TOB Social Post",
 		fields=[
 			"name", "content", "platforms", "status", "image_url", "video_url",
-			"scheduled_at", "published_at", "error", "creation",
+			"scheduled_at", "published_at", "error", "channel_results", "creation",
 		],
 		order_by="creation desc",
 		limit_page_length=int(limit_page_length),
@@ -150,6 +150,7 @@ def list_posts(limit_page_length=20, limit_start=0):
 			"scheduled_at": row.scheduled_at,
 			"published_at": row.published_at,
 			"error": row.error,
+			"channel_results": _parse_json(row.channel_results, []),
 			"created_at": row.creation,
 		})
 	return {"posts": posts, "total_count": frappe.db.count("TOB Social Post")}
@@ -165,6 +166,11 @@ def create_post(
 	video_url=None,
 	instagram_tags=None,
 	thread_texts=None,
+	post_types=None,
+	gbp_title=None,
+	gbp_start_date=None,
+	gbp_end_date=None,
+	gbp_coupon_code=None,
 ):
 	require_admin()
 	channel_ids = _parse_json(channels, [])
@@ -173,6 +179,12 @@ def create_post(
 	video_url = (video_url or "").strip() or None
 	instagram_tags = [t for t in _parse_json(instagram_tags, []) if t]
 	thread_texts = [t for t in _parse_json(thread_texts, []) if t]
+	# {platform: type} — e.g. {"instagram": "reel", "facebook": "post"}.
+	# Keyed by platform, not channel id, since Buffer's `type` requirement
+	# is platform-level (see buffer.py's `_create_post` docstring).
+	post_types = {
+		k: v for k, v in _parse_json(post_types, {}).items() if k and v
+	}
 
 	if not channel_ids:
 		frappe.throw(frappe._("Choose at least one channel."), frappe.ValidationError)
@@ -199,6 +211,11 @@ def create_post(
 		video_url=video_url,
 		instagram_tags=instagram_tags or None,
 		thread_texts=thread_texts or None,
+		post_types=post_types or None,
+		gbp_title=(gbp_title or "").strip() or None,
+		gbp_start_date=(gbp_start_date or "").strip() or None,
+		gbp_end_date=(gbp_end_date or "").strip() or None,
+		gbp_coupon_code=(gbp_coupon_code or "").strip() or None,
 	)
 
 	if action == "publish":
@@ -242,6 +259,21 @@ def create_post(
 		else None
 	)
 
+	# Kept per-channel (not just the joined `error` string above) so
+	# Recent Posts can render exactly which channel(s) failed and why,
+	# and offer a "Fix & retry" that resubmits only those channels —
+	# the joined string is a fallback for anything not yet reading this.
+	channel_results_detail = [
+		{
+			"channel_id": r["channel_id"],
+			"platform": (channels_by_id.get(r["channel_id"]) or {}).get("platform", ""),
+			"channel_name": _channel_label(r["channel_id"]),
+			"success": r.get("success", False),
+			"error": r.get("error"),
+		}
+		for r in channel_results
+	]
+
 	doc = frappe.get_doc(
 		{
 			"doctype": "TOB Social Post",
@@ -254,6 +286,7 @@ def create_post(
 			"scheduled_at": get_datetime(scheduled_at) if scheduled_at else None,
 			"published_at": now_datetime() if requested_status == "SENT" and status != "FAILED" else None,
 			"error": error,
+			"channel_results": json.dumps(channel_results_detail),
 		}
 	)
 	doc.insert(ignore_permissions=True)

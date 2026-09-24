@@ -33,6 +33,15 @@ _GRAPHQL_URL = "https://api.buffer.com"
 # Buffer has to fetch and process before responding.
 _TIMEOUT = 30
 
+# Confirmed live via GraphQL schema introspection (`__type(name:
+# "PostInputMetaData")`): every service's metadata key matches its
+# `channels()`-reported `service` value exactly EXCEPT Google Business
+# Profile, whose `service` is "googlebusiness" but whose metadata key is
+# "google" — everything else (instagram/facebook/twitter/bluesky/
+# mastodon/threads/tiktok/linkedin/pinterest/substack/youtube) needs no
+# entry here at all, the `.get(service, service)` fallback covers them.
+_METADATA_KEY_BY_SERVICE = {"googlebusiness": "google"}
+
 _CREATE_POST_MUTATION = """
 mutation CreatePost($input: CreatePostInput!) {
 	createPost(input: $input) {
@@ -102,20 +111,37 @@ def _graphql(query: str, variables: dict = None) -> dict:
 	return payload.get("data") or {}
 
 
+_ORG_CACHE_KEY = "tob_buffer_org_id"
+_CHANNELS_CACHE_KEY = "tob_buffer_channels"
+_CHANNELS_STALE_KEY = "tob_buffer_channels_stale"
+
+
 def _organization_id():
-	"""Buffer's GraphQL API scopes channels/posts by organization — fetched
-	fresh each time rather than cached in site_config, since a personal
-	API key is normally tied to exactly one organization anyway and this
-	keeps the module stateless."""
+	"""Buffer's GraphQL API scopes channels/posts by organization. Cached
+	for a day (a personal API key is tied to one organization and it
+	doesn't change) — Buffer allows only 100 requests per 15 minutes on
+	this key, and every channel/post lookup used to spend one of them
+	re-fetching this same id. A failed lookup is never cached."""
+	cached = frappe.cache().get_value(_ORG_CACHE_KEY)
+	if cached:
+		return cached
 	data = _graphql("query GetOrganizations { account { organizations { id } } }")
 	orgs = (data.get("account") or {}).get("organizations") or []
-	return orgs[0].get("id") if orgs else None
+	org_id = orgs[0].get("id") if orgs else None
+	if org_id:
+		frappe.cache().set_value(_ORG_CACHE_KEY, org_id, expires_in_sec=86400)
+	return org_id
 
 
 def list_channels():
 	"""Returns None when Buffer isn't configured, has no organization, or
 	the API call fails — the dashboard treats that as "not connected",
 	distinct from a genuinely empty (but reachable) list of channels.
+
+	Cached for 5 minutes for the same rate-limit reason as
+	`_organization_id()` — the channel list backs every dashboard load,
+	post-history load and post creation, and changes rarely. A failure
+	is never cached, so "not connected" corrects itself on the next call.
 
 	`avatar`/`isQueuePaused` are confirmed real `Channel` fields (seen on
 	Buffer's own "Get Channel" single-channel query) — added to this bulk
@@ -125,6 +151,9 @@ def list_channels():
 	for free."""
 	if not _token():
 		return None
+	cached = frappe.cache().get_value(_CHANNELS_CACHE_KEY)
+	if cached is not None:
+		return cached
 	try:
 		org_id = _organization_id()
 		if not org_id:
@@ -144,10 +173,15 @@ def list_channels():
 			{"organizationId": org_id},
 		)
 	except requests.RequestException:
-		return None
+		# A transient failure (most often Buffer's 429 rate limit) must not
+		# flip the whole dashboard to "not connected" — fall back to the
+		# last good list (kept for 6 hours). With no prior success there is
+		# nothing to fall back on, so a genuinely bad/missing token still
+		# reports None.
+		return frappe.cache().get_value(_CHANNELS_STALE_KEY)
 
 	channels = data.get("channels") or []
-	return [
+	result = [
 		{
 			"buffer_channel_id": c.get("id"),
 			"platform": c.get("service"),
@@ -157,49 +191,21 @@ def list_channels():
 		}
 		for c in channels
 	]
+	frappe.cache().set_value(_CHANNELS_CACHE_KEY, result, expires_in_sec=300)
+	frappe.cache().set_value(_CHANNELS_STALE_KEY, result, expires_in_sec=21600)
+	return result
 
 
-def create_draft(
-	channels: list,
-	text: str,
-	image_url: str = None,
-	video_url: str = None,
-	instagram_tags: list = None,
-	thread_texts: list = None,
-) -> dict:
-	return _create_post(
-		channels, text, save_to_draft=True, image_url=image_url, video_url=video_url,
-		instagram_tags=instagram_tags, thread_texts=thread_texts,
-	)
+def create_draft(channels: list, text: str, **kwargs) -> dict:
+	return _create_post(channels, text, save_to_draft=True, **kwargs)
 
 
-def schedule_post(
-	channels: list,
-	text: str,
-	scheduled_at,
-	image_url: str = None,
-	video_url: str = None,
-	instagram_tags: list = None,
-	thread_texts: list = None,
-) -> dict:
-	return _create_post(
-		channels, text, scheduled_at=scheduled_at, image_url=image_url, video_url=video_url,
-		instagram_tags=instagram_tags, thread_texts=thread_texts,
-	)
+def schedule_post(channels: list, text: str, scheduled_at, **kwargs) -> dict:
+	return _create_post(channels, text, scheduled_at=scheduled_at, **kwargs)
 
 
-def publish_post(
-	channels: list,
-	text: str,
-	image_url: str = None,
-	video_url: str = None,
-	instagram_tags: list = None,
-	thread_texts: list = None,
-) -> dict:
-	return _create_post(
-		channels, text, now=True, image_url=image_url, video_url=video_url,
-		instagram_tags=instagram_tags, thread_texts=thread_texts,
-	)
+def publish_post(channels: list, text: str, **kwargs) -> dict:
+	return _create_post(channels, text, now=True, **kwargs)
 
 
 def _create_post(
@@ -212,16 +218,57 @@ def _create_post(
 	video_url: str = None,
 	instagram_tags: list = None,
 	thread_texts: list = None,
+	post_types: dict = None,
+	gbp_title: str = None,
+	gbp_start_date: str = None,
+	gbp_end_date: str = None,
+	gbp_coupon_code: str = None,
 ) -> dict:
 	"""One `createPost` call per channel — the GraphQL mutation takes a
 	single `channelId`, unlike the old REST API's `profile_ids[]` array.
 
 	`channels` is a list of `{"id": ..., "service": ...}` dicts (not bare
 	ids) — the per-channel `service` is what decides whether Instagram-
-	specific metadata or a service-scoped thread gets attached, so the
-	caller (social/dashboard.py) resolves it once via `list_channels()`
-	rather than this module re-fetching it per call. A bare string id is
-	also accepted for callers that don't need those extras.
+	specific metadata, a service-scoped thread, or a required `post_types`
+	entry gets attached, so the caller (social/dashboard.py) resolves it
+	once via `list_channels()` rather than this module re-fetching it per
+	call. A bare string id is also accepted for callers that don't need
+	those extras.
+
+	`post_types` is `{service: type}` (e.g. `{"instagram": "reel",
+	"facebook": "post", "googlebusiness": "event"}`) — a real device test
+	showed Buffer rejects Instagram/Facebook/Google Business Profile posts
+	outright without this. Confirmed shape (Buffer's own "Create Instagram
+	Post With User Tags" doc example, plus live schema introspection of
+	`PostInputMetaData`/`InstagramPostMetadataInput`/
+	`FacebookPostMetadataInput`/`GoogleBusinessPostMetadataInput` after a
+	real device test surfaced 3 wrong assumptions in one round: Instagram
+	also requires `shouldShareToFeed: Boolean!` whenever `metadata.
+	instagram` is present at all (not just as an example flourish);
+	`schedulingType` is required on every mode including `saveToDraft`;
+	and Google Business Profile's metadata key is `google`, not
+	`googlebusiness` like every other service's key matches its own
+	`channels()` `service` value — see `_METADATA_KEY_BY_SERVICE`.
+	Facebook needed no metadata field beyond `type` (confirmed via the
+	same introspection).
+
+	`gbp_title`/`gbp_start_date`/`gbp_end_date`/`gbp_coupon_code` only
+	apply when a channel's service is `googlebusiness` and its type is
+	`offer`/`event`. Confirmed via introspecting `GoogleBusinessEventMeta
+	DataInput`/`GoogleBusinessOfferMetaDataInput`: `title` sits at BOTH
+	the top level of `google` and (redundantly, harmlessly) inside each
+	details object; offer's coupon code is named `code` (not
+	`couponCode`, the original guess); both `startDate`/`endDate` are
+	`DateTime` (full ISO 8601, not a bare date) and live under
+	`detailsEvent`/`detailsOffer`, not flat under `google`;
+	`detailsEvent.isFullDayEvent: Boolean!` is required whenever
+	`detailsEvent` is sent — this app only collects a date, not a time,
+	so it's always `True`. **`startDate`/`endDate` are required for
+	`offer` too** — confirmed live via a real Buffer rejection ("Google
+	Business offers require a start/end date"), not visible from the
+	schema itself (both fields are merely optional on
+	`GoogleBusinessOfferMetaDataInput`); `event`'s start must also be
+	strictly before its end, same real rejection pattern.
 	"""
 	assets = []
 	if video_url:
@@ -267,10 +314,63 @@ def _create_post(
 			service = ""
 
 		post_input = {"channelId": channel_id, "text": text, "assets": assets}
+		metadata_key = _METADATA_KEY_BY_SERVICE.get(service, service)
 
 		metadata = {}
-		if instagram_tags and image_url and service == "instagram":
-			metadata["instagram"] = {"type": "post", "shouldShareToFeed": True}
+		if post_types and service in post_types:
+			metadata.setdefault(metadata_key, {})["type"] = post_types[service]
+			if service == "instagram":
+				# Confirmed live (real GraphQL validation error):
+				# `shouldShareToFeed` is a REQUIRED Boolean whenever
+				# `metadata.instagram` is present at all, not an optional
+				# extra from the one confirmed doc example — omitting it
+				# (the earlier assumption) fails every Instagram post.
+				metadata["instagram"]["shouldShareToFeed"] = True
+		if service == "googlebusiness" and post_types and post_types.get(service) in ("offer", "event"):
+			# Confirmed live via schema introspection of
+			# `GoogleBusinessPostMetadataInput`/`GoogleBusinessEventMetaData
+			# Input`/`GoogleBusinessOfferMetaDataInput` (the metadata KEY is
+			# "google", not "googlebusiness" — every other service's key
+			# matches its `service` value exactly except this one).
+			# `title` sits at the top level of `google` (set unconditionally
+			# below, alongside `type`); start/end dates and the coupon code
+			# are nested one level deeper, under `detailsEvent`/
+			# `detailsOffer` respectively — NOT flat under `google` as
+			# first guessed. Offer's coupon field is `code`, not
+			# `couponCode`. Dates are `DateTime` (full ISO 8601), not a
+			# bare date — `_date_to_iso()` below adds a midnight-UTC time
+			# if the caller only sent a date, which is all this app's own
+			# UI collects.
+			gbp = metadata.setdefault("google", {})
+			if gbp_title:
+				gbp["title"] = gbp_title
+			if post_types[service] == "event":
+				details = {"isFullDayEvent": True}  # required; this app collects a date, not a time
+				if gbp_title:
+					details["title"] = gbp_title
+				if gbp_start_date:
+					details["startDate"] = _date_to_iso(gbp_start_date)
+				if gbp_end_date:
+					details["endDate"] = _date_to_iso(gbp_end_date)
+				gbp["detailsEvent"] = details
+			elif post_types[service] == "offer":
+				# Confirmed live (real Buffer rejection, not in the schema
+				# itself — `startDate`/`endDate` are optional per
+				# introspection but Buffer's business-logic validation
+				# requires both): "Google Business offers require a start
+				# date., ... require an end date." — same requirement as
+				# Event, just not visible from the type system alone.
+				details = {}
+				if gbp_title:
+					details["title"] = gbp_title
+				if gbp_coupon_code:
+					details["code"] = gbp_coupon_code
+				if gbp_start_date:
+					details["startDate"] = _date_to_iso(gbp_start_date)
+				if gbp_end_date:
+					details["endDate"] = _date_to_iso(gbp_end_date)
+				if details:
+					gbp["detailsOffer"] = details
 		if thread_texts and len(thread_texts) > 1 and service:
 			# Confirmed shape (Twitter/X example): a `thread` array nested
 			# under a metadata key named after the service itself. Only
@@ -278,7 +378,7 @@ def _create_post(
 			# mastodon/threads) — sent as-is for any other service would
 			# just be ignored by Buffer, not a hard error, so no extra
 			# guard is needed here beyond requiring `service` to be known.
-			metadata[service] = {"thread": [{"text": t} for t in thread_texts]}
+			metadata[metadata_key] = {"thread": [{"text": t} for t in thread_texts]}
 		if metadata:
 			post_input["metadata"] = metadata
 
@@ -287,11 +387,16 @@ def _create_post(
 			post_input["mode"] = "shareNext"
 		elif now:
 			post_input["mode"] = "shareNow"
-			post_input["schedulingType"] = "automatic"
 		else:
 			post_input["mode"] = "customScheduled"
-			post_input["schedulingType"] = "automatic"
 			post_input["dueAt"] = _unix_to_iso(scheduled_at)
+
+		# Confirmed live (real GraphQL validation error): `schedulingType`
+		# is required on EVERY mode, including `saveToDraft`/`shareNext` —
+		# not just publish/schedule as first assumed. Always `automatic`;
+		# `notification` is Buffer's other documented value but nothing in
+		# this app has a use for it.
+		post_input["schedulingType"] = "automatic"
 
 		try:
 			data = _graphql(_CREATE_POST_MUTATION, {"input": post_input})
@@ -327,7 +432,11 @@ def _create_post(
 				"success": False,
 				"buffer_post_id": None,
 				"status": None,
-				"error": str(e),
+				"error": (
+					"Buffer's rate limit was reached (100 requests per 15 minutes) — wait a few minutes and retry."
+					if getattr(e.response, "status_code", None) == 429
+					else str(e)
+				),
 			})
 
 	return {
@@ -341,6 +450,14 @@ def _unix_to_iso(timestamp) -> str:
 	from datetime import datetime, timezone
 
 	return datetime.fromtimestamp(float(timestamp), tz=timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def _date_to_iso(date_str: str) -> str:
+	"""Google Business Profile's event/offer dates are `DateTime` (full
+	ISO 8601), but this app's own UI only collects a bare date
+	(`YYYY-MM-DD`) — confirmed via schema introspection, not a doc
+	example. Adds a midnight-UTC time if one isn't already present."""
+	return date_str if "T" in date_str else f"{date_str}T00:00:00Z"
 
 
 def get_post_metrics(buffer_post_id: str):
