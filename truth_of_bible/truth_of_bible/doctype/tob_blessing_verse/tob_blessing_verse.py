@@ -7,9 +7,16 @@ from frappe.utils import now_datetime
 class TOBBlessingVerse(Document):
 	def validate(self):
 		self.kjv_text = (self.kjv_text or "").strip()
-		# Approval certifies one exact text. Any edit to that text voids it, so
-		# the automation can never post wording nobody has checked.
-		if self.social_approved and not self.is_new() and self.has_value_changed("kjv_text"):
+		# Approval certifies one exact text. Editing an already-approved text
+		# voids it, so the automation can never post wording nobody has
+		# checked. Ticking approval in the same save as the edit approves the
+		# new text — that person has just checked it.
+		if (
+			self.social_approved
+			and not self.is_new()
+			and self.has_value_changed("kjv_text")
+			and not self.has_value_changed("social_approved")
+		):
 			self.social_approved = 0
 			frappe.msgprint(_("KJV text changed, so social approval was cleared. Check the new text and approve again."))
 
