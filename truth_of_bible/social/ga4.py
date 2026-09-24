@@ -1,9 +1,11 @@
 """Google Analytics 4 (Data API v1beta) — website analytics for the
-Social Intelligence Center. Uses the shared Google OAuth connection
-(social/google_oauth.py, `analytics.readonly` scope) since GA4 is
-private, per-property data — unlike YouTube's public channel-summary
-card (social/youtube.py), which uses a plain API key and needs no
-consent flow at all.
+Social Intelligence Center. GA4 is private, per-property data — unlike
+YouTube's public channel-summary card (social/youtube.py), which uses a
+plain API key and needs no consent flow at all — so this needs one of
+two credential paths (see get_access_token() below): a dedicated GA4
+service account (preferred when configured — no per-admin consent
+needed), or the shared Google OAuth connection (social/google_oauth.py,
+`analytics.readonly` scope) as a fallback.
 
 The property to report on is identified by `ga4_property_id` in
 site_config.json — the numeric Property ID from GA4 Admin → Property
@@ -37,8 +39,24 @@ def _property_id():
 	return frappe.get_site_config().get("ga4_property_id")
 
 
+def get_access_token():
+	"""Shared by this module and social/app_analytics.py (same Data API,
+	same credential). Prefers a dedicated GA4 service account when one is
+	configured (site_config.json's `ga4_service_account` — see
+	google_oauth.get_ga4_service_account_token()) so GA4 can work
+	independently of whether anyone has ever completed the "Connect
+	Google Account" OAuth flow; falls back to that shared OAuth
+	connection otherwise. Returns None if neither is set up."""
+	token = google_oauth.get_ga4_service_account_token()
+	if token:
+		return token
+	return google_oauth.get_valid_access_token()
+
+
 def is_configured() -> bool:
-	return bool(_property_id()) and google_oauth.is_connected()
+	return bool(_property_id()) and (
+		bool(frappe.get_site_config().get("ga4_service_account")) or google_oauth.is_connected()
+	)
 
 
 def run_report(token: str, property_id: str, body: dict):
@@ -57,13 +75,13 @@ def run_report(token: str, property_id: str, body: dict):
 
 
 def get_website_summary(days: int = 28):
-	"""Returns None when GA4 isn't configured, the Google account isn't
+	"""Returns None when GA4 isn't configured, neither credential path is
 	connected, or the call fails — same "None = not connected" convention
 	as buffer.list_channels()/youtube.get_channel_summary()."""
 	property_id = _property_id()
 	if not property_id:
 		return None
-	token = google_oauth.get_valid_access_token()
+	token = get_access_token()
 	if not token:
 		return None
 

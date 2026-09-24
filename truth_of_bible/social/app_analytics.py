@@ -36,7 +36,9 @@ def _property_id():
 
 
 def is_configured() -> bool:
-	return bool(_property_id()) and google_oauth.is_connected()
+	return bool(_property_id()) and (
+		bool(frappe.get_site_config().get("ga4_service_account")) or google_oauth.is_connected()
+	)
 
 
 def get_app_summary(days: int = 28):
@@ -45,7 +47,12 @@ def get_app_summary(days: int = 28):
 	property_id = _property_id()
 	if not property_id:
 		return None
-	token = google_oauth.get_valid_access_token()
+	# Same credential preference as social/ga4.py's own get_access_token()
+	# (dedicated GA4 service account first, shared OAuth connection as
+	# fallback) — reused directly rather than re-implemented, since this
+	# is the exact same Data API/credential as ga4.py, just a different
+	# property/filter.
+	token = ga4_mod.get_access_token()
 	if not token:
 		return None
 
