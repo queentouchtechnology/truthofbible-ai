@@ -1,0 +1,74 @@
+{
+ "doctype": "DocType",
+ "name": "TOB User Activity Event",
+ "module": "Truth Of Bible",
+ "custom": 0,
+ "istable": 0,
+ "issingle": 0,
+ "quick_entry": 0,
+ "track_changes": 0,
+ "autoname": "hash",
+ "naming_rule": "Random",
+ "sort_field": "event_time",
+ "sort_order": "DESC",
+ "engine": "InnoDB",
+ "description": "One row per curated in-app event (see truth_of_bible/analytics/activity.py's _ALLOWED_EVENTS) — the real per-user activity log behind the admin 'who did what' report, deliberately separate from Firebase/GA4 (aggregate-only, no per-user drill-down or avatars in-app). Written in small batches by record_batch(), never one row per client HTTP request — track_changes is off since this is high-volume log data, not a document anyone edits.",
+ "field_order": [
+  "user",
+  "event",
+  "event_time",
+  "column_break_1",
+  "data"
+ ],
+ "fields": [
+  {
+   "fieldname": "user",
+   "fieldtype": "Link",
+   "options": "User",
+   "label": "User",
+   "reqd": 1,
+   "in_list_view": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "event",
+   "fieldtype": "Data",
+   "label": "Event",
+   "reqd": 1,
+   "in_list_view": 1,
+   "search_index": 1,
+   "description": "One of _ALLOWED_EVENTS in truth_of_bible/analytics/activity.py — Data, not Select, so a new event can be added client-side without a schema migration."
+  },
+  {
+   "fieldname": "event_time",
+   "fieldtype": "Datetime",
+   "label": "Event Time",
+   "reqd": 1,
+   "in_list_view": 1,
+   "search_index": 1,
+   "description": "The client-side time the event actually happened, not when the batch was uploaded — batches can be flushed several minutes (or an app-background) after the fact."
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "data",
+   "fieldtype": "Long Text",
+   "label": "Data (JSON)",
+   "description": "Event-specific parameters as a JSON object, e.g. {\"book\": \"John\", \"chapter\": 3} for verse_opened — shape varies per event, same JSON-in-Long-Text precedent as TOB Social Post.platforms."
+  }
+ ],
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "report": 1,
+   "export": 1
+  }
+ ],
+ "links": []
+}
