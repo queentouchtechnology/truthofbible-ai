@@ -25,7 +25,8 @@
   "scheduled_at",
   "column_break_timing",
   "published_at",
-  "error"
+  "error",
+  "channel_results"
  ],
  "fields": [
   {
@@ -97,6 +98,13 @@
    "fieldtype": "Small Text",
    "label": "Error",
    "read_only": 1
+  },
+  {
+   "fieldname": "channel_results",
+   "fieldtype": "Long Text",
+   "label": "Channel Results (JSON)",
+   "read_only": 1,
+   "description": "JSON array of {channel_id, platform, channel_name, success, error} — the per-channel breakdown behind a PARTIAL/FAILED status, so Recent Posts can show exactly which channel(s) failed and why, and offer a targeted retry."
   }
  ],
  "permissions": [

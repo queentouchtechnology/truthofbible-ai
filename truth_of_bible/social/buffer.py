@@ -159,47 +159,16 @@ def list_channels():
 	]
 
 
-def create_draft(
-	channels: list,
-	text: str,
-	image_url: str = None,
-	video_url: str = None,
-	instagram_tags: list = None,
-	thread_texts: list = None,
-) -> dict:
-	return _create_post(
-		channels, text, save_to_draft=True, image_url=image_url, video_url=video_url,
-		instagram_tags=instagram_tags, thread_texts=thread_texts,
-	)
+def create_draft(channels: list, text: str, **kwargs) -> dict:
+	return _create_post(channels, text, save_to_draft=True, **kwargs)
 
 
-def schedule_post(
-	channels: list,
-	text: str,
-	scheduled_at,
-	image_url: str = None,
-	video_url: str = None,
-	instagram_tags: list = None,
-	thread_texts: list = None,
-) -> dict:
-	return _create_post(
-		channels, text, scheduled_at=scheduled_at, image_url=image_url, video_url=video_url,
-		instagram_tags=instagram_tags, thread_texts=thread_texts,
-	)
+def schedule_post(channels: list, text: str, scheduled_at, **kwargs) -> dict:
+	return _create_post(channels, text, scheduled_at=scheduled_at, **kwargs)
 
 
-def publish_post(
-	channels: list,
-	text: str,
-	image_url: str = None,
-	video_url: str = None,
-	instagram_tags: list = None,
-	thread_texts: list = None,
-) -> dict:
-	return _create_post(
-		channels, text, now=True, image_url=image_url, video_url=video_url,
-		instagram_tags=instagram_tags, thread_texts=thread_texts,
-	)
+def publish_post(channels: list, text: str, **kwargs) -> dict:
+	return _create_post(channels, text, now=True, **kwargs)
 
 
 def _create_post(
@@ -212,16 +181,46 @@ def _create_post(
 	video_url: str = None,
 	instagram_tags: list = None,
 	thread_texts: list = None,
+	post_types: dict = None,
+	gbp_title: str = None,
+	gbp_start_date: str = None,
+	gbp_end_date: str = None,
+	gbp_coupon_code: str = None,
 ) -> dict:
 	"""One `createPost` call per channel — the GraphQL mutation takes a
 	single `channelId`, unlike the old REST API's `profile_ids[]` array.
 
 	`channels` is a list of `{"id": ..., "service": ...}` dicts (not bare
 	ids) — the per-channel `service` is what decides whether Instagram-
-	specific metadata or a service-scoped thread gets attached, so the
-	caller (social/dashboard.py) resolves it once via `list_channels()`
-	rather than this module re-fetching it per call. A bare string id is
-	also accepted for callers that don't need those extras.
+	specific metadata, a service-scoped thread, or a required `post_types`
+	entry gets attached, so the caller (social/dashboard.py) resolves it
+	once via `list_channels()` rather than this module re-fetching it per
+	call. A bare string id is also accepted for callers that don't need
+	those extras.
+
+	`post_types` is `{service: type}` (e.g. `{"instagram": "reel",
+	"facebook": "post", "googlebusiness": "event"}`) — a real device test
+	showed Buffer rejects Instagram/Facebook/Google Business Profile posts
+	outright without this. Confirmed shape (Buffer's own "Create Instagram
+	Post With User Tags" doc example): `metadata: { instagram: { type:
+	post, ... } }` — a service-scoped metadata key, the same pattern
+	`thread_texts` below already uses, so Facebook/Google Business Profile
+	are assumed to take `type` the same way under their own service key
+	rather than a separate, unconfirmed mutation shape.
+
+	`gbp_title`/`gbp_start_date`/`gbp_end_date`/`gbp_coupon_code` only
+	apply when a channel's service is `googlebusiness` and its type is
+	`offer`/`event` — Google Business Profile's Offer/Event post types
+	need a title (both), a coupon code (offer, optional) and start/end
+	dates (event). **Unverified against Buffer's schema** — no confirmed
+	doc example exists for these fields (only `type` was confirmed), so
+	the field names (`title`/`startDate`/`endDate`/`couponCode`) are a
+	best-effort guess following Buffer's own camelCase convention seen
+	elsewhere (`shouldShareToFeed`, `dueAt`); check the first real
+	Frappe Error Log entry from an Offer/Event post against this if it
+	fails, the same "confirm against the real error" loop that already
+	fixed two wrong guesses in this module (`OrganizationId!`, the
+	`PostActionPayload` inline fragment).
 	"""
 	assets = []
 	if video_url:
@@ -269,8 +268,19 @@ def _create_post(
 		post_input = {"channelId": channel_id, "text": text, "assets": assets}
 
 		metadata = {}
-		if instagram_tags and image_url and service == "instagram":
-			metadata["instagram"] = {"type": "post", "shouldShareToFeed": True}
+		if post_types and service in post_types:
+			metadata.setdefault(service, {})["type"] = post_types[service]
+		if service == "googlebusiness" and post_types and post_types.get(service) in ("offer", "event"):
+			gbp = metadata.setdefault("googlebusiness", {})
+			if gbp_title:
+				gbp["title"] = gbp_title
+			if post_types[service] == "event":
+				if gbp_start_date:
+					gbp["startDate"] = gbp_start_date
+				if gbp_end_date:
+					gbp["endDate"] = gbp_end_date
+			elif post_types[service] == "offer" and gbp_coupon_code:
+				gbp["couponCode"] = gbp_coupon_code
 		if thread_texts and len(thread_texts) > 1 and service:
 			# Confirmed shape (Twitter/X example): a `thread` array nested
 			# under a metadata key named after the service itself. Only
