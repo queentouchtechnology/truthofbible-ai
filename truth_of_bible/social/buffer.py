@@ -111,20 +111,36 @@ def _graphql(query: str, variables: dict = None) -> dict:
 	return payload.get("data") or {}
 
 
+_ORG_CACHE_KEY = "tob_buffer_org_id"
+_CHANNELS_CACHE_KEY = "tob_buffer_channels"
+
+
 def _organization_id():
-	"""Buffer's GraphQL API scopes channels/posts by organization — fetched
-	fresh each time rather than cached in site_config, since a personal
-	API key is normally tied to exactly one organization anyway and this
-	keeps the module stateless."""
+	"""Buffer's GraphQL API scopes channels/posts by organization. Cached
+	for a day (a personal API key is tied to one organization and it
+	doesn't change) — Buffer allows only 100 requests per 15 minutes on
+	this key, and every channel/post lookup used to spend one of them
+	re-fetching this same id. A failed lookup is never cached."""
+	cached = frappe.cache().get_value(_ORG_CACHE_KEY)
+	if cached:
+		return cached
 	data = _graphql("query GetOrganizations { account { organizations { id } } }")
 	orgs = (data.get("account") or {}).get("organizations") or []
-	return orgs[0].get("id") if orgs else None
+	org_id = orgs[0].get("id") if orgs else None
+	if org_id:
+		frappe.cache().set_value(_ORG_CACHE_KEY, org_id, expires_in_sec=86400)
+	return org_id
 
 
 def list_channels():
 	"""Returns None when Buffer isn't configured, has no organization, or
 	the API call fails — the dashboard treats that as "not connected",
 	distinct from a genuinely empty (but reachable) list of channels.
+
+	Cached for 5 minutes for the same rate-limit reason as
+	`_organization_id()` — the channel list backs every dashboard load,
+	post-history load and post creation, and changes rarely. A failure
+	is never cached, so "not connected" corrects itself on the next call.
 
 	`avatar`/`isQueuePaused` are confirmed real `Channel` fields (seen on
 	Buffer's own "Get Channel" single-channel query) — added to this bulk
@@ -134,6 +150,9 @@ def list_channels():
 	for free."""
 	if not _token():
 		return None
+	cached = frappe.cache().get_value(_CHANNELS_CACHE_KEY)
+	if cached is not None:
+		return cached
 	try:
 		org_id = _organization_id()
 		if not org_id:
@@ -156,7 +175,7 @@ def list_channels():
 		return None
 
 	channels = data.get("channels") or []
-	return [
+	result = [
 		{
 			"buffer_channel_id": c.get("id"),
 			"platform": c.get("service"),
@@ -166,6 +185,8 @@ def list_channels():
 		}
 		for c in channels
 	]
+	frappe.cache().set_value(_CHANNELS_CACHE_KEY, result, expires_in_sec=300)
+	return result
 
 
 def create_draft(channels: list, text: str, **kwargs) -> dict:
@@ -404,7 +425,11 @@ def _create_post(
 				"success": False,
 				"buffer_post_id": None,
 				"status": None,
-				"error": str(e),
+				"error": (
+					"Buffer's rate limit was reached (100 requests per 15 minutes) — wait a few minutes and retry."
+					if getattr(e.response, "status_code", None) == 429
+					else str(e)
+				),
 			})
 
 	return {
