@@ -1395,3 +1395,27 @@ def ensure_social_worker_role():
 		ignore_permissions=True
 	)
 	frappe.db.commit()
+
+
+def seed_social_content():
+	"""Starter drafts for TOB Social Content (app features from the app's own
+	navigation map, salvation prayers with exact KJV references), from
+	social/seed_content.json. Added once per (type, title), never approved and
+	never overwritten — approval is always a person checking every word."""
+	import json
+	from pathlib import Path
+
+	path = Path(__file__).parent / "social" / "seed_content.json"
+	for entry in json.loads(path.read_text(encoding="utf-8")):
+		if frappe.db.exists("TOB Social Content", {"content_type": entry["content_type"], "title": entry["title"]}):
+			continue
+		try:
+			frappe.get_doc({
+				"doctype": "TOB Social Content",
+				"source": "Import",
+				**{k: entry.get(k) or "" for k in ("content_type", "title", "image_text", "image_footer", "caption",
+					"how_to_find")},
+			}).insert(ignore_permissions=True)
+			frappe.db.commit()
+		except frappe.ValidationError:
+			frappe.db.rollback()

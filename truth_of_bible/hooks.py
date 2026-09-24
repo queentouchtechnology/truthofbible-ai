@@ -73,6 +73,7 @@ after_install = [
 	"truth_of_bible.install.seed_blessing_verses",
 	"truth_of_bible.install.seed_notification_templates",
 	"truth_of_bible.install.ensure_social_worker_role",
+	"truth_of_bible.install.seed_social_content",
 ]
 after_migrate = [
 	"truth_of_bible.install.seed_default_prompts",
@@ -81,6 +82,7 @@ after_migrate = [
 	"truth_of_bible.install.seed_blessing_verses",
 	"truth_of_bible.install.seed_notification_templates",
 	"truth_of_bible.install.ensure_social_worker_role",
+	"truth_of_bible.install.seed_social_content",
 ]
 
 # Bible Battle's only background-job-shaped mechanism: a cron backstop for
