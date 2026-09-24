@@ -12,7 +12,7 @@
  "sort_field": "modified",
  "sort_order": "DESC",
  "engine": "InnoDB",
- "description": "A small, hand-curated bank of encouraging/blessing verse REFERENCES — deliberately never stores verse text itself, matching this app's standing rule that Scripture text lives only in the Flutter client's own on-device SQLite Bible (see HANDOFF.md §5.7). The client resolves the actual verse text locally, in whatever language/version it already has installed, from bible_book/chapter/verse_start/verse_end. Used by two features: the Daily Verse screen (verse card, no AI involved) and the AI daily_devotional task (this reference is passed in as the anchor the AI writes its reflection around — the AI never invents which verse to use). System-Manager-only permissions, same as every other Bible Battle/content doctype in this app — read only through whitelisted API methods.",
+ "description": "A small, hand-curated bank of encouraging/blessing verse REFERENCES — does not store verse text for the app (the optional kjv_text field exists only to render social-media post images — founder decision 2026-09-24), matching this app's standing rule that Scripture text lives only in the Flutter client's own on-device SQLite Bible (see HANDOFF.md §5.7). The client resolves the actual verse text locally, in whatever language/version it already has installed, from bible_book/chapter/verse_start/verse_end. Used by two features: the Daily Verse screen (verse card, no AI involved) and the AI daily_devotional task (this reference is passed in as the anchor the AI writes its reflection around — the AI never invents which verse to use). System-Manager-only permissions, same as every other Bible Battle/content doctype in this app — read only through whitelisted API methods.",
  "field_order": [
   "reference",
   "column_break_ref",
@@ -23,7 +23,14 @@
   "chapter",
   "column_break_verses",
   "verse_start",
-  "verse_end"
+  "verse_end",
+  "section_break_social",
+  "kjv_text",
+  "social_approved",
+  "column_break_social",
+  "approved_by",
+  "approved_on",
+  "last_posted_on"
  ],
  "fields": [
   {
@@ -91,6 +98,49 @@
    "fieldtype": "Int",
    "label": "Verse End",
    "description": "Leave blank for a single-verse reference."
+  },
+  {
+   "fieldname": "section_break_social",
+   "fieldtype": "Section Break",
+   "label": "Social Posting"
+  },
+  {
+   "fieldname": "kjv_text",
+   "fieldtype": "Small Text",
+   "label": "KJV Text",
+   "description": "Exact KJV (public domain) text, used ONLY to render daily blessing post images for social media. The mobile app never reads this field — it resolves verse text on-device. Editing this text clears the approval below, so every change is re-checked."
+  },
+  {
+   "fieldname": "social_approved",
+   "fieldtype": "Check",
+   "label": "Checked & approved for social posts",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "description": "Tick only after checking the KJV text above against a printed or trusted KJV Bible. Approved verses may be posted automatically by the blessing automation without further review."
+  },
+  {
+   "fieldname": "column_break_social",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "approved_by",
+   "fieldtype": "Link",
+   "options": "User",
+   "label": "Approved By",
+   "read_only": 1
+  },
+  {
+   "fieldname": "approved_on",
+   "fieldtype": "Datetime",
+   "label": "Approved On",
+   "read_only": 1
+  },
+  {
+   "fieldname": "last_posted_on",
+   "fieldtype": "Date",
+   "label": "Last Posted On",
+   "read_only": 1,
+   "description": "Set by the blessing automation; the least recently posted approved verse is chosen next."
   }
  ],
  "permissions": [

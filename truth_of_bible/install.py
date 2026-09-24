@@ -1346,3 +1346,15 @@ def seed_notification_templates():
 			frappe.db.commit()
 		except frappe.ValidationError:
 			frappe.db.rollback()
+
+
+def ensure_social_worker_role():
+	"""The outreach VPS worker's API user gets only this role — enough for
+	social/blessing_automation.py's whitelisted methods, never System Manager.
+	No desk access: the worker only calls the API."""
+	if frappe.db.exists("Role", "TOB Social Worker"):
+		return
+	frappe.get_doc({"doctype": "Role", "role_name": "TOB Social Worker", "desk_access": 0}).insert(
+		ignore_permissions=True
+	)
+	frappe.db.commit()

@@ -1,0 +1,86 @@
+{
+ "doctype": "DocType",
+ "name": "TOB Automation Log",
+ "module": "Truth Of Bible",
+ "custom": 0,
+ "istable": 0,
+ "issingle": 0,
+ "quick_entry": 0,
+ "track_changes": 0,
+ "autoname": "hash",
+ "naming_rule": "Random",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "engine": "InnoDB",
+ "description": "Activity log for the daily blessing post automation — one row per preview sent, post published, failure, or skipped run, written by the outreach VPS worker through social/blessing_automation.log_event. Read-only in the Desk: rows are only ever created by the worker, never edited, so the log stays a truthful record.",
+ "field_order": [
+  "event",
+  "platform",
+  "column_break_1",
+  "reference",
+  "blessing_verse",
+  "section_break_detail",
+  "post_id",
+  "message"
+ ],
+ "fields": [
+  {
+   "fieldname": "event",
+   "fieldtype": "Select",
+   "label": "Event",
+   "options": "Preview Sent\nPosted\nFailed\nSkipped\nNo Approved Verse",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "platform",
+   "fieldtype": "Data",
+   "label": "Platform",
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "reference",
+   "fieldtype": "Data",
+   "label": "Verse Reference",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "blessing_verse",
+   "fieldtype": "Link",
+   "options": "TOB Blessing Verse",
+   "label": "Blessing Verse"
+  },
+  {
+   "fieldname": "section_break_detail",
+   "fieldtype": "Section Break",
+   "label": "Detail"
+  },
+  {
+   "fieldname": "post_id",
+   "fieldtype": "Data",
+   "label": "Platform Post ID"
+  },
+  {
+   "fieldname": "message",
+   "fieldtype": "Small Text",
+   "label": "Message"
+  }
+ ],
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "report": 1,
+   "export": 1,
+   "delete": 1
+  }
+ ],
+ "links": []
+}

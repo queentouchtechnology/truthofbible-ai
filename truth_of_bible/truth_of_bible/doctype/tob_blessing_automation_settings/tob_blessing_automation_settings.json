@@ -1,0 +1,163 @@
+{
+ "doctype": "DocType",
+ "name": "TOB Blessing Automation Settings",
+ "module": "Truth Of Bible",
+ "custom": 0,
+ "istable": 0,
+ "issingle": 1,
+ "quick_entry": 0,
+ "track_changes": 1,
+ "engine": "InnoDB",
+ "description": "Control panel for the daily blessing post automation. The posting worker runs on the separate outreach VPS (tob-social, systemd timer every 15 minutes) and reads these settings plus the approved TOB Blessing Verse list through social/blessing_automation.py on every run; it writes each preview/post/failure to TOB Automation Log. Turning 'Automatic posting' off takes effect on the worker's next run. Secrets (Meta page token, Slack bot token) live only in the worker's own .env, never here.",
+ "field_order": [
+  "enabled",
+  "post_time",
+  "column_break_main",
+  "design",
+  "section_break_platforms",
+  "post_to_facebook",
+  "column_break_platforms",
+  "post_to_instagram",
+  "section_break_preview",
+  "preview_channel",
+  "slack_channel_id",
+  "column_break_preview",
+  "preview_minutes_before",
+  "section_break_caption",
+  "app_link",
+  "hashtags",
+  "section_break_status",
+  "last_heartbeat",
+  "column_break_status",
+  "last_result"
+ ],
+ "fields": [
+  {
+   "fieldname": "enabled",
+   "fieldtype": "Check",
+   "label": "Automatic posting ON",
+   "default": "0",
+   "description": "Master switch. When off, the worker posts nothing and sends no previews."
+  },
+  {
+   "fieldname": "post_time",
+   "fieldtype": "Time",
+   "label": "Post Time (India time)",
+   "default": "07:00:00",
+   "reqd": 1,
+   "description": "The worker checks every 15 minutes, so the post goes out within 15 minutes after this time."
+  },
+  {
+   "fieldname": "column_break_main",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "design",
+   "fieldtype": "Select",
+   "label": "Image Design",
+   "options": "modern_mono\nmodern\nmodern_navy\nmodern_forest\nmodern_dark\nmodern_gradient\nmodern_card\nmodern_split\nmodern_sky\nroyal\nsunrise\nminimal\nparchment\nradiant",
+   "default": "modern_mono",
+   "reqd": 1
+  },
+  {
+   "fieldname": "section_break_platforms",
+   "fieldtype": "Section Break",
+   "label": "Platforms"
+  },
+  {
+   "fieldname": "post_to_facebook",
+   "fieldtype": "Check",
+   "label": "Facebook Page",
+   "default": "1"
+  },
+  {
+   "fieldname": "column_break_platforms",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "post_to_instagram",
+   "fieldtype": "Check",
+   "label": "Instagram",
+   "default": "1",
+   "description": "Instagram reuses the image Facebook hosts, so it only posts when Facebook is also on."
+  },
+  {
+   "fieldname": "section_break_preview",
+   "fieldtype": "Section Break",
+   "label": "Preview Channel"
+  },
+  {
+   "fieldname": "preview_channel",
+   "fieldtype": "Select",
+   "label": "Send Previews To",
+   "options": "Slack\nNone",
+   "default": "Slack",
+   "description": "Where the worker sends the image + caption before posting, and each post's result."
+  },
+  {
+   "fieldname": "slack_channel_id",
+   "fieldtype": "Data",
+   "label": "Slack Channel ID",
+   "description": "Channel ID (starts with C), e.g. #project-truthofbible = C0BRUBKRLE5. Invite the bot to the channel first: /invite @qtt"
+  },
+  {
+   "fieldname": "column_break_preview",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "preview_minutes_before",
+   "fieldtype": "Int",
+   "label": "Preview Minutes Before Posting",
+   "default": "60",
+   "description": "Gives time to switch posting off or un-approve the verse if something looks wrong."
+  },
+  {
+   "fieldname": "section_break_caption",
+   "fieldtype": "Section Break",
+   "label": "Caption"
+  },
+  {
+   "fieldname": "app_link",
+   "fieldtype": "Data",
+   "label": "App Link",
+   "default": "https://play.google.com/store/apps/details?id=in.bizzui.truthofbible"
+  },
+  {
+   "fieldname": "hashtags",
+   "fieldtype": "Small Text",
+   "label": "Hashtags",
+   "default": "#TruthOfBible #BibleVerse #DailyBlessing #GodBlessYou"
+  },
+  {
+   "fieldname": "section_break_status",
+   "fieldtype": "Section Break",
+   "label": "Worker Status"
+  },
+  {
+   "fieldname": "last_heartbeat",
+   "fieldtype": "Datetime",
+   "label": "Worker Last Checked In",
+   "read_only": 1,
+   "description": "Updated on every worker run. If this is more than ~30 minutes old, the worker or its server is down."
+  },
+  {
+   "fieldname": "column_break_status",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "last_result",
+   "fieldtype": "Small Text",
+   "label": "Last Result",
+   "read_only": 1
+  }
+ ],
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1
+  }
+ ],
+ "links": []
+}
