@@ -33,6 +33,15 @@ _GRAPHQL_URL = "https://api.buffer.com"
 # Buffer has to fetch and process before responding.
 _TIMEOUT = 30
 
+# Confirmed live via GraphQL schema introspection (`__type(name:
+# "PostInputMetaData")`): every service's metadata key matches its
+# `channels()`-reported `service` value exactly EXCEPT Google Business
+# Profile, whose `service` is "googlebusiness" but whose metadata key is
+# "google" — everything else (instagram/facebook/twitter/bluesky/
+# mastodon/threads/tiktok/linkedin/pinterest/substack/youtube) needs no
+# entry here at all, the `.get(service, service)` fallback covers them.
+_METADATA_KEY_BY_SERVICE = {"googlebusiness": "google"}
+
 _CREATE_POST_MUTATION = """
 mutation CreatePost($input: CreatePostInput!) {
 	createPost(input: $input) {
@@ -266,10 +275,11 @@ def _create_post(
 			service = ""
 
 		post_input = {"channelId": channel_id, "text": text, "assets": assets}
+		metadata_key = _METADATA_KEY_BY_SERVICE.get(service, service)
 
 		metadata = {}
 		if post_types and service in post_types:
-			metadata.setdefault(service, {})["type"] = post_types[service]
+			metadata.setdefault(metadata_key, {})["type"] = post_types[service]
 			if service == "instagram":
 				# Confirmed live (real GraphQL validation error):
 				# `shouldShareToFeed` is a REQUIRED Boolean whenever
@@ -278,7 +288,16 @@ def _create_post(
 				# (the earlier assumption) fails every Instagram post.
 				metadata["instagram"]["shouldShareToFeed"] = True
 		if service == "googlebusiness" and post_types and post_types.get(service) in ("offer", "event"):
-			gbp = metadata.setdefault("googlebusiness", {})
+			# Confirmed live: the metadata KEY is "google", not
+			# "googlebusiness" (a real GraphQL error: `"googlebusiness" is
+			# not defined by type "PostInputMetaData"` — every other
+			# service's metadata key matches its `service` value exactly
+			# except this one). The field NAMES inside it
+			# (title/startDate/endDate/couponCode) are still an unverified
+			# guess — introspect `GoogleBusinessPostMetadataInput` before
+			# trusting these; the `type` field above is the only part of
+			# this block confirmed correct so far.
+			gbp = metadata.setdefault("google", {})
 			if gbp_title:
 				gbp["title"] = gbp_title
 			if post_types[service] == "event":
@@ -295,7 +314,7 @@ def _create_post(
 			# mastodon/threads) — sent as-is for any other service would
 			# just be ignored by Buffer, not a hard error, so no extra
 			# guard is needed here beyond requiring `service` to be known.
-			metadata[service] = {"thread": [{"text": t} for t in thread_texts]}
+			metadata[metadata_key] = {"thread": [{"text": t} for t in thread_texts]}
 		if metadata:
 			post_input["metadata"] = metadata
 
