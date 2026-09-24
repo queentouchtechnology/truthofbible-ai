@@ -1,0 +1,146 @@
+{
+ "doctype": "DocType",
+ "name": "TOB Social Content",
+ "module": "Truth Of Bible",
+ "custom": 0,
+ "istable": 0,
+ "issingle": 0,
+ "quick_entry": 0,
+ "track_changes": 1,
+ "engine": "InnoDB",
+ "description": "Hand-approved content for scheduled social posts, one row per post idea, grouped by Content Type (App Feature, Salvation Prayer, ...). The outreach VPS worker posts approved rows of a type on that type's schedule (TOB Blessing Automation Settings → Content Schedules), least recently posted first, as a designed card (title + image text + image footer) with the caption below. Never state anything untrue about the app, never fabricate testimonies, and quote Scripture exactly (KJV, with reference). Editing any post wording clears the approval.",
+ "autoname": "hash",
+ "naming_rule": "Random",
+ "title_field": "title",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "field_order": [
+  "content_type",
+  "title",
+  "source",
+  "column_break_main",
+  "image_footer",
+  "how_to_find",
+  "section_break_text",
+  "image_text",
+  "caption",
+  "section_break_social",
+  "social_approved",
+  "column_break_social",
+  "approved_by",
+  "approved_on",
+  "last_posted_on"
+ ],
+ "fields": [
+  {
+   "fieldname": "content_type",
+   "fieldtype": "Select",
+   "label": "Content Type",
+   "options": "App Feature\nSalvation Prayer",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "title",
+   "fieldtype": "Data",
+   "label": "Title",
+   "reqd": 1,
+   "in_list_view": 1,
+   "description": "Shown large on the image, e.g. 'Gospel Compare' or 'A Prayer of Salvation'."
+  },
+  {
+   "fieldname": "source",
+   "fieldtype": "Select",
+   "label": "Source",
+   "options": "Manual\nAI Draft\nImport",
+   "default": "Manual",
+   "read_only": 1,
+   "in_standard_filter": 1,
+   "description": "AI Draft = written by the app's AI from an admin's brief. Check it word for word before approving."
+  },
+  {
+   "fieldname": "column_break_main",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "image_footer",
+   "fieldtype": "Data",
+   "label": "Image Footer",
+   "description": "Small line at the bottom of the image, e.g. a Scripture reference 'Romans 10:9'. App features show a Google Play button instead."
+  },
+  {
+   "fieldname": "how_to_find",
+   "fieldtype": "Data",
+   "label": "Where in the App",
+   "depends_on": "eval:doc.content_type=='App Feature'",
+   "description": "App features only: breadcrumb added to the caption, e.g. 'Explore → Gospel Compare'."
+  },
+  {
+   "fieldname": "section_break_text",
+   "fieldtype": "Section Break",
+   "label": "Text"
+  },
+  {
+   "fieldname": "image_text",
+   "fieldtype": "Small Text",
+   "label": "Image Text",
+   "description": "Shown under the title on the image: a one-line benefit for a feature, or the prayer itself (keep it under about 350 characters)."
+  },
+  {
+   "fieldname": "caption",
+   "fieldtype": "Small Text",
+   "label": "Post Text",
+   "description": "The caption. The worker adds the app link and the type's hashtags after it."
+  },
+  {
+   "fieldname": "section_break_social",
+   "fieldtype": "Section Break",
+   "label": "Approval"
+  },
+  {
+   "fieldname": "social_approved",
+   "fieldtype": "Check",
+   "label": "Checked & approved for social posts",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "description": "Tick only after checking every word: app features against the live app, prayers and Scripture quotations against a KJV Bible. Approved content may be posted automatically."
+  },
+  {
+   "fieldname": "column_break_social",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "approved_by",
+   "fieldtype": "Link",
+   "options": "User",
+   "label": "Approved By",
+   "read_only": 1
+  },
+  {
+   "fieldname": "approved_on",
+   "fieldtype": "Datetime",
+   "label": "Approved On",
+   "read_only": 1
+  },
+  {
+   "fieldname": "last_posted_on",
+   "fieldtype": "Date",
+   "label": "Last Posted On",
+   "read_only": 1
+  }
+ ],
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "report": 1,
+   "export": 1
+  }
+ ],
+ "links": []
+}

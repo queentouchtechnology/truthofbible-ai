@@ -12,10 +12,12 @@
  "sort_field": "creation",
  "sort_order": "DESC",
  "engine": "InnoDB",
- "description": "Activity log for the daily blessing post automation — one row per preview sent, post published, failure, or skipped run, written by the outreach VPS worker through social/blessing_automation.log_event. Read-only in the Desk: rows are only ever created by the worker, never edited, so the log stays a truthful record.",
+ "description": "Activity log for the daily blessing post automation — one row per preview sent (blessing verse or scheduled content), post published, failure, or skipped run, written by the outreach VPS worker through social/blessing_automation.log_event. Read-only in the Desk: rows are only ever created by the worker, never edited, so the log stays a truthful record.",
  "field_order": [
   "event",
   "platform",
+  "post_type",
+  "social_content",
   "column_break_1",
   "reference",
   "blessing_verse",
@@ -28,7 +30,7 @@
    "fieldname": "event",
    "fieldtype": "Select",
    "label": "Event",
-   "options": "Preview Sent\nPosted\nFailed\nSkipped\nNo Approved Verse",
+   "options": "Preview Sent\nPosted\nFailed\nSkipped\nNo Approved Verse\nNo Approved Content",
    "reqd": 1,
    "in_list_view": 1,
    "in_standard_filter": 1,
@@ -42,13 +44,28 @@
    "in_standard_filter": 1
   },
   {
+   "fieldname": "post_type",
+   "fieldtype": "Select",
+   "label": "Post Type",
+   "options": "Blessing\nApp Feature\nSalvation Prayer",
+   "default": "Blessing",
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "social_content",
+   "fieldtype": "Link",
+   "options": "TOB Social Content",
+   "label": "Social Content"
+  },
+  {
    "fieldname": "column_break_1",
    "fieldtype": "Column Break"
   },
   {
    "fieldname": "reference",
    "fieldtype": "Data",
-   "label": "Verse Reference",
+   "label": "Reference / Feature",
    "in_list_view": 1
   },
   {

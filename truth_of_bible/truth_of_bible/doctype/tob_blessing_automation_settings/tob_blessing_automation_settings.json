@@ -26,6 +26,8 @@
   "section_break_caption",
   "app_link",
   "hashtags",
+  "section_break_features",
+  "content_schedules",
   "section_break_status",
   "last_heartbeat",
   "column_break_status",
@@ -127,6 +129,18 @@
    "fieldtype": "Small Text",
    "label": "Hashtags",
    "default": "#TruthOfBible #BibleVerse #DailyBlessing #GodBlessYou"
+  },
+  {
+   "fieldname": "section_break_features",
+   "fieldtype": "Section Break",
+   "label": "Scheduled Content Posts",
+   "description": "Extra posts on chosen weekdays, one row per content type (App Feature, Salvation Prayer, ...). Only TOB Social Content ticked 'Checked & approved' is used; the least recently posted goes next. 'Automatic posting ON' above is the master switch for these too."
+  },
+  {
+   "fieldname": "content_schedules",
+   "fieldtype": "Table",
+   "label": "Content Schedules",
+   "options": "TOB Automation Schedule"
   },
   {
    "fieldname": "section_break_status",

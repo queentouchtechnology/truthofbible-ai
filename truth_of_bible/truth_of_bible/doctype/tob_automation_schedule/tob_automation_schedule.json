@@ -1,0 +1,103 @@
+{
+ "doctype": "DocType",
+ "name": "TOB Automation Schedule",
+ "module": "Truth Of Bible",
+ "custom": 0,
+ "istable": 1,
+ "issingle": 0,
+ "quick_entry": 0,
+ "track_changes": 1,
+ "engine": "InnoDB",
+ "description": "One scheduled content type in TOB Blessing Automation Settings: when approved TOB Social Content of this type is posted. The daily blessing verse has its own fields on the settings, not a row here.",
+ "permissions": [],
+ "field_order": [
+  "content_type",
+  "enabled",
+  "post_time",
+  "hashtags",
+  "column_break_days",
+  "mon",
+  "tue",
+  "wed",
+  "thu",
+  "fri",
+  "sat",
+  "sun"
+ ],
+ "fields": [
+  {
+   "fieldname": "content_type",
+   "fieldtype": "Select",
+   "label": "Content Type",
+   "options": "App Feature\nSalvation Prayer",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "enabled",
+   "fieldtype": "Check",
+   "label": "On",
+   "default": "0",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "post_time",
+   "fieldtype": "Time",
+   "label": "Post Time (India time)",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "hashtags",
+   "fieldtype": "Small Text",
+   "label": "Hashtags"
+  },
+  {
+   "fieldname": "column_break_days",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "mon",
+   "fieldtype": "Check",
+   "label": "Mon",
+   "in_list_view": 0
+  },
+  {
+   "fieldname": "tue",
+   "fieldtype": "Check",
+   "label": "Tue",
+   "in_list_view": 0
+  },
+  {
+   "fieldname": "wed",
+   "fieldtype": "Check",
+   "label": "Wed",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "thu",
+   "fieldtype": "Check",
+   "label": "Thu",
+   "in_list_view": 0
+  },
+  {
+   "fieldname": "fri",
+   "fieldtype": "Check",
+   "label": "Fri",
+   "in_list_view": 0
+  },
+  {
+   "fieldname": "sat",
+   "fieldtype": "Check",
+   "label": "Sat",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "sun",
+   "fieldtype": "Check",
+   "label": "Sun",
+   "in_list_view": 0
+  }
+ ],
+ "links": []
+}

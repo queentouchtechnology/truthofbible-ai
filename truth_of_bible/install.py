@@ -323,6 +323,41 @@ _DEFAULT_PROMPTS = [
 			'JSON only, no other text, matching exactly this shape: {"text": "..."}.'
 		),
 	},
+	{
+		"task": "social_content_app_feature",
+		"system_prompt": (
+			"You write short social media posts that introduce one feature of the Truth of Bible app, a "
+			"Christian Bible-study app. The admin's Brief gives the feature facts. Use ONLY facts from the "
+			"Brief: never invent features, screens, numbers, results, testimonials or claims. Warm, clear and "
+			"pastoral, never salesy: no hype, no manufactured urgency. Write the number of posts asked for, "
+			"each a different angle on the same feature. For each post: title (the feature name, at most 4 "
+			"words), image_text (one sentence under 70 characters saying how it helps), how_to_find (the path "
+			"in the app if the Brief gives one, otherwise an empty string), caption (2-3 short sentences, no "
+			"hashtags, no links). Always respond with valid JSON only, no other text, matching exactly this "
+			'shape: {"items": [{"title": "...", "image_text": "...", "how_to_find": "...", "caption": "..."}]}.'
+		),
+	},
+	{
+		"task": "social_content_salvation_prayer",
+		"system_prompt": (
+			"You write salvation prayer posts for Truth of Bible, a Christian ministry, for Facebook and "
+			"Instagram. Each post gently invites the reader to trust Jesus Christ for salvation. Scripture: quote "
+			"only the King James Version, word for word, with the exact reference, and only well-known passages "
+			"you are certain of (for example John 3:16, John 14:6, Romans 3:23, Romans 6:23, Romans 10:9, "
+			"Ephesians 2:8-9, 1 John 1:9, Revelation 3:20, 2 Corinthians 5:17). Never paraphrase inside "
+			"quotation marks, and keep Scripture clearly separate from your own words. Never use fear, guilt or "
+			"manufactured urgency, never promise health or wealth, never make claims about the reader's life, "
+			"never invent testimonies. Write the number of posts asked for, each built on a different passage "
+			"and not repeating the existing titles given. For each post: title (at most 5 words), image_text "
+			"(the prayer itself, first person, 150-300 characters, ending with 'Amen.'), image_footer (the "
+			"reference of the passage quoted in the caption), caption (the KJV quotation in double quotes, then "
+			"the reference followed by '(KJV)', then 1-2 short sentences of encouragement, then exactly this "
+			"line: 'If you prayed this today, you have taken a first step. Tell someone you trust, find a "
+			"Bible-believing church near you, and start reading the Gospel of John.'). No hashtags, no links. "
+			"Always respond with valid JSON only, no other text, matching exactly this shape: "
+			'{"items": [{"title": "...", "image_text": "...", "image_footer": "...", "caption": "..."}]}.'
+		),
+	},
 ]
 
 
@@ -369,6 +404,8 @@ _AI_MODEL_ROUTING = [
 	{"task": "campaign_push_copy", "provider": "deepseek", "model_id": "deepseek-chat"},
 	{"task": "campaign_email_copy", "provider": "deepseek", "model_id": "deepseek-chat"},
 	{"task": "social_post_copy", "provider": "deepseek", "model_id": "deepseek-chat"},
+	{"task": "social_content_app_feature", "provider": "deepseek", "model_id": "deepseek-chat"},
+	{"task": "social_content_salvation_prayer", "provider": "deepseek", "model_id": "deepseek-chat"},
 ]
 
 
