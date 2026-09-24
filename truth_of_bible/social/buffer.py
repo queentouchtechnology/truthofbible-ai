@@ -229,14 +229,18 @@ def _create_post(
 	`offer`/`event`. Confirmed via introspecting `GoogleBusinessEventMeta
 	DataInput`/`GoogleBusinessOfferMetaDataInput`: `title` sits at BOTH
 	the top level of `google` and (redundantly, harmlessly) inside each
-	details object; event's coupon-equivalent field doesn't exist for
-	events, offer's coupon code is named `code` (not `couponCode`, the
-	original guess); both `startDate`/`endDate` are `DateTime` (full
-	ISO 8601, not a bare date) and live under `detailsEvent`/
-	`detailsOffer`, not flat under `google`; `detailsEvent.
-	isFullDayEvent: Boolean!` is required whenever `detailsEvent` is
-	sent — this app only collects a date, not a time, so it's always
-	`True`.
+	details object; offer's coupon code is named `code` (not
+	`couponCode`, the original guess); both `startDate`/`endDate` are
+	`DateTime` (full ISO 8601, not a bare date) and live under
+	`detailsEvent`/`detailsOffer`, not flat under `google`;
+	`detailsEvent.isFullDayEvent: Boolean!` is required whenever
+	`detailsEvent` is sent — this app only collects a date, not a time,
+	so it's always `True`. **`startDate`/`endDate` are required for
+	`offer` too** — confirmed live via a real Buffer rejection ("Google
+	Business offers require a start/end date"), not visible from the
+	schema itself (both fields are merely optional on
+	`GoogleBusinessOfferMetaDataInput`); `event`'s start must also be
+	strictly before its end, same real rejection pattern.
 	"""
 	assets = []
 	if video_url:
@@ -322,11 +326,21 @@ def _create_post(
 					details["endDate"] = _date_to_iso(gbp_end_date)
 				gbp["detailsEvent"] = details
 			elif post_types[service] == "offer":
+				# Confirmed live (real Buffer rejection, not in the schema
+				# itself — `startDate`/`endDate` are optional per
+				# introspection but Buffer's business-logic validation
+				# requires both): "Google Business offers require a start
+				# date., ... require an end date." — same requirement as
+				# Event, just not visible from the type system alone.
 				details = {}
 				if gbp_title:
 					details["title"] = gbp_title
 				if gbp_coupon_code:
 					details["code"] = gbp_coupon_code
+				if gbp_start_date:
+					details["startDate"] = _date_to_iso(gbp_start_date)
+				if gbp_end_date:
+					details["endDate"] = _date_to_iso(gbp_end_date)
 				if details:
 					gbp["detailsOffer"] = details
 		if thread_texts and len(thread_texts) > 1 and service:
