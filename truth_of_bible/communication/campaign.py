@@ -478,14 +478,30 @@ def _process_recipient(doc, recipient_name: str):
 		else:
 			raw_params = json.loads(doc.whatsapp_template_params or "[]")
 			params = [_render_merge_tags(p, merge_values) for p in raw_params]
-			ok, message_id, err = _send_whatsapp(
-				user,
-				recipient.user_name,
-				doc.whatsapp_template_name,
-				doc.whatsapp_template_category,
-				doc.whatsapp_template_language,
-				params,
-			)
+			empty_at = [i + 1 for i, p in enumerate(params) if not (p or "").strip()]
+			if empty_at:
+				# A blank template param (almost always a personalization
+				# tag like {{first_name}} that had nothing to substitute for
+				# this recipient) is what WhatsApp itself rejects with Cloud
+				# API error 131008 "Required parameter is missing" — but
+				# only AFTER Chatwoot has already 200'd the request, which
+				# is why this used to show as a false "Sent" (see
+				# chatwoot_webhook.py's message_updated handler for the
+				# other half of this fix). Catching it here means this
+				# never reaches Chatwoot at all, and fails honestly instead.
+				ok, message_id, err = False, None, (
+					f"Template param(s) #{', '.join(map(str, empty_at))} resolved to an empty "
+					"value for this recipient — not sent."
+				)
+			else:
+				ok, message_id, err = _send_whatsapp(
+					user,
+					recipient.user_name,
+					doc.whatsapp_template_name,
+					doc.whatsapp_template_category,
+					doc.whatsapp_template_language,
+					params,
+				)
 			recipient.whatsapp_status = "SENT" if ok else "FAILED"
 			if message_id:
 				recipient.whatsapp_message_id = message_id

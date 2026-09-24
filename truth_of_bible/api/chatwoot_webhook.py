@@ -1,9 +1,25 @@
 """Receives Chatwoot's outbound webhook (Settings -> Integrations ->
-Webhooks on the Chatwoot side) for `message_created` and
-`conversation_status_changed` events, keeping the local TOB WhatsApp
-Conversation/Message mirror in sync and notifying admins of new inbound
-messages via the existing notification engine (Decision 4/5 — reused, not
-duplicated).
+Webhooks on the Chatwoot side) for `message_created`,
+`conversation_status_changed` and `message_updated` events, keeping the
+local TOB WhatsApp Conversation/Message mirror in sync and notifying
+admins of new inbound messages via the existing notification engine
+(Decision 4/5 — reused, not duplicated).
+
+**`message_updated` — added to close a real correctness gap.**
+`chatwoot.send_template_message` (see that module's own docstring) only
+confirms Chatwoot *accepted* an outbound send; it never confirms WhatsApp
+actually delivered it. A campaign recipient's `whatsapp_status` used to be
+written once, synchronously, from that accept response alone, and never
+revisited — so a message WhatsApp later rejected (e.g. Cloud API error
+131008 "Required parameter is missing", surfaced only inside Chatwoot's
+own conversation view) stayed recorded as "Sent" forever. `message_updated`
+is Chatwoot's own async delivery-status callback for an outbound message;
+`_handle_message_updated` below corrects both `TOB WhatsApp Message.status`
+and the owning `TOB Communication Campaign Recipient.whatsapp_status` once
+Chatwoot reports the real outcome. **Requires this event to actually be
+enabled** on the Chatwoot side (Settings -> Integrations -> Webhooks -> the
+event checkboxes) — `message_created`/`conversation_status_changed` being
+enabled there does not imply `message_updated` also is.
 
 **Auth — UNVERIFIED against this specific instance, same honest-assumption
 precedent as `community_webhook.py`'s own docstring.** Unlike WooCommerce/
@@ -37,6 +53,12 @@ from frappe.utils import now_datetime
 from truth_of_bible.notifications.engine import handle_event
 
 _STATUS_VALUES = ("OPEN", "PENDING", "RESOLVED")
+_MESSAGE_STATUS_MAP = {
+	"sent": "SENT",
+	"delivered": "DELIVERED",
+	"read": "READ",
+	"failed": "FAILED",
+}
 _CONTENT_TYPE_MAP = {
 	"text": "TEXT",
 	None: "TEXT",
@@ -64,6 +86,8 @@ def receive():
 			_handle_message_created(payload)
 		elif event == "conversation_status_changed":
 			_handle_status_changed(payload)
+		elif event == "message_updated":
+			_handle_message_updated(payload)
 	except Exception:
 		frappe.log_error(
 			title=f"Communication Center: chatwoot_webhook ({event})", message=frappe.get_traceback()
@@ -159,4 +183,48 @@ def _handle_status_changed(payload: dict) -> None:
 	frappe.db.set_value(
 		"TOB WhatsApp Conversation", {"chatwoot_conversation_id": chatwoot_conversation_id}, "status", status
 	)
+	frappe.db.commit()
+
+
+def _handle_message_updated(payload: dict) -> None:
+	"""Chatwoot's async delivery-status callback for a message already
+	created (inbound or outbound) — the only place this app learns a
+	previously-recorded "Sent" outbound message actually failed downstream
+	(WhatsApp rejecting it after Chatwoot already accepted the request; see
+	this module's own docstring). Silently returns for anything that isn't
+	a status transition on a message this app already has a local mirror
+	row for — an inbound message's own status echo, or a status value this
+	map doesn't recognize, are both expected no-ops, not errors."""
+	chatwoot_message_id = str(payload.get("id") or "").strip()
+	raw_status = str(payload.get("status") or "").strip().lower()
+	new_status = _MESSAGE_STATUS_MAP.get(raw_status)
+	if not chatwoot_message_id or not new_status:
+		return
+
+	message_name = frappe.db.get_value(
+		"TOB WhatsApp Message", {"chatwoot_message_id": chatwoot_message_id}, "name"
+	)
+	if not message_name:
+		return
+
+	frappe.db.set_value("TOB WhatsApp Message", message_name, "status", new_status)
+
+	# Cascade to whichever campaign recipient this send belongs to, if
+	# any — a manually-sent agent reply (not a campaign send) has no
+	# matching recipient row, which is fine, nothing to cascade to.
+	recipient_name = frappe.db.get_value(
+		"TOB Communication Campaign Recipient", {"whatsapp_message_id": chatwoot_message_id}, "name"
+	)
+	if recipient_name:
+		frappe.db.set_value("TOB Communication Campaign Recipient", recipient_name, "whatsapp_status", new_status)
+		if new_status == "FAILED":
+			error_detail = (
+				(payload.get("content_attributes") or {}).get("external_error")
+				or payload.get("error")
+				or "WhatsApp reported this message as failed after Chatwoot accepted it."
+			)
+			frappe.db.set_value(
+				"TOB Communication Campaign Recipient", recipient_name, "error", str(error_detail)[:500]
+			)
+
 	frappe.db.commit()
