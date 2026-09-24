@@ -211,25 +211,32 @@ def _create_post(
 	"facebook": "post", "googlebusiness": "event"}`) — a real device test
 	showed Buffer rejects Instagram/Facebook/Google Business Profile posts
 	outright without this. Confirmed shape (Buffer's own "Create Instagram
-	Post With User Tags" doc example): `metadata: { instagram: { type:
-	post, ... } }` — a service-scoped metadata key, the same pattern
-	`thread_texts` below already uses, so Facebook/Google Business Profile
-	are assumed to take `type` the same way under their own service key
-	rather than a separate, unconfirmed mutation shape.
+	Post With User Tags" doc example, plus live schema introspection of
+	`PostInputMetaData`/`InstagramPostMetadataInput`/
+	`FacebookPostMetadataInput`/`GoogleBusinessPostMetadataInput` after a
+	real device test surfaced 3 wrong assumptions in one round: Instagram
+	also requires `shouldShareToFeed: Boolean!` whenever `metadata.
+	instagram` is present at all (not just as an example flourish);
+	`schedulingType` is required on every mode including `saveToDraft`;
+	and Google Business Profile's metadata key is `google`, not
+	`googlebusiness` like every other service's key matches its own
+	`channels()` `service` value — see `_METADATA_KEY_BY_SERVICE`.
+	Facebook needed no metadata field beyond `type` (confirmed via the
+	same introspection).
 
 	`gbp_title`/`gbp_start_date`/`gbp_end_date`/`gbp_coupon_code` only
 	apply when a channel's service is `googlebusiness` and its type is
-	`offer`/`event` — Google Business Profile's Offer/Event post types
-	need a title (both), a coupon code (offer, optional) and start/end
-	dates (event). **Unverified against Buffer's schema** — no confirmed
-	doc example exists for these fields (only `type` was confirmed), so
-	the field names (`title`/`startDate`/`endDate`/`couponCode`) are a
-	best-effort guess following Buffer's own camelCase convention seen
-	elsewhere (`shouldShareToFeed`, `dueAt`); check the first real
-	Frappe Error Log entry from an Offer/Event post against this if it
-	fails, the same "confirm against the real error" loop that already
-	fixed two wrong guesses in this module (`OrganizationId!`, the
-	`PostActionPayload` inline fragment).
+	`offer`/`event`. Confirmed via introspecting `GoogleBusinessEventMeta
+	DataInput`/`GoogleBusinessOfferMetaDataInput`: `title` sits at BOTH
+	the top level of `google` and (redundantly, harmlessly) inside each
+	details object; event's coupon-equivalent field doesn't exist for
+	events, offer's coupon code is named `code` (not `couponCode`, the
+	original guess); both `startDate`/`endDate` are `DateTime` (full
+	ISO 8601, not a bare date) and live under `detailsEvent`/
+	`detailsOffer`, not flat under `google`; `detailsEvent.
+	isFullDayEvent: Boolean!` is required whenever `detailsEvent` is
+	sent — this app only collects a date, not a time, so it's always
+	`True`.
 	"""
 	assets = []
 	if video_url:
@@ -288,25 +295,40 @@ def _create_post(
 				# (the earlier assumption) fails every Instagram post.
 				metadata["instagram"]["shouldShareToFeed"] = True
 		if service == "googlebusiness" and post_types and post_types.get(service) in ("offer", "event"):
-			# Confirmed live: the metadata KEY is "google", not
-			# "googlebusiness" (a real GraphQL error: `"googlebusiness" is
-			# not defined by type "PostInputMetaData"` — every other
-			# service's metadata key matches its `service` value exactly
-			# except this one). The field NAMES inside it
-			# (title/startDate/endDate/couponCode) are still an unverified
-			# guess — introspect `GoogleBusinessPostMetadataInput` before
-			# trusting these; the `type` field above is the only part of
-			# this block confirmed correct so far.
+			# Confirmed live via schema introspection of
+			# `GoogleBusinessPostMetadataInput`/`GoogleBusinessEventMetaData
+			# Input`/`GoogleBusinessOfferMetaDataInput` (the metadata KEY is
+			# "google", not "googlebusiness" — every other service's key
+			# matches its `service` value exactly except this one).
+			# `title` sits at the top level of `google` (set unconditionally
+			# below, alongside `type`); start/end dates and the coupon code
+			# are nested one level deeper, under `detailsEvent`/
+			# `detailsOffer` respectively — NOT flat under `google` as
+			# first guessed. Offer's coupon field is `code`, not
+			# `couponCode`. Dates are `DateTime` (full ISO 8601), not a
+			# bare date — `_date_to_iso()` below adds a midnight-UTC time
+			# if the caller only sent a date, which is all this app's own
+			# UI collects.
 			gbp = metadata.setdefault("google", {})
 			if gbp_title:
 				gbp["title"] = gbp_title
 			if post_types[service] == "event":
+				details = {"isFullDayEvent": True}  # required; this app collects a date, not a time
+				if gbp_title:
+					details["title"] = gbp_title
 				if gbp_start_date:
-					gbp["startDate"] = gbp_start_date
+					details["startDate"] = _date_to_iso(gbp_start_date)
 				if gbp_end_date:
-					gbp["endDate"] = gbp_end_date
-			elif post_types[service] == "offer" and gbp_coupon_code:
-				gbp["couponCode"] = gbp_coupon_code
+					details["endDate"] = _date_to_iso(gbp_end_date)
+				gbp["detailsEvent"] = details
+			elif post_types[service] == "offer":
+				details = {}
+				if gbp_title:
+					details["title"] = gbp_title
+				if gbp_coupon_code:
+					details["code"] = gbp_coupon_code
+				if details:
+					gbp["detailsOffer"] = details
 		if thread_texts and len(thread_texts) > 1 and service:
 			# Confirmed shape (Twitter/X example): a `thread` array nested
 			# under a metadata key named after the service itself. Only
@@ -382,6 +404,14 @@ def _unix_to_iso(timestamp) -> str:
 	from datetime import datetime, timezone
 
 	return datetime.fromtimestamp(float(timestamp), tz=timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def _date_to_iso(date_str: str) -> str:
+	"""Google Business Profile's event/offer dates are `DateTime` (full
+	ISO 8601), but this app's own UI only collects a bare date
+	(`YYYY-MM-DD`) — confirmed via schema introspection, not a doc
+	example. Adds a midnight-UTC time if one isn't already present."""
+	return date_str if "T" in date_str else f"{date_str}T00:00:00Z"
 
 
 def get_post_metrics(buffer_post_id: str):
