@@ -121,7 +121,7 @@ def _sync_user(cfg: dict, user: str) -> dict:
 		timeout=_TIMEOUT,
 	)
 	if r.status_code != 200:
-		frappe.log_error(title="Community SSO sync", message=f"{r.status_code}: {r.text[:500]}")
+		frappe.log_error(title="Community SSO sync", message=f"user={user} | {r.status_code}: {r.text[:1000]}")
 		frappe.throw(_("Could not link your community account. Please try again later."))
 	data = r.json()
 	if not data.get("id"):
@@ -149,7 +149,7 @@ def _issue_key(cfg: dict, user: str, username: str) -> str:
 		timeout=_TIMEOUT,
 	)
 	if r.status_code != 200:
-		frappe.log_error(title="Community SSO key", message=f"{r.status_code}: {r.text[:500]}")
+		frappe.log_error(title="Community SSO key", message=f"user={user} | {r.status_code}: {r.text[:1000]}")
 		frappe.throw(_("Could not open your community session. Please try again later."))
 	key = r.json().get("key", {})
 	old_id = get_decrypted_password("User", user, _KEY_ID_FIELD, raise_exception=False)
@@ -172,6 +172,17 @@ def _key_still_valid(cfg: dict, key: str, username: str) -> bool:
 		return False
 
 
+# A member's key is checked/re-synced at most this often. Every screen open
+# used to make a live round trip to Discourse (and often rewrite the stored
+# key) before it could show anything — slow on its own, and worse, that
+# round trip happened while a database write was left open, so a second
+# request for the same person (another tab, a retry) queued behind it and
+# could hit MariaDB's lock-wait timeout. Since the key essentially never
+# actually changes, most opens can now skip Discourse and the database
+# write entirely and just reuse what was already confirmed good.
+_RECHECK_TTL = 300
+
+
 @frappe.whitelist(methods=["POST"])
 def get_community_credentials(refresh: int = 0) -> dict:
 	"""Session-authenticated (the real logged-in member). Returns the member's
@@ -181,12 +192,24 @@ def get_community_credentials(refresh: int = 0) -> dict:
 		frappe.throw(_("Please log in to use the community."), frappe.PermissionError)
 
 	cfg = _config()
+	cache = frappe.cache()
+	ok_key = f"tob_discourse_ok_{user}"
+
+	if not int(refresh or 0):
+		key = get_decrypted_password("User", user, _KEY_FIELD, raise_exception=False)
+		username = cache.get_value(f"tob_discourse_username_{user}")
+		if key and username and cache.get_value(ok_key):
+			return {"username": username, "api_key": key, "base_url": cfg["url"]}
+
 	account = _sync_user(cfg, user)
 	username = account["username"]
 
 	key = None if int(refresh or 0) else get_decrypted_password("User", user, _KEY_FIELD, raise_exception=False)
 	if not key or not _key_still_valid(cfg, key, username):
 		key = _issue_key(cfg, user, username)
+
+	cache.set_value(ok_key, 1, expires_in_sec=_RECHECK_TTL)
+	cache.set_value(f"tob_discourse_username_{user}", username, expires_in_sec=_RECHECK_TTL)
 	return {"username": username, "api_key": key, "base_url": cfg["url"]}
 
 
