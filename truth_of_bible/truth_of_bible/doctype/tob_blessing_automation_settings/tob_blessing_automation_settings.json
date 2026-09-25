@@ -8,12 +8,13 @@
  "quick_entry": 0,
  "track_changes": 1,
  "engine": "InnoDB",
- "description": "Control panel for the daily blessing post automation. The posting worker runs on the separate outreach VPS (tob-social, systemd timer every 15 minutes) and reads these settings plus the approved TOB Blessing Verse list through social/blessing_automation.py on every run; it writes each preview/post/failure to TOB Automation Log. Turning 'Automatic posting' off takes effect on the worker's next run. Secrets (Meta page token, Slack bot token) live only in the worker's own .env, never here.",
+ "description": "Control panel for the daily blessing post automation. The posting worker runs on the separate outreach VPS (tob-social, systemd timer every 15 minutes) and reads these settings plus the approved TOB Blessing Verse list through social/blessing_automation.py on every run; it writes each preview/post/failure to TOB Automation Log. Turning 'Automatic posting' off takes effect on the worker's next run. The Slack bot token is stored here (encrypted); the Meta token lives in TOB Meta Connection. The worker's .env holds only its own Frappe login.",
  "field_order": [
   "enabled",
   "post_time",
   "column_break_main",
   "design",
+  "timezone",
   "section_break_platforms",
   "post_to_facebook",
   "column_break_platforms",
@@ -21,6 +22,7 @@
   "section_break_preview",
   "preview_channel",
   "slack_channel_id",
+  "slack_bot_token",
   "column_break_preview",
   "preview_minutes_before",
   "section_break_caption",
@@ -62,6 +64,13 @@
    "reqd": 1
   },
   {
+   "fieldname": "timezone",
+   "fieldtype": "Data",
+   "label": "Time Zone",
+   "default": "Asia/Kolkata",
+   "description": "IANA time zone for every post time, e.g. Asia/Kolkata."
+  },
+  {
    "fieldname": "section_break_platforms",
    "fieldtype": "Section Break",
    "label": "Platforms"
@@ -101,6 +110,13 @@
    "fieldtype": "Data",
    "label": "Slack Channel ID",
    "description": "Channel ID (starts with C), e.g. #project-truthofbible = C0BRUBKRLE5. Invite the bot to the channel first: /invite @qtt"
+  },
+  {
+   "fieldname": "slack_bot_token",
+   "fieldtype": "Password",
+   "label": "Slack Bot Token",
+   "length": 500,
+   "description": "The only copy of the Slack bot token (xoxb-…), stored encrypted. The outreach VPS worker receives it with its settings; it keeps no copy."
   },
   {
    "fieldname": "column_break_preview",

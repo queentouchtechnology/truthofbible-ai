@@ -110,4 +110,9 @@ scheduler_events = {
 		"truth_of_bible.notifications.reading.daily_scan",
 		"truth_of_bible.notifications.prayer.daily_scan",
 	],
+	# Meta token health: verify, renew where Meta allows it, warn ahead of
+	# expiry (see social/meta_connection.py).
+	"daily": [
+		"truth_of_bible.social.meta_connection.check_connection",
+	],
 }

@@ -1,0 +1,177 @@
+{
+ "doctype": "DocType",
+ "name": "TOB Meta Connection",
+ "module": "Truth Of Bible",
+ "custom": 0,
+ "istable": 0,
+ "issingle": 1,
+ "quick_entry": 0,
+ "track_changes": 1,
+ "engine": "InnoDB",
+ "description": "The single home of the Meta (Facebook/Instagram) token for Truth of Bible. A daily check (social/meta_connection.check_connection) verifies it, records expiry and permissions, and renews it automatically where Meta supports that (expiring System User tokens, using the App Secret). Where renewal needs a person (Meta's data access expiry for User-login tokens), it warns ahead of time here, in the admin app's Social Automation overview and on Slack.",
+ "field_order": [
+  "section_break_account",
+  "page_id",
+  "instagram_account_id",
+  "column_break_account",
+  "app_id",
+  "app_secret",
+  "section_break_token",
+  "access_token",
+  "column_break_token",
+  "auto_renew",
+  "warn_days",
+  "section_break_status",
+  "status",
+  "status_message",
+  "token_type",
+  "scopes",
+  "column_break_status",
+  "expires_at",
+  "data_access_expires_at",
+  "last_checked",
+  "last_renewed",
+  "last_renewal_result"
+ ],
+ "fields": [
+  {
+   "fieldname": "section_break_account",
+   "fieldtype": "Section Break",
+   "label": "Account"
+  },
+  {
+   "fieldname": "page_id",
+   "fieldtype": "Data",
+   "label": "Facebook Page ID",
+   "default": "1153713644500338"
+  },
+  {
+   "fieldname": "instagram_account_id",
+   "fieldtype": "Data",
+   "label": "Instagram Account ID",
+   "read_only": 1,
+   "description": "Looked up from the Page on each check."
+  },
+  {
+   "fieldname": "column_break_account",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "app_id",
+   "fieldtype": "Data",
+   "label": "Meta App ID",
+   "default": "1048054197801821"
+  },
+  {
+   "fieldname": "app_secret",
+   "fieldtype": "Password",
+   "label": "Meta App Secret",
+   "description": "Only needed for automatic renewal of expiring (60-day) tokens. Stored encrypted."
+  },
+  {
+   "fieldname": "section_break_token",
+   "fieldtype": "Section Break",
+   "label": "Token"
+  },
+  {
+   "fieldname": "access_token",
+   "fieldtype": "Password",
+   "label": "Access Token",
+   "length": 1000,
+   "description": "The ONLY copy of the Meta token. A System User token (recommended), a long-lived User token or a Page token. Everything else (the outreach VPS worker, Manage Posts) gets what it needs from here through the API. Stored encrypted."
+  },
+  {
+   "fieldname": "column_break_token",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "auto_renew",
+   "fieldtype": "Check",
+   "label": "Renew automatically when supported",
+   "default": "1"
+  },
+  {
+   "fieldname": "warn_days",
+   "fieldtype": "Int",
+   "label": "Warn / renew this many days before expiry",
+   "default": "14"
+  },
+  {
+   "fieldname": "section_break_status",
+   "fieldtype": "Section Break",
+   "label": "Status (updated by the daily check)"
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "read_only": 1,
+   "options": "Not Configured\nOK\nExpiring Soon\nAction Needed\nInvalid",
+   "default": "Not Configured",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "status_message",
+   "fieldtype": "Small Text",
+   "label": "Status Message",
+   "read_only": 1
+  },
+  {
+   "fieldname": "token_type",
+   "fieldtype": "Data",
+   "label": "Token Type",
+   "read_only": 1
+  },
+  {
+   "fieldname": "scopes",
+   "fieldtype": "Small Text",
+   "label": "Granted Permissions",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_status",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "expires_at",
+   "fieldtype": "Datetime",
+   "label": "Token Expires",
+   "read_only": 1,
+   "description": "Blank = never expires."
+  },
+  {
+   "fieldname": "data_access_expires_at",
+   "fieldtype": "Datetime",
+   "label": "Data Access Expires",
+   "read_only": 1,
+   "description": "Meta's 90-day data access window for User-login tokens. Only renewed by the person re-authorising the app (log in again and update the token here)."
+  },
+  {
+   "fieldname": "last_checked",
+   "fieldtype": "Datetime",
+   "label": "Last Checked",
+   "read_only": 1
+  },
+  {
+   "fieldname": "last_renewed",
+   "fieldtype": "Datetime",
+   "label": "Last Renewed",
+   "read_only": 1
+  },
+  {
+   "fieldname": "last_renewal_result",
+   "fieldtype": "Small Text",
+   "label": "Last Renewal Result",
+   "read_only": 1
+  }
+ ],
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1
+  }
+ ],
+ "links": []
+}

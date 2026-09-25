@@ -34,7 +34,7 @@ from frappe import _
 from frappe.utils import add_days, cint, get_datetime, getdate, now_datetime, today
 
 from truth_of_bible.communication.auth import require_admin
-from truth_of_bible.social import verse_reference
+from truth_of_bible.social import meta_connection, verse_reference
 
 SETTINGS = "TOB Blessing Automation Settings"
 CONTENT = "TOB Social Content"
@@ -100,6 +100,9 @@ def get_worker_config():
 		"platforms": platforms,
 		"preview_channel": settings.preview_channel or "None",
 		"slack_channel_id": settings.slack_channel_id or "",
+		# Secrets live here, not on the VPS: the worker gets them per run over HTTPS.
+		"slack_bot_token": settings.get_password("slack_bot_token", raise_exception=False) or "",
+		"timezone": settings.timezone or "Asia/Kolkata",
 		"preview_minutes_before": cint(settings.preview_minutes_before),
 		"app_link": settings.app_link or "",
 		"hashtags": settings.hashtags or "",
@@ -110,7 +113,25 @@ def get_worker_config():
 			order_by="reference asc",
 		),
 		"schedules": schedules,
+		# Page token etc. from TOB Meta Connection — the worker keeps no copy.
+		"meta": meta_connection.worker_block(),
 	}
+
+
+@frappe.whitelist(methods=["POST"])
+def seed_worker_secrets(slack_bot_token=None):
+	"""One-time move of the Slack token from the outreach VPS's .env into these settings. Only fills an
+	empty field, so it can never overwrite what an admin set."""
+	require_worker()
+	settings = frappe.get_single(SETTINGS)
+	moved = []
+	if (slack_bot_token or "").strip() and not settings.get_password("slack_bot_token", raise_exception=False):
+		settings.slack_bot_token = slack_bot_token.strip()
+		moved.append("slack_bot_token")
+	if moved:
+		settings.flags.ignore_permissions = True
+		settings.save()
+	return {"moved": moved}
 
 
 @frappe.whitelist(methods=["POST"])
@@ -214,7 +235,7 @@ def import_content(items):
 
 SETTINGS_FIELDS = (
 	"enabled", "post_time", "design", "post_to_facebook", "post_to_instagram", "preview_channel",
-	"slack_channel_id", "preview_minutes_before", "app_link", "hashtags",
+	"slack_channel_id", "preview_minutes_before", "app_link", "hashtags", "timezone",
 )
 _CHECKS = ("enabled", "post_to_facebook", "post_to_instagram")
 _VERSE_FIELDS = [
@@ -232,6 +253,8 @@ def _settings_dict(settings):
 	data["post_time"] = str(data["post_time"] or "")
 	data["preview_minutes_before"] = cint(data["preview_minutes_before"])
 	data["schedules"] = _schedules(settings)
+	data["timezone"] = data["timezone"] or "Asia/Kolkata"
+	data["has_slack_token"] = bool(settings.get_password("slack_bot_token", raise_exception=False))
 	return data
 
 
@@ -358,6 +381,7 @@ def get_overview(days=30):
 			for k in ("approved", "needs_check", "no_text")},
 		"next_verse": next_verse,
 		"content": content,
+		"meta_connection": meta_connection.status(),
 		"today": frappe.get_all(LOG, filters={"creation": [">=", today()]},
 			fields=["event", "platform", "post_type", "reference", "post_id", "message", "creation"],
 			order_by="creation desc"),
@@ -376,6 +400,8 @@ def update_settings(values):
 	for field in SETTINGS_FIELDS:
 		if field in values:
 			settings.set(field, cint(values[field]) if field in _CHECKS else values[field])
+	if (values.get("slack_bot_token") or "").strip():  # write-only; blank keeps the stored one
+		settings.slack_bot_token = values["slack_bot_token"].strip()
 	if "schedules" in values:
 		settings.set("content_schedules", [])
 		for row in values["schedules"] or []:
