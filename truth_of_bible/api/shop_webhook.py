@@ -89,6 +89,13 @@ def _handle_order_updated(payload: dict) -> None:
 		user = frappe.db.get_value("User", {"email": billing_email}, "name")
 		if user:
 			handle_event(user_event, user, variables)
+			if status == "completed":
+				try:
+					from truth_of_bible.rewards import engine as rewards_engine
+
+					rewards_engine.on_order_completed(user, order_id)
+				except Exception:
+					frappe.log_error(title="Rewards: order points failed", message=frappe.get_traceback())
 
 	if admin_event:
 		handle_event(admin_event, None, variables)

@@ -121,6 +121,12 @@ def record_batch(events):
 				"data": json.dumps(row.get("data") or {}),
 			}).insert(ignore_permissions=True)
 			recorded += 1
+			try:
+				from truth_of_bible.rewards import engine as rewards_engine
+
+				rewards_engine.on_activity(user, event_name, event_time)
+			except Exception:
+				frappe.log_error(title="Rewards: awarding from activity failed", message=frappe.get_traceback())
 		except Exception:
 			# One entry per BATCH, not per event — a systemic failure (like
 			# the timezone bug this replaced) used to write up to 100

@@ -1,0 +1,98 @@
+{
+ "doctype": "DocType",
+ "name": "TOB Reward Coupon",
+ "module": "Truth Of Bible",
+ "custom": 0,
+ "istable": 0,
+ "issingle": 0,
+ "quick_entry": 0,
+ "track_changes": 0,
+ "autoname": "hash",
+ "naming_rule": "Random",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "engine": "InnoDB",
+ "description": "A shop coupon a user bought with reward points \u2014 created automatically as a WooCommerce coupon (single use, tied to the user's email, short expiry).",
+ "field_order": [
+  "user",
+  "code",
+  "tier",
+  "title",
+  "discount_label",
+  "points_spent",
+  "expires_on",
+  "status",
+  "wc_coupon_id"
+ ],
+ "fields": [
+  {
+   "fieldname": "user",
+   "fieldtype": "Link",
+   "options": "User",
+   "label": "User",
+   "reqd": 1,
+   "in_list_view": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "code",
+   "fieldtype": "Data",
+   "label": "Coupon Code",
+   "reqd": 1,
+   "in_list_view": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "tier",
+   "fieldtype": "Data",
+   "label": "Tier"
+  },
+  {
+   "fieldname": "title",
+   "fieldtype": "Data",
+   "label": "Title"
+  },
+  {
+   "fieldname": "discount_label",
+   "fieldtype": "Data",
+   "label": "Discount"
+  },
+  {
+   "fieldname": "points_spent",
+   "fieldtype": "Int",
+   "label": "Points Spent"
+  },
+  {
+   "fieldname": "expires_on",
+   "fieldtype": "Datetime",
+   "label": "Expires On",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "ACTIVE\nUSED\nEXPIRED",
+   "default": "ACTIVE",
+   "in_list_view": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "wc_coupon_id",
+   "fieldtype": "Data",
+   "label": "WooCommerce Coupon ID"
+  }
+ ],
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "report": 1,
+   "export": 1
+  }
+ ],
+ "links": []
+}

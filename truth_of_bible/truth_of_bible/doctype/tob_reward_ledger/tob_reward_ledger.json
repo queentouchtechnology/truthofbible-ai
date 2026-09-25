@@ -1,0 +1,75 @@
+{
+ "doctype": "DocType",
+ "name": "TOB Reward Ledger",
+ "module": "Truth Of Bible",
+ "custom": 0,
+ "istable": 0,
+ "issingle": 0,
+ "quick_entry": 0,
+ "track_changes": 0,
+ "autoname": "hash",
+ "naming_rule": "Random",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "engine": "InnoDB",
+ "description": "One row per points movement (earned or spent) \u2014 the reward balance is the sum of `points` for a user. Written only by rewards/engine.py; `dedupe_key` (unique per user) is what makes every automatic award idempotent.",
+ "field_order": [
+  "user",
+  "reason",
+  "title",
+  "points",
+  "dedupe_key"
+ ],
+ "fields": [
+  {
+   "fieldname": "user",
+   "fieldtype": "Link",
+   "options": "User",
+   "label": "User",
+   "reqd": 1,
+   "in_list_view": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "reason",
+   "fieldtype": "Data",
+   "label": "Reason Code",
+   "reqd": 1,
+   "in_list_view": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "title",
+   "fieldtype": "Data",
+   "label": "Title",
+   "description": "What the user sees in their history."
+  },
+  {
+   "fieldname": "points",
+   "fieldtype": "Int",
+   "label": "Points",
+   "reqd": 1,
+   "in_list_view": 1,
+   "description": "Positive = earned, negative = spent."
+  },
+  {
+   "fieldname": "dedupe_key",
+   "fieldtype": "Data",
+   "label": "Dedupe Key",
+   "search_index": 1,
+   "description": "Unique per user \u2014 e.g. 'read_chapter:2026-09-25'. Stops the same award being granted twice."
+  }
+ ],
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "report": 1,
+   "export": 1
+  }
+ ],
+ "links": []
+}
