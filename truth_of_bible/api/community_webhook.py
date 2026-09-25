@@ -54,9 +54,21 @@ import frappe
 
 from truth_of_bible.notifications.engine import handle_event
 
+# Same integer values the in-app "My Activity" list already trusts and
+# renders correctly today (`CommunityNotification.verb`/`_icon` in the
+# Flutter app, `community_extras_models.dart`/`community_notifications_
+# screen.dart`) — that list is populated by Discourse's own
+# `/notifications.json`, using these exact type numbers, so they're
+# considerably better-confirmed for THIS instance than the two originally
+# shipped here (which were Discourse's stable defaults, not instance-
+# verified). 5/15 both mean "liked" (15 = several posts liked at once,
+# consolidated); 12 is "granted_badge".
 _NOTIFICATION_TYPE_EVENTS = {
-	2: "COMMUNITY_REPLY",  # Discourse's "replied" notification type
-	1: "COMMUNITY_MENTION",  # Discourse's "mentioned" notification type
+	2: "COMMUNITY_REPLY",  # "replied"
+	1: "COMMUNITY_MENTION",  # "mentioned"
+	5: "COMMUNITY_LIKE",  # "liked"
+	15: "COMMUNITY_LIKE",  # "liked_consolidated" (several at once)
+	12: "COMMUNITY_BADGE",  # "granted_badge"
 }
 
 
@@ -127,7 +139,15 @@ def _handle_notification(notification: dict) -> None:
 		return
 
 	data = _parse_data(notification.get("data"))
-	handle_event(event, user, {"topic_title": data.get("topic_title", "")})
+	# A badge notification carries no `topic_title` at all — its own
+	# payload shape is `badge_name`/`badge_title` instead (same field the
+	# in-app list already falls back to — see `CommunityNotification.
+	# fromJson`'s `data['badge_name']`).
+	if event == "COMMUNITY_BADGE":
+		variables = {"badge_name": data.get("badge_title") or data.get("badge_name", "")}
+	else:
+		variables = {"topic_title": data.get("topic_title", "")}
+	handle_event(event, user, variables)
 
 
 def _parse_data(raw) -> dict:
