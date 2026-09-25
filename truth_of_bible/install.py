@@ -1350,6 +1350,26 @@ _NOTIFICATION_TEMPLATES = [
 		"body": "{{ topic_title }}",
 		"description": "Discourse notification_type 'mentioned' (unverified for this instance — see community_webhook.py).",
 	},
+	{
+		"event_code": "COMMUNITY_LIKE",
+		"audience": "User",
+		"category": "Community",
+		"priority": "Low",
+		"deeplink_route": "/communityActivity",
+		"title": "Someone liked your post",
+		"body": "{{ topic_title }}",
+		"description": "Discourse notification_type 'liked'/'liked_consolidated' (5/15) — confirmed values, already used by the in-app My Activity list.",
+	},
+	{
+		"event_code": "COMMUNITY_BADGE",
+		"audience": "User",
+		"category": "Community",
+		"priority": "Normal",
+		"deeplink_route": "/communityActivity",
+		"title": "You earned a badge!",
+		"body": "{{ badge_name }}",
+		"description": "Discourse notification_type 'granted_badge' (12) — confirmed value, already used by the in-app My Activity list.",
+	},
 	# --- Communication Center (api/chatwoot_webhook.py) — nudges an admin
 	# that a new inbound WhatsApp message arrived, reusing this same
 	# Admin-audience/FCM pipeline rather than a second notification

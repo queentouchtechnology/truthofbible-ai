@@ -50,6 +50,10 @@ _ALLOWED_EVENTS = {
 	# notifications/engagement.py.
 	"notification_received",
 	"notification_tapped",
+	# Reported once a session ends (`main.dart`'s WidgetsBindingObserver),
+	# with `data.duration_seconds` — see notifications/engagement.py's real
+	# session-length calculation.
+	"app_session_ended",
 }
 
 _MAX_BATCH_SIZE = 100
