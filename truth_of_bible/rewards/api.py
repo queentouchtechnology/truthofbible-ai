@@ -8,8 +8,9 @@ decides whether Edenza shop coupons are offered (India only) — every other
 member uses the wallet."""
 
 import frappe
+from frappe.rate_limiter import rate_limit
 
-from truth_of_bible.rewards import engine, topup
+from truth_of_bible.rewards import engine, history, topup
 
 
 def _user() -> str:
@@ -52,6 +53,14 @@ def claim_referral(code, country=None):
 	return {**result, "overview": engine.overview(user, country)}
 
 
+@frappe.whitelist(allow_guest=True, methods=["POST"])
+@rate_limit(limit=20, seconds=60)
+def check_referral_code(code=None):
+	"""Lets the sign-in screen confirm a code before login. Yes/no only, and
+	rate-limited so codes can't be enumerated."""
+	return {"valid": engine.referral_code_exists(code)}
+
+
 @frappe.whitelist(methods=["POST"])
 def redeem(tier_id, country=None):
 	user = _user()
@@ -77,6 +86,21 @@ def verify_topup(order_id, payment_id, signature, country=None):
 	user = _user()
 	result = topup.verify_topup(user, order_id, payment_id, signature)
 	return {**result, "overview": engine.overview(user, country)}
+
+
+@frappe.whitelist(methods=["GET"])
+def get_points_history(page=1, page_size=20):
+	return history.points_history(_user(), page, page_size)
+
+
+@frappe.whitelist(methods=["GET"])
+def get_wallet_history(page=1, page_size=20):
+	return history.wallet_history(_user(), page, page_size)
+
+
+@frappe.whitelist(methods=["GET"])
+def get_invite_summary():
+	return history.invite_summary(_user())
 
 
 @frappe.whitelist(allow_guest=True, methods=["POST"])

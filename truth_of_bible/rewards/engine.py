@@ -33,6 +33,7 @@ Points can be spent two ways, both automatic:
   the Bank account the top-up flow uses, which would misstate the books.
 """
 
+import re
 import secrets
 from datetime import timedelta
 
@@ -531,6 +532,7 @@ FRIEND_POINTS = 2
 REFERRER_MONTHLY_CAP = 20  # rewarded friends per calendar month
 REFERRAL_MILESTONES = ((3, 5), (10, 15), (25, 40))  # rewarded friends -> bonus
 _CLAIM_WINDOW_DAYS = 30  # only fairly new accounts can enter a code
+_REFEREE_MIN_DAYS = 2  # a friend must be genuinely active on this many different days
 _CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
 
 
@@ -580,6 +582,15 @@ def _settle_referral(user: str) -> int:
 	# Real activity = a chapter read or quiz done (not just a check-in tap).
 	if not frappe.db.exists("TOB Reward Ledger", {"user": user, "reason": ["in", ["read_chapter", "complete_quiz"]]}):
 		return 0
+	# One quick session isn't enough — several throwaway accounts would each
+	# do that. The friend has to come back on a second day.
+	active_days = frappe.db.sql(
+		"""select count(distinct date(creation)) from `tabTOB Reward Ledger`
+		where user=%s and reason in ('daily_checkin', 'read_chapter', 'complete_quiz')""",
+		user,
+	)[0][0]
+	if int(active_days or 0) < _REFEREE_MIN_DAYS:
+		return 0
 	month_start = getdate(nowdate()).replace(day=1)
 	rewarded_this_month = frappe.db.count(
 		"TOB Reward Referral", {"referrer": row.referrer, "status": "REWARDED", "rewarded_at": [">=", month_start]}
@@ -597,6 +608,13 @@ def _settle_referral(user: str) -> int:
 	return FRIEND_POINTS if granted else 0
 
 
+def referral_code_exists(code) -> bool:
+	code = str(code or "").strip().upper()
+	if not re.fullmatch(r"[A-Z0-9]{4,20}", code):
+		return False
+	return bool(frappe.db.exists("TOB Reward Profile", {"referral_code": code}))
+
+
 def referral_overview(user: str) -> dict:
 	code = referral_code(user)
 	rewarded = frappe.db.count("TOB Reward Referral", {"referrer": user, "status": ["in", ["REWARDED", "CAPPED"]]})
@@ -609,7 +627,40 @@ def referral_overview(user: str) -> dict:
 	)
 	upcoming = next(((f, b) for f, b in REFERRAL_MILESTONES if f > rewarded), None)
 	used_code = bool(frappe.db.exists("TOB Reward Referral", {"referee": user}))
+	package = frappe.get_site_config().get("play_package") or "in.bizzui.truthofbible"
+	invite_link = f"https://play.google.com/store/apps/details?id={package}&referrer=ref_{code}"
+	tiers = [
+		{"kind": "referrer", "title": f"+{REFERRER_POINTS} points per friend",
+		 "subtitle": "Each friend who joins with your code and starts reading.", "reached": False},
+		{"kind": "friend", "title": f"+{FRIEND_POINTS} points for your friend",
+		 "subtitle": "A welcome bonus once they start reading.", "reached": False},
+	] + [
+		{"kind": "milestone", "title": f"{f} friends → +{b} bonus",
+		 "subtitle": "Unlocked" if rewarded >= f else "Keep inviting to unlock", "reached": rewarded >= f}
+		for f, b in REFERRAL_MILESTONES
+	]
+	rules = [
+		f"A friend counts once they read or take a quiz on {_REFEREE_MIN_DAYS} different days — signing up alone earns nothing.",
+		f"Codes can be entered in the first {_CLAIM_WINDOW_DAYS} days of a new account.",
+		f"Up to {REFERRER_MONTHLY_CAP} rewarded friends per month.",
+	]
 	return {
+		"invite_link": invite_link,
+		"share_message": (
+			"Join me on the Truth of Bible app — daily verses, quizzes and a community that grows in faith "
+			f"together. Install with my link and my code {code} is applied automatically:\n{invite_link}"
+		),
+		"summary": (
+			f"You get {REFERRER_POINTS} points, they get {FRIEND_POINTS} — once they start reading. "
+			"Your code is applied automatically when they install from your link."
+		),
+		"headline": f"{rewarded} friend{'' if rewarded == 1 else 's'} joined",
+		"progress_text": (
+			f"{upcoming[0] - rewarded} more for +{upcoming[1]} bonus points at {upcoming[0]} friends."
+			if upcoming else "You've unlocked every milestone. Thank you for spreading the word!"
+		),
+		"tiers": tiers,
+		"rules": rules,
 		"code": code,
 		"friends_rewarded": rewarded,
 		"friends_pending": pending,

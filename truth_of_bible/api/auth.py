@@ -5,6 +5,36 @@ from frappe import _
 from frappe.utils.file_manager import save_file
 
 
+def _token_is_for_this_app(access_token) -> bool:
+	"""Strict: a Google access token is accepted only if it was issued to one
+	of OUR OAuth clients (`google_client_ids` in site_config). Anything else —
+	another app's token, an unreadable audience, an empty or missing list —
+	is refused. The audience seen is written to Error Log (once per value) so
+	the right client IDs can be copied into site_config."""
+	try:
+		r = requests.get(
+			"https://oauth2.googleapis.com/tokeninfo", params={"access_token": access_token}, timeout=15
+		)
+		if r.status_code != 200:
+			return False
+		info = r.json()
+	except Exception:
+		frappe.log_error(title="Google login audience check failed", message=frappe.get_traceback())
+		return False
+	audiences = {a for a in (info.get("aud"), info.get("azp")) if a}
+	allowed = {str(c) for c in (frappe.get_site_config().get("google_client_ids") or [])}
+	ok = bool(audiences & allowed)
+	if not ok:
+		seen = ",".join(sorted(audiences)) or "(none)"
+		if not frappe.cache().get_value(f"google_aud_refused:{seen}"):
+			frappe.cache().set_value(f"google_aud_refused:{seen}", 1)
+			frappe.log_error(
+				title="Google login refused: audience not allowed",
+				message=f"Audience seen: {seen}. If this is your app, add it to google_client_ids in site_config.json.",
+			)
+	return ok
+
+
 @frappe.whitelist(allow_guest=True)
 def google_login(access_token, referralCode=None):
 	# `referralCode` is accepted only so older app builds that still send it
@@ -24,7 +54,12 @@ def google_login(access_token, referralCode=None):
 			return {"status": "error", "message": "Invalid Google token"}
 
 		data = res.json()
+		if not _token_is_for_this_app(access_token):
+			return {"status": "error", "message": "Invalid Google token"}
+
 		email = data.get("email")
+		if data.get("email_verified") in (False, "false", "False", 0):
+			return {"status": "error", "message": "Google email is not verified"}
 		full_name = data.get("name")
 		picture = data.get("picture")
 
