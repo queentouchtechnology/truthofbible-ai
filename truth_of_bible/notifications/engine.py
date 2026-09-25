@@ -142,6 +142,10 @@ def _send_one(template: dict, user: str, variables: dict, event_code: str) -> bo
 			message=frappe.get_traceback(),
 		)
 
+	# Recorded BEFORE the push so its id can travel in the payload — the app
+	# reports "received"/"tapped" back against it, which is what makes
+	# open rates and engagement measurable at all.
+	send_id = _record_send(user, event_code)
 	delivery.send_push(
 		user=user,
 		title=title,
@@ -149,8 +153,8 @@ def _send_one(template: dict, user: str, variables: dict, event_code: str) -> bo
 		route=template.deeplink_route,
 		ref_id=str(route_id) if route_id is not None else None,
 		notif_type=event_code,
+		send_id=send_id,
 	)
-	_record_send(user, event_code)
 	return True
 
 
@@ -208,12 +212,15 @@ def _already_sent_today(user: str, event_code: str) -> bool:
 	)
 
 
-def _record_send(user: str, event_code: str) -> None:
-	frappe.get_doc(
+def _record_send(user: str, event_code: str) -> str:
+	doc = frappe.get_doc(
 		{
 			"doctype": "TOB Notification Send Log",
 			"user": user,
 			"event_code": event_code,
 			"sent_at": now_datetime(),
+			"tracked": 1,
 		}
-	).insert(ignore_permissions=True)
+	)
+	doc.insert(ignore_permissions=True)
+	return doc.name

@@ -17,7 +17,11 @@
   "user",
   "event_code",
   "channel",
-  "sent_at"
+  "sent_at",
+  "tracked",
+  "devices_reached",
+  "devices_failed",
+  "failure_reason"
  ],
  "fields": [
   {
@@ -54,6 +58,29 @@
    "reqd": 1,
    "in_list_view": 1,
    "search_index": 1
+  },
+  {
+   "fieldname": "tracked",
+   "fieldtype": "Check",
+   "label": "Tracked",
+   "default": "0",
+   "description": "1 when this send carried a send_id in its push payload, so the app can report received/tapped back against it. Older rows are untracked and excluded from open-rate math."
+  },
+  {
+   "fieldname": "devices_reached",
+   "fieldtype": "Int",
+   "label": "Devices Reached",
+   "description": "Devices Google's push service accepted the message for (HTTP 200) — accepted for delivery, not proof the phone displayed it."
+  },
+  {
+   "fieldname": "devices_failed",
+   "fieldtype": "Int",
+   "label": "Devices Failed"
+  },
+  {
+   "fieldname": "failure_reason",
+   "fieldtype": "Small Text",
+   "label": "Failure Reason"
   }
  ],
  "permissions": [

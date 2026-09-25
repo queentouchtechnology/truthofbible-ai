@@ -51,6 +51,7 @@ def send_push(
 	notif_type: str = "",
 	image: str | None = None,
 	sound: str = "default",
+	send_id: str | None = None,
 ) -> bool:
 	"""Sends to every device token this user has registered (`User FCM
 	Token`), pruning any token FCM reports as UNREGISTERED. Returns True if
@@ -60,10 +61,12 @@ def send_push(
 	"""
 	tokens = frappe.get_all("User FCM Token", filters={"user": user}, pluck="fcm_token")
 	if not tokens:
+		_record_result(send_id, 0, 0, "No push token registered")
 		return False
 
 	access_token, project_id = _access_token()
 	if not access_token:
+		_record_result(send_id, 0, 0, "Push service credentials unavailable")
 		return False
 
 	url = f"https://fcm.googleapis.com/v1/projects/{project_id}/messages:send"
@@ -71,6 +74,9 @@ def send_push(
 
 	sent_any = False
 	pruned = 0
+	reached = 0
+	failed = 0
+	reasons = []
 	for token in tokens:
 		notification = {"title": title, "body": body or ""}
 		if image:
@@ -87,6 +93,7 @@ def send_push(
 					"id": str(ref_id or ""),
 					"type": str(notif_type or ""),
 					"image": str(image or ""),
+					"send_id": str(send_id or ""),
 				},
 				"android": {
 					"priority": "HIGH",
@@ -106,16 +113,22 @@ def send_push(
 				title=f"Notification engine: FCM request failed ({notif_type})",
 				message=frappe.get_traceback(),
 			)
+			failed += 1
+			reasons.append("Could not reach the push service")
 			continue
 
 		if response.status_code == 200:
 			sent_any = True
+			reached += 1
 			continue
 
+		failed += 1
 		if _is_unregistered(response):
 			frappe.db.delete("User FCM Token", {"fcm_token": token})
 			pruned += 1
+			reasons.append("Device token no longer valid (app removed or reinstalled)")
 		else:
+			reasons.append(_failure_reason(response))
 			frappe.log_error(
 				title=f"Notification engine: FCM send failed ({notif_type})",
 				message=f"HTTP {response.status_code}: {response.text[:2000]}",
@@ -124,7 +137,35 @@ def send_push(
 	if pruned:
 		frappe.db.commit()
 
+	_record_result(send_id, reached, failed, "; ".join(dict.fromkeys(reasons)))
 	return sent_any
+
+
+def _failure_reason(response) -> str:
+	"""A short, readable reason from an FCM error body — never the raw
+	response, which can be long."""
+	try:
+		err = response.json().get("error", {})
+		return f"{err.get('status') or response.status_code}: {(err.get('message') or '')[:120]}".strip(": ")
+	except Exception:
+		return f"HTTP {response.status_code}"
+
+
+def _record_result(send_id, reached: int, failed: int, reason: str) -> None:
+	"""Stores what Google's push service said on the send-log row, so the
+	admin report can show delivery rate and failure reasons. `reached`
+	means accepted for delivery (HTTP 200), not proof the phone showed it."""
+	if not send_id:
+		return
+	try:
+		frappe.db.set_value(
+			"TOB Notification Send Log",
+			send_id,
+			{"devices_reached": reached, "devices_failed": failed, "failure_reason": (reason or "")[:500]},
+			update_modified=False,
+		)
+	except Exception:
+		frappe.log_error(title="Notification engine: recording delivery result failed", message=frappe.get_traceback())
 
 
 def _is_unregistered(response) -> bool:

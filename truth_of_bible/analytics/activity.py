@@ -46,6 +46,10 @@ _ALLOWED_EVENTS = {
 	"login_success",
 	"signup_success",
 	"donation_completed",
+	# Reported by the app against a notification's send_id — see
+	# notifications/engagement.py.
+	"notification_received",
+	"notification_tapped",
 }
 
 _MAX_BATCH_SIZE = 100

@@ -375,10 +375,16 @@ def get_user_notification_history(user, limit=100):
 	sends = frappe.get_all(
 		"TOB Notification Send Log",
 		filters={"user": user},
-		fields=["event_code", "sent_at"],
+		fields=[
+			"name", "event_code", "sent_at", "tracked",
+			"devices_reached", "devices_failed", "failure_reason",
+		],
 		order_by="sent_at desc",
 		limit_page_length=limit,
 	)
+	from truth_of_bible.notifications.engagement import annotate_sends
+
+	annotate_sends(user, sends)
 	for s in sends:
 		s["title"] = titles.get(s["event_code"]) or s["event_code"]
 		s["sent_at"] = str(s["sent_at"])
