@@ -92,10 +92,21 @@ def _graphql(query: str, variables: dict = None) -> dict:
 		# itself (only Buffer's own response), so this is safe to leave on.
 		status = getattr(e.response, "status_code", "n/a")
 		body = getattr(e.response, "text", str(e))
-		frappe.log_error(
-			title="Buffer GraphQL request failed",
-			message=f"Status: {status}\nBody: {body[:2000]}",
-		)
+		# While Buffer is rate-limiting (429) every call fails the same way —
+		# log it once per 10 minutes instead of once per request, so a quota
+		# hit doesn't bury every other error in the log.
+		if status == 429:
+			if not frappe.cache().get_value("tob_buffer_429_logged"):
+				frappe.cache().set_value("tob_buffer_429_logged", 1, expires_in_sec=600)
+				frappe.log_error(
+					title="Buffer GraphQL request failed (rate limited)",
+					message=f"Status: 429\nBody: {body[:2000]}\n(Further 429s are not logged for 10 minutes.)",
+				)
+		else:
+			frappe.log_error(
+				title="Buffer GraphQL request failed",
+				message=f"Status: {status}\nBody: {body[:2000]}",
+			)
 		raise
 
 	payload = response.json()

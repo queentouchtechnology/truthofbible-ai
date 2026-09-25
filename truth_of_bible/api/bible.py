@@ -15,6 +15,7 @@ from truth_of_bible.ai import service
 from truth_of_bible.ai.core.exceptions import AiProviderException
 from truth_of_bible.ai.core.request import AiMessage, AiRequest
 from truth_of_bible.ai.prompts import language_instruction, resolve_prompt
+from truth_of_bible.rewards.gate import charge_ai
 
 _EXPLANATION_TASK = "verse_explanation"
 _QA_TASK = "bible_qa"
@@ -91,6 +92,7 @@ def explain(reference: str, language: str, explanation_type: str = "verse") -> d
 
 
 @frappe.whitelist(methods=["POST"])
+@charge_ai
 def qa(question: str, language: str) -> dict:
 	"""Starts a new conversation. Use qa_followup to continue it."""
 	conversation = frappe.get_doc(
@@ -107,6 +109,7 @@ def qa(question: str, language: str) -> dict:
 
 
 @frappe.whitelist(methods=["POST"])
+@charge_ai
 def qa_followup(conversation: str, question: str) -> dict:
 	convo = frappe.get_doc("TOB Bible Conversation", conversation)
 	if convo.user != frappe.session.user:

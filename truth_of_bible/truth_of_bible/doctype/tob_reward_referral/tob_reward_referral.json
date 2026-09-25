@@ -1,0 +1,74 @@
+{
+ "doctype": "DocType",
+ "module": "Truth Of Bible",
+ "custom": 0,
+ "istable": 0,
+ "issingle": 0,
+ "quick_entry": 0,
+ "track_changes": 0,
+ "autoname": "hash",
+ "naming_rule": "Random",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "engine": "InnoDB",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "report": 1,
+   "export": 1
+  }
+ ],
+ "links": [],
+ "name": "TOB Reward Referral",
+ "description": "One row per invited friend who entered a code. PENDING until the friend really starts reading (the payout trigger), then REWARDED \u2014 signing up alone earns nothing.",
+ "field_order": [
+  "referrer",
+  "referee",
+  "code",
+  "status",
+  "rewarded_at"
+ ],
+ "fields": [
+  {
+   "fieldname": "referrer",
+   "fieldtype": "Link",
+   "options": "User",
+   "label": "Referrer",
+   "reqd": 1,
+   "in_list_view": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "referee",
+   "fieldtype": "Link",
+   "options": "User",
+   "label": "Friend",
+   "reqd": 1,
+   "unique": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "code",
+   "fieldtype": "Data",
+   "label": "Code Used"
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "PENDING\nREWARDED\nCAPPED",
+   "default": "PENDING",
+   "in_list_view": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "rewarded_at",
+   "fieldtype": "Datetime",
+   "label": "Rewarded At"
+  }
+ ]
+}

@@ -1,0 +1,73 @@
+{
+ "doctype": "DocType",
+ "module": "Truth Of Bible",
+ "custom": 0,
+ "istable": 0,
+ "issingle": 0,
+ "quick_entry": 0,
+ "track_changes": 0,
+ "autoname": "hash",
+ "naming_rule": "Random",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "engine": "InnoDB",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "report": 1,
+   "export": 1
+  }
+ ],
+ "links": [],
+ "name": "TOB Reward Wallet Ledger",
+ "description": "The rewards wallet \u2014 points converted to spendable balance (AI credits and more). Its own ledger: it never touches ERPNext accounts or the old wallet. Balance = sum of `amount` for a user (converted in = positive, spent = negative).",
+ "field_order": [
+  "user",
+  "kind",
+  "title",
+  "amount",
+  "dedupe_key"
+ ],
+ "fields": [
+  {
+   "fieldname": "user",
+   "fieldtype": "Link",
+   "options": "User",
+   "label": "User",
+   "reqd": 1,
+   "in_list_view": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "kind",
+   "fieldtype": "Select",
+   "label": "Kind",
+   "options": "TOPUP\nCONVERT\nSPEND\nADJUST",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "title",
+   "fieldtype": "Data",
+   "label": "Title"
+  },
+  {
+   "fieldname": "amount",
+   "fieldtype": "Float",
+   "label": "Amount",
+   "reqd": 1,
+   "in_list_view": 1,
+   "precision": "2"
+  },
+  {
+   "fieldname": "dedupe_key",
+   "fieldtype": "Data",
+   "label": "Dedupe Key",
+   "search_index": 1
+  }
+ ]
+}
