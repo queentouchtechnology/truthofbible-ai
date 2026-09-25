@@ -440,6 +440,17 @@ def _process_recipient(doc, recipient_name: str):
 		if _already_sent(doc.name, user, "PUSH"):
 			recipient.push_status = "SENT"
 		else:
+			# Recorded BEFORE the push, exactly like `engine.py`'s own
+			# automatic sends — its id travels in the FCM payload as
+			# `send_id`, which is what lets `delivery._record_result` fill in
+			# devices_reached/failed afterward, lets the app's own
+			# `notification_tapped` report be attributed back to this exact
+			# send, and (via `tracked=1`) is what makes a campaign push show
+			# up in the engagement report at all — none of that happened
+			# before, since `_record_channel_send` used to run AFTER the
+			# send with no id to pass in, so campaign pushes were entirely
+			# invisible to delivery/tap/engagement reporting.
+			send_id = _record_channel_send(doc.name, user, "PUSH", tracked=1)
 			ok = delivery.send_push(
 				user=user,
 				title=doc.push_title or "",
@@ -448,9 +459,9 @@ def _process_recipient(doc, recipient_name: str):
 				image=doc.push_image_url or None,
 				route=doc.push_deeplink_route or None,
 				ref_id=doc.push_deeplink_id or None,
+				send_id=send_id,
 			)
 			recipient.push_status = "SENT" if ok else "FAILED"
-			_record_channel_send(doc.name, user, "PUSH")
 			if not ok:
 				errors.append("push: delivery failed")
 
@@ -602,16 +613,19 @@ def _already_sent(campaign_id: str, user: str, channel: str) -> bool:
 	)
 
 
-def _record_channel_send(campaign_id: str, user: str, channel: str) -> None:
-	frappe.get_doc(
+def _record_channel_send(campaign_id: str, user: str, channel: str, tracked: int = 0) -> str:
+	doc = frappe.get_doc(
 		{
 			"doctype": "TOB Notification Send Log",
 			"user": user,
 			"event_code": campaign_id,
 			"channel": channel,
 			"sent_at": now_datetime(),
+			"tracked": tracked,
 		}
-	).insert(ignore_permissions=True)
+	)
+	doc.insert(ignore_permissions=True)
+	return doc.name
 
 
 def _finalize_if_done(doc):

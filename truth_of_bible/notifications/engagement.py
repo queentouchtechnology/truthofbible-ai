@@ -17,9 +17,12 @@ What this can and can't say — kept visible in the UI:
 - Only sends made after this shipped carry a send_id (`tracked = 1`), and
   only people on an app version that reports taps can register one — so
   early open rates are a floor, not the true figure.
-- No session length yet: that needs the app to report session start/end.
-  Until then "engaged" means at least one recorded action within
-  ENGAGEMENT_WINDOW_MIN of the tap.
+- "Engaged" means at least one recorded action within ENGAGEMENT_WINDOW_MIN
+  of the tap — a proxy, not a promise the app was open that whole time.
+  Real session length (`app_session_ended`, reported by `main.dart`'s
+  WidgetsBindingObserver) is now measured alongside it where available —
+  same phased-rollout caveat as taps: only counted for a tap whose user is
+  on an app version that reports session length at all.
 """
 
 import json
@@ -63,6 +66,14 @@ def _range(period: str):
 def _send_id(data):
 	try:
 		return (json.loads(data) if isinstance(data, str) else data or {}).get("send_id")
+	except Exception:
+		return None
+
+
+def _session_seconds(data):
+	try:
+		value = (json.loads(data) if isinstance(data, str) else data or {}).get("duration_seconds")
+		return int(value) if value is not None else None
 	except Exception:
 		return None
 
@@ -125,6 +136,38 @@ class _Ctx:
 				limit = tap + _minutes(ENGAGEMENT_WINDOW_MIN)
 				self.actions[s.name] = [a.event for a in by_user.get(s.user, []) if tap <= a.event_time <= limit]
 
+		# Real session length after a tap, from the app's own session-end
+		# report (`app_session_ended`, `data.duration_seconds` — see
+		# `main.dart`'s WidgetsBindingObserver). The first session-end
+		# reported after the tap is the session the tap opened or continued.
+		# Only sends whose user is on an app version that reports this at
+		# all will have one — same phased-rollout caveat as taps themselves.
+		self.session_seconds = {}
+		if self.tapped:
+			sessions = frappe.get_all(
+				"TOB User Activity Event",
+				filters={
+					"user": ["in", users],
+					"event": "app_session_ended",
+					"event_time": [">=", earliest],
+				},
+				fields=["user", "event_time", "data"],
+				order_by="event_time asc",
+			)
+			by_user_sessions = {}
+			for row in sessions:
+				by_user_sessions.setdefault(row.user, []).append(row)
+			for s in self.sends:
+				tap = self.tapped.get(s.name)
+				if not tap:
+					continue
+				for row in by_user_sessions.get(s.user, []):
+					if row.event_time >= tap:
+						seconds = _session_seconds(row.data)
+						if seconds is not None:
+							self.session_seconds[s.name] = seconds
+						break
+
 	def accepted(self, s) -> bool:
 		return bool(s.devices_reached and s.devices_reached > 0)
 
@@ -167,6 +210,12 @@ def get_engagement_report(period="7d"):
 	require_admin()
 	ctx = _Ctx(period)
 	titles = {t.name: t.title for t in frappe.get_all("TOB Notification Template", fields=["name", "title"])}
+	# A campaign push's `event_code` is the campaign's own doc name, not a
+	# template — without this, every campaign row in `by_type` would show
+	# as a raw id instead of the campaign's actual name.
+	titles.update(
+		{c.name: c.campaign_name for c in frappe.get_all("TOB Communication Campaign", fields=["name", "campaign_name"])}
+	)
 
 	sent = len(ctx.sends)
 	accepted = [s for s in ctx.sends if ctx.accepted(s)]
@@ -190,6 +239,8 @@ def get_engagement_report(period="7d"):
 		for ev in set(ctx.actions[s.name]):
 			action_counts[ev] = action_counts.get(ev, 0) + 1
 
+	session_lengths = [ctx.session_seconds[s.name] for s in tapped if s.name in ctx.session_seconds]
+
 	by_type = {}
 	for s in ctx.sends:
 		row = by_type.setdefault(
@@ -209,6 +260,7 @@ def get_engagement_report(period="7d"):
 		r["tap_rate"] = _rate(r["tapped"], r["accepted"])
 
 	segments = _segments(ctx)
+	reengagement = _reengagement(ctx)
 	first_event = frappe.db.sql(
 		"select min(event_time) from `tabTOB User Activity Event` where event = 'notification_tapped'"
 	)[0][0]
@@ -240,6 +292,8 @@ def get_engagement_report(period="7d"):
 				{"event": k, "label": _ACTION_LABELS.get(k, k), "count": v}
 				for k, v in sorted(action_counts.items(), key=lambda kv: -kv[1])
 			],
+			"avg_session_seconds": round(sum(session_lengths) / len(session_lengths)) if session_lengths else None,
+			"sessions_measured": len(session_lengths),
 		},
 		"funnel": [
 			{"label": "Sent", "count": sent},
@@ -249,13 +303,69 @@ def get_engagement_report(period="7d"):
 		],
 		"by_type": type_rows,
 		"segments": [{"key": k, "label": v["label"], "count": len(v["users"])} for k, v in segments.items()],
+		"reengagement": reengagement,
 		"suggestions": _suggestions(sent, accepted, tapped, engaged, failed, segments, reasons, first_event),
 		"note": (
 			"'Delivered' means accepted by Google's push service — it gives no delivery or read receipts. "
 			"Taps come from the app, so they cover only people on an updated app version; treat early open "
-			"rates as a floor. Session length isn't tracked yet."
+			"rates as a floor. Session length is only counted for taps from an app version that reports it — "
+			"treat it the same way."
 		),
 	}
+
+
+_DORMANT_DAYS = 7  # no real activity for this long before a send = dormant
+_REENGAGE_WINDOW_HOURS = 48  # real activity within this long after = "came back"
+
+
+def _reengagement(ctx: "_Ctx") -> dict:
+	"""Of the notifications sent to someone who'd gone quiet, how many
+	actually brought them back? Built from real `TOB User Activity Event`
+	history rather than `User.last_active` (which only ever reflects NOW,
+	not who was dormant at the moment a past send went out — the same
+	limitation notifications/insights.py's own segments already carry)."""
+	accepted = [s for s in ctx.sends if ctx.accepted(s)]
+	if not accepted:
+		return {"dormant_sends": 0, "reengaged": 0, "rate": 0}
+
+	users = list({s.user for s in accepted})
+	real_events = [e for e in _ACTION_LABELS] + ["app_session_ended"]
+	history = frappe.get_all(
+		"TOB User Activity Event",
+		filters={"user": ["in", users], "event": ["in", real_events]},
+		fields=["user", "event_time"],
+		order_by="event_time asc",
+	)
+	by_user = {}
+	for row in history:
+		by_user.setdefault(row.user, []).append(row.event_time)
+
+	dormant_sends = 0
+	reengaged_users = set()
+	for s in accepted:
+		times = by_user.get(s.user, [])
+		sent = get_datetime(s.sent_at)
+		prior = max((t for t in times if t < sent), default=None)
+		if prior is not None and (sent - prior).days < _DORMANT_DAYS:
+			continue  # already active recently — not a re-engagement case
+		dormant_sends += 1
+		came_back = any(sent < t <= sent + _hours(_REENGAGE_WINDOW_HOURS) for t in times)
+		if came_back:
+			reengaged_users.add(s.user)
+
+	return {
+		"dormant_sends": dormant_sends,
+		"reengaged": len(reengaged_users),
+		"rate": _rate(len(reengaged_users), dormant_sends),
+		"dormant_days": _DORMANT_DAYS,
+		"window_hours": _REENGAGE_WINDOW_HOURS,
+	}
+
+
+def _hours(n):
+	from datetime import timedelta
+
+	return timedelta(hours=n)
 
 
 def _segments(ctx: "_Ctx"):
