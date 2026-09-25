@@ -111,7 +111,7 @@ def send_push(
 		except Exception:
 			frappe.log_error(
 				title=f"Notification engine: FCM request failed ({notif_type})",
-				message=frappe.get_traceback(),
+				message=f"User: {user}\n{frappe.get_traceback()}",
 			)
 			failed += 1
 			reasons.append("Could not reach the push service")
@@ -140,7 +140,7 @@ def send_push(
 			reasons.append(_failure_reason(response))
 			frappe.log_error(
 				title=f"Notification engine: FCM send failed ({notif_type})",
-				message=f"HTTP {response.status_code}: {response.text[:2000]}",
+				message=f"User: {user}\nHTTP {response.status_code}: {response.text[:2000]}",
 			)
 
 	if pruned:
