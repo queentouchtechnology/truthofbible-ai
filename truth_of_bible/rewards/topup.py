@@ -40,9 +40,25 @@ def _keys():
 	return conf.get("razorpay_key_id"), conf.get("razorpay_key_secret")
 
 
-def options() -> dict:
+def _countries() -> list:
+	"""Regions whose members can pay. India only until an international
+	gateway is added — then add its country codes to `rewards_topup_countries`
+	in site_config.json (no code change)."""
+	conf = frappe.get_site_config().get("rewards_topup_countries")
+	return [c.upper() for c in conf] if isinstance(conf, list) and conf else ["IN"]
+
+
+def options(region: str = "IN") -> dict:
 	key_id, secret = _keys()
-	return {"enabled": bool(key_id and secret), "min": MIN_AMOUNT, "max": MAX_AMOUNT, "presets": list(PRESETS)}
+	configured = bool(key_id and secret)
+	in_region = region in _countries()
+	return {
+		"enabled": configured and in_region,
+		"reason": "" if in_region else "Adding money isn't available in your country yet.",
+		"min": MIN_AMOUNT,
+		"max": MAX_AMOUNT,
+		"presets": list(PRESETS),
+	}
 
 
 def _call(method: str, path: str, **kwargs):
@@ -61,8 +77,8 @@ def _call(method: str, path: str, **kwargs):
 	return response.json()
 
 
-def create_topup(user: str, amount) -> dict:
-	if not options()["enabled"]:
+def create_topup(user: str, amount, country: str | None = None) -> dict:
+	if not options(engine.region(country, user))["enabled"]:
 		frappe.throw(frappe._("Adding money isn't available yet."), frappe.ValidationError)
 	try:
 		amount = int(float(amount))
@@ -104,13 +120,15 @@ def _credit(user: str, amount: float, payment_id: str) -> bool:
 	return True
 
 
-def _settle(order_id: str, payment_id: str, expected_user: str | None) -> dict:
+def _settle(order_id: str, payment_id: str, expected_user: str | None, ignore_foreign: bool = False) -> dict:
 	"""Confirms with Razorpay itself (never trusting the client) that the
 	payment is captured and belongs to this rewards-wallet order, then
 	credits the wallet."""
 	order = _call("GET", f"/orders/{order_id}")
 	notes = order.get("notes") or {}
 	if notes.get("purpose") != "rewards_wallet" or not notes.get("user"):
+		if ignore_foreign:
+			return {"ignored": True}  # a payment for something else on this account
 		frappe.throw(frappe._("That payment isn't a wallet top-up."), frappe.ValidationError)
 	user = notes["user"]
 	if expected_user and user != expected_user:
@@ -156,7 +174,4 @@ def handle_webhook(raw_body: bytes, signature: str) -> dict:
 	order_id, payment_id = payment.get("order_id"), payment.get("id")
 	if not (order_id and payment_id):
 		return {"ignored": True}
-	notes = payment.get("notes") or {}
-	if notes.get("purpose") != "rewards_wallet":
-		return {"ignored": True}  # a payment for something else on this account
-	return _settle(order_id, payment_id, expected_user=None)
+	return _settle(order_id, payment_id, expected_user=None, ignore_foreign=True)

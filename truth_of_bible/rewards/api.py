@@ -67,9 +67,9 @@ def redeem_to_wallet(points, country=None):
 
 
 @frappe.whitelist(methods=["POST"])
-def create_topup(amount):
+def create_topup(amount, country=None):
 	"""Creates the Razorpay order for a wallet top-up (amount fixed here, server-side)."""
-	return topup.create_topup(_user(), amount)
+	return topup.create_topup(_user(), amount, country)
 
 
 @frappe.whitelist(methods=["POST"])

@@ -235,20 +235,21 @@ def wallet_balance(user: str) -> float:
 	)
 
 
-def _topup_options() -> dict:
+def _topup_options(country: str | None = None, user: str | None = None) -> dict:
 	from truth_of_bible.rewards import topup
 
-	return topup.options()
+	return topup.options(region(country, user))
 
 
-def wallet_options(user: str, bal: int) -> dict:
+def wallet_options(user: str, bal: int, country: str | None = None) -> dict:
 	cfg = _wallet_config()
 	return {
 		"enabled": cfg["enabled"],
 		"currency": cfg["currency"],
 		"rate": cfg["rate"],
 		"balance": wallet_balance(user),
-		"topup": _topup_options(),
+		"topup": _topup_options(country, user),
+		"display": display_currency(country, user),
 		"min_points": _WALLET_MIN_POINTS,
 		"options": [
 			{"points": p, "amount": round(p * cfg["rate"], 2), "affordable": bal >= p} for p in _WALLET_PRESETS
@@ -325,19 +326,68 @@ def _tier(tier_id: str):
 	return next((t for t in tiers() if t["id"] == tier_id), None)
 
 
-def shop_available(country: str | None, user: str | None = None) -> bool:
-	"""The Edenza shop ships in India only. `country` is the device region
-	the app reports; failing that, an Indian mobile number decides. With no
-	signal we assume India (where nearly all members are) — the coupon is
-	only usable at the Indian shop either way."""
+def region(country: str | None, user: str | None = None) -> str:
+	"""The member's country (ISO code). The device region the app reports
+	wins; else an Indian mobile number; with no signal we assume India, where
+	nearly all members are."""
 	country = (country or "").strip().upper()
 	if country:
-		return country == "IN"
-	mobile = (frappe.db.get_value("User", user, "mobile_no") or "") if user else ""
-	if mobile:
-		digits = mobile.strip()
-		return digits.startswith("+91") or digits.startswith("91") or (len(digits) == 10 and digits.isdigit())
-	return True
+		return country
+	mobile = ((frappe.db.get_value("User", user, "mobile_no") or "") if user else "").strip()
+	if mobile and not (mobile.startswith("+91") or mobile.startswith("91") or (len(mobile) == 10 and mobile.isdigit())):
+		return "ZZ"  # a foreign number we can't map to a country
+	return "IN"
+
+
+def shop_available(country: str | None, user: str | None = None) -> bool:
+	"""The Edenza shop ships in India only."""
+	return region(country, user) == "IN"
+
+
+# Country -> the currency amounts are DISPLAYED in. The wallet itself is always
+# kept in the base currency; this only changes how it is shown.
+_COUNTRY_CURRENCY = {
+	"IN": "INR", "US": "USD", "GB": "GBP", "CA": "CAD", "AU": "AUD", "NZ": "NZD", "SG": "SGD", "MY": "MYR",
+	"AE": "AED", "SA": "SAR", "QA": "QAR", "KW": "KWD", "OM": "OMR", "BH": "BHD", "NP": "NPR", "LK": "LKR",
+	"BD": "BDT", "PK": "PKR", "ZA": "ZAR", "NG": "NGN", "KE": "KES", "GH": "GHS", "PH": "PHP", "ID": "IDR",
+	"CH": "CHF", "JP": "JPY", "HK": "HKD", "TH": "THB",
+}
+for _c in ("DE", "FR", "IT", "ES", "NL", "BE", "AT", "IE", "PT", "FI", "GR", "LU", "SK", "SI", "EE", "LV", "LT", "MT", "CY"):
+	_COUNTRY_CURRENCY[_c] = "EUR"
+
+
+def fx_rate(currency: str) -> float | None:
+	"""1 unit of the wallet's base currency in `currency`. A site_config
+	`rewards_fx_rates` entry wins; otherwise a public daily rate cached for 12
+	hours. None = unknown (the app then just shows the base currency)."""
+	base = _wallet_config()["currency"]
+	if currency == base:
+		return 1.0
+	override = (frappe.get_site_config().get("rewards_fx_rates") or {}).get(currency)
+	if override:
+		return float(override)
+	cache = frappe.cache()
+	key = f"tob_reward_fx_{base}"
+	rates = cache.get_value(key)
+	if not rates:
+		try:
+			r = requests.get(f"https://open.er-api.com/v6/latest/{base}", timeout=8)
+			rates = (r.json() or {}).get("rates") if r.status_code == 200 else None
+		except (requests.RequestException, ValueError):
+			rates = None
+		if rates:
+			cache.set_value(key, rates, expires_in_sec=12 * 3600)
+	rate = (rates or {}).get(currency)
+	return float(rate) if rate else None
+
+
+def display_currency(country: str | None, user: str | None = None) -> dict:
+	base = _wallet_config()["currency"]
+	currency = _COUNTRY_CURRENCY.get(region(country, user), base)
+	rate = fx_rate(currency)
+	if not rate:
+		return {"currency": base, "rate": 1.0}
+	return {"currency": currency, "rate": round(rate, 6)}
 
 
 def _discount_label(t: dict) -> str:
@@ -653,7 +703,7 @@ def overview(user: str, country: str | None = None) -> dict:
 		"shop_available": shop_available(country, user),
 		"tiers": tier_rows,
 		"next_tier": next_tier,
-		"wallet": wallet_options(user, bal),
+		"wallet": wallet_options(user, bal, country),
 		"referral": referral_overview(user),
 		"coupons": [_coupon_row(c) for c in coupons],
 		"history": [{"title": h.title, "points": h.points, "when": str(h.creation)} for h in history],
