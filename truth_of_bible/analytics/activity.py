@@ -51,6 +51,27 @@ _ALLOWED_EVENTS = {
 _MAX_BATCH_SIZE = 100
 
 
+def _to_site_naive(value):
+	"""The app sends ISO 8601 timestamps with a "Z" (UTC) suffix, which
+	parse as timezone-aware. Frappe stores naive datetimes in the site's
+	timezone, and MariaDB rejects an aware value outright ("Incorrect
+	datetime value: '...+00:00'") — every batch containing a timestamp
+	used to fail on insert. Converts to the site timezone, then drops
+	tzinfo, so event_time matches every other Frappe timestamp."""
+	if value.tzinfo is None:
+		return value
+	try:
+		from zoneinfo import ZoneInfo
+
+		from frappe.utils import get_system_timezone
+
+		return value.astimezone(ZoneInfo(get_system_timezone())).replace(tzinfo=None)
+	except Exception:
+		# Never let a timezone lookup drop the event — keep the instant,
+		# just without tz conversion (off by the site's UTC offset at worst).
+		return value.replace(tzinfo=None)
+
+
 @frappe.whitelist(methods=["POST"])
 def record_batch(events):
 	"""Bulk-records one client-flushed batch of curated events for the
@@ -72,6 +93,8 @@ def record_batch(events):
 		return {"recorded": 0}
 
 	recorded = 0
+	failed = 0
+	last_traceback = ""
 	for row in rows[:_MAX_BATCH_SIZE]:
 		if not isinstance(row, dict):
 			continue
@@ -81,7 +104,7 @@ def record_batch(events):
 
 		event_time = row.get("event_time")
 		try:
-			event_time = get_datetime(event_time) if event_time else now_datetime()
+			event_time = _to_site_naive(get_datetime(event_time)) if event_time else now_datetime()
 		except Exception:
 			event_time = now_datetime()
 
@@ -95,8 +118,19 @@ def record_batch(events):
 			}).insert(ignore_permissions=True)
 			recorded += 1
 		except Exception:
-			frappe.log_error(title="analytics.record_batch: failed to insert one event")
+			# One entry per BATCH, not per event — a systemic failure (like
+			# the timezone bug this replaced) used to write up to 100
+			# near-identical full tracebacks per request and bury every other
+			# error in the log.
+			failed += 1
+			last_traceback = frappe.get_traceback()
 			continue
+
+	if failed:
+		frappe.log_error(
+			title=f"analytics.record_batch: {failed} event(s) failed to insert",
+			message=last_traceback,
+		)
 
 	return {"recorded": recorded}
 
