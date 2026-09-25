@@ -127,6 +127,15 @@ def send_push(
 			frappe.db.delete("User FCM Token", {"fcm_token": token})
 			pruned += 1
 			reasons.append("Device token no longer valid (app removed or reinstalled)")
+		elif _is_invalid_token(response):
+			# Google says the token string itself isn't a valid FCM token
+			# (INVALID_ARGUMENT on `message.token`) — it can never work, so
+			# remove it. Before this, only UNREGISTERED tokens were pruned:
+			# malformed ones failed and wrote an error-log entry on every
+			# single send, forever.
+			frappe.db.delete("User FCM Token", {"fcm_token": token})
+			pruned += 1
+			reasons.append("Device token was malformed (removed)")
 		else:
 			reasons.append(_failure_reason(response))
 			frappe.log_error(
@@ -166,6 +175,21 @@ def _record_result(send_id, reached: int, failed: int, reason: str) -> None:
 		)
 	except Exception:
 		frappe.log_error(title="Notification engine: recording delivery result failed", message=frappe.get_traceback())
+
+
+def _is_invalid_token(response) -> bool:
+	"""True only when FCM's error points at the token field itself — an
+	INVALID_ARGUMENT about anything else (a bad payload) must NOT delete a
+	perfectly good token."""
+	try:
+		details = response.json().get("error", {}).get("details", [])
+	except Exception:
+		return False
+	for d in details:
+		for v in d.get("fieldViolations", []) or []:
+			if v.get("field") == "message.token":
+				return True
+	return False
 
 
 def _is_unregistered(response) -> bool:
