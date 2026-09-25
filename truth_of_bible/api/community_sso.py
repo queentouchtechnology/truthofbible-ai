@@ -31,6 +31,9 @@ from frappe.utils.password import get_decrypted_password, set_encrypted_password
 _TIMEOUT = 15
 _KEY_FIELD = "discourse_api_key"
 _KEY_ID_FIELD = "discourse_api_key_id"
+# Roles allowed into the in-app Community admin module (the app's admin roles,
+# not only Frappe System Managers).
+_ADMIN_ROLES = {"System Manager", "Administrator", "Course Creator", "LMS Manager", "Moderator"}
 
 
 def _config() -> dict:
@@ -193,9 +196,15 @@ def get_community_credentials(refresh: int = 0) -> dict:
 @frappe.whitelist(methods=["POST"])
 def get_admin_community_credentials() -> dict:
 	"""For the in-app Community admin module only — a `system`-scoped key,
-	restricted to Frappe System Managers (Discourse staff status is separate
+	restricted to the app's admin roles (Discourse staff status is separate
 	from the Frappe admin role)."""
-	frappe.only_for("System Manager")
+	roles = set(frappe.get_roles())
+	if not roles & _ADMIN_ROLES:
+		frappe.log_error(
+			title="Community admin credentials denied",
+			message=f"user={frappe.session.user} roles={sorted(roles)} (needs one of {sorted(_ADMIN_ROLES)})",
+		)
+		frappe.throw(_("Only community admins can do this."), frappe.PermissionError)
 	cfg = _config()
 	return {"username": "system", "api_key": cfg["admin_key"], "base_url": cfg["url"]}
 
