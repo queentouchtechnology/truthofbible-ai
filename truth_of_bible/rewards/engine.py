@@ -235,6 +235,12 @@ def wallet_balance(user: str) -> float:
 	)
 
 
+def _topup_options() -> dict:
+	from truth_of_bible.rewards import topup
+
+	return topup.options()
+
+
 def wallet_options(user: str, bal: int) -> dict:
 	cfg = _wallet_config()
 	return {
@@ -242,6 +248,7 @@ def wallet_options(user: str, bal: int) -> dict:
 		"currency": cfg["currency"],
 		"rate": cfg["rate"],
 		"balance": wallet_balance(user),
+		"topup": _topup_options(),
 		"min_points": _WALLET_MIN_POINTS,
 		"options": [
 			{"points": p, "amount": round(p * cfg["rate"], 2), "affordable": bal >= p} for p in _WALLET_PRESETS

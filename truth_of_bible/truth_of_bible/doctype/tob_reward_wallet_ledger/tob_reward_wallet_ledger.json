@@ -46,7 +46,7 @@
    "fieldname": "kind",
    "fieldtype": "Select",
    "label": "Kind",
-   "options": "CONVERT\nSPEND\nADJUST",
+   "options": "TOPUP\nCONVERT\nSPEND\nADJUST",
    "reqd": 1,
    "in_list_view": 1
   },
