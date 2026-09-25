@@ -61,6 +61,18 @@ doc_events = {
 	"LMS Enrollment": {
 		"after_insert": "truth_of_bible.notifications.triggers.on_enrollment_created",
 	},
+	# Course/batch lifecycle (NOTIFICATION_ENGINE_PLAN.md "What's still
+	# open" item 5) — see triggers.py's own docstring for the field-name
+	# provenance.
+	"LMS Batch Enrollment": {
+		"after_insert": "truth_of_bible.notifications.triggers.on_batch_enrollment_created",
+	},
+	"Course Lesson": {
+		"after_insert": "truth_of_bible.notifications.triggers.on_lesson_created",
+	},
+	"LMS Batch": {
+		"on_update": "truth_of_bible.notifications.triggers.on_batch_updated",
+	},
 }
 
 # Idempotent — safe to run on every migrate, matching qmp_lms_bridge's own
@@ -109,10 +121,16 @@ scheduler_events = {
 	"hourly": [
 		"truth_of_bible.notifications.reading.daily_scan",
 		"truth_of_bible.notifications.prayer.daily_scan",
+		"truth_of_bible.notifications.bible_study.daily_scan",
 	],
 	# Meta token health: verify, renew where Meta allows it, warn ahead of
 	# expiry (see social/meta_connection.py).
 	"daily": [
 		"truth_of_bible.social.meta_connection.check_connection",
+		# NOTIFICATION_ENGINE_PLAN.md "What's still open" items 3/4 — a
+		# slow-moving trend signal each, daily is enough for both (see each
+		# module's own docstring for why).
+		"truth_of_bible.notifications.stock.daily_check",
+		"truth_of_bible.notifications.selfcheck.daily_check",
 	],
 }

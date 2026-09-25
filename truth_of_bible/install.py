@@ -1369,6 +1369,117 @@ _NOTIFICATION_TEMPLATES = [
 		"body": "{{ contact_name }} sent a message.",
 		"description": "Fired when api/chatwoot_webhook.py mirrors a new inbound WhatsApp message.",
 	},
+	# --- Course/batch lifecycle (notifications/triggers.py) —
+	# NOTIFICATION_ENGINE_PLAN.md "What's still open" item 5. All 'Courses'
+	# category, the same preference toggle that existed with no real
+	# template behind it before this slice.
+	{
+		"event_code": "COURSE_ENROLLED",
+		"audience": "User",
+		"category": "Courses",
+		"priority": "Low",
+		"deeplink_route": "/viewCourse",
+		"deeplink_id_field": "course",
+		"title": "You're enrolled!",
+		"body": "Your course is ready whenever you are.",
+		"description": "Fired alongside the existing admin-only NEW_ENROLLMENT, same LMS Enrollment.after_insert trigger — this copy goes to the member themselves.",
+	},
+	{
+		"event_code": "USER_ADDED_TO_BATCH",
+		"audience": "User",
+		"category": "Courses",
+		"priority": "Low",
+		"deeplink_route": "/batch",
+		"deeplink_id_field": "batch",
+		"title": "You've been added to {{ batch_title }}",
+		"body": "Check your batch for schedule and details.",
+		"description": "Fired on LMS Batch Enrollment.after_insert.",
+	},
+	{
+		"event_code": "LESSON_AVAILABLE",
+		"audience": "User",
+		"category": "Courses",
+		"priority": "Low",
+		"deeplink_route": "/viewLesson",
+		"deeplink_id_field": "lesson_id",
+		"title": "New lesson available: {{ lesson_title }}",
+		"body": "Continue your course.",
+		"description": "Fired on Course Lesson.after_insert, fanned out to that course's enrolled members (capped at 200, same convention as NEW_QUIZ_AVAILABLE).",
+	},
+	{
+		"event_code": "BATCH_UPDATED",
+		"audience": "User",
+		"category": "Courses",
+		"priority": "Normal",
+		"deeplink_route": "/batch",
+		"deeplink_id_field": "batch",
+		"title": "{{ batch_title }} has been updated",
+		"body": "Check the batch for what changed.",
+		"description": "Fired on LMS Batch.on_update when start_date/end_date/published actually changed, fanned to that batch's enrolled members only.",
+	},
+	# --- Bible Study suggestion (notifications/bible_study.py) —
+	# NOTIFICATION_ENGINE_PLAN.md "What's still open" item 6 (half of it —
+	# see that module's own docstring for why this reuses last_book rather
+	# than the plan's original, never-built "recentBooks" concept).
+	{
+		"event_code": "BIBLE_STUDY_SUGGESTION",
+		"audience": "User",
+		"category": "Bible Study",
+		"priority": "Low",
+		"deeplink_route": "/todayVerse",
+		"title": "Go deeper into {{ book }}",
+		"body": "There's always more to discover in God's Word.",
+		"description": "Hourly scan, at most 2/week per user, only for someone who read today — see bible_study.py.",
+	},
+	# --- Self-monitoring (notifications/selfcheck.py) —
+	# NOTIFICATION_ENGINE_PLAN.md "What's still open" item 4.
+	{
+		"event_code": "SYSTEM_ALERT",
+		"audience": "Admin",
+		"category": "System",
+		"priority": "Critical",
+		"deeplink_route": "/dashboard",
+		"title": "Notification system needs attention",
+		"body": "{{ count }} notification errors in the last {{ window_hours }} hours — check Error Log.",
+		"description": "Fired when Error Log rows titled 'Notification ...' exceed a threshold in a rolling 24h window — see selfcheck.py.",
+	},
+	# --- Stock poll (notifications/stock.py) —
+	# NOTIFICATION_ENGINE_PLAN.md "What's still open" item 3. Share the
+	# 'Orders' admin category/preference toggle — same reasoning as
+	# PAYMENT_FAILED_ADMIN sharing it: a stock problem is an order-desk
+	# concern for an admin, not a separate thing to opt in/out of.
+	{
+		"event_code": "OUT_OF_STOCK",
+		"audience": "Admin",
+		"category": "Orders",
+		"priority": "Normal",
+		"deeplink_route": "/dashboard",
+		"title": "{{ count }} product(s) out of stock",
+		"body": "{{ products }}",
+		"description": "Daily WooCommerce stock poll — see stock.py. Needs 'woocommerce_api_auth' in site_config.json before it can fire.",
+	},
+	{
+		"event_code": "LOW_STOCK",
+		"audience": "Admin",
+		"category": "Orders",
+		"priority": "Low",
+		"deeplink_route": "/dashboard",
+		"title": "{{ count }} product(s) running low",
+		"body": "{{ products }}",
+		"description": "Daily WooCommerce stock poll — see stock.py. Needs 'woocommerce_api_auth' in site_config.json before it can fire.",
+	},
+	# --- Community moderation (api/community_webhook.py's flag_created) —
+	# NOTIFICATION_ENGINE_PLAN.md "What's still open" item 2.
+	{
+		"event_code": "COMMUNITY_REPORT",
+		"audience": "Admin",
+		"category": "Moderation",
+		"priority": "High",
+		"deeplink_route": "/dashboard",
+		"title": "A post was flagged for review",
+		"body": "{{ topic_title }}",
+		"description": "Fired by community_webhook.py's flag_created receiver — payload shape UNVERIFIED, see that function's own docstring.",
+	},
 ]
 
 

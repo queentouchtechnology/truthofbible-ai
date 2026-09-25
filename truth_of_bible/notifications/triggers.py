@@ -1,10 +1,11 @@
 """Doc-event triggers that fan out into the notification engine
 (engine.handle_event) — Quiz and Support-Ticket User-audience events (the
 second slice, after the spiritual/Bible-reading reminders in reading.py),
-plus the first Frappe-native Admin-audience events (New Support Ticket,
+the first Frappe-native Admin-audience events (New Support Ticket,
 Ticket Escalated, New User, New Enrollment — see engine.py's `admin_users`
-fan-out). Admin-audience triggers pass `user=None`: `handle_event` resolves
-its own recipients for an Admin-audience template.
+fan-out), and the Course/batch lifecycle slice (NOTIFICATION_ENGINE_PLAN.md
+"What's still open" item 5). Admin-audience triggers pass `user=None`:
+`handle_event` resolves its own recipients for an Admin-audience template.
 
 Every trigger here is deliberately defensive: a notification is a
 side-effect of a real save (a quiz being created, a submission being
@@ -22,6 +23,18 @@ checked against this project's own qmp_lms_bridge app (which already
 relies on these exact field names for its own quiz grading / tenant
 scoping) and verified live against learn.truthofbible.org's real schema
 and sample rows before this file was written.
+
+Course/batch lifecycle field names (`LMS Batch Enrollment.batch`/`.member`,
+`Course Lesson.course`/`.title`, `LMS Batch.start_date`/`.end_date`/
+`.published`/`.title`) are cross-checked the same way: qmp_lms_bridge's own
+`validators.py` (whose docstring states `Course Lesson.course` was
+verified live against this exact backend) and this app's own already-
+shipped, already-working Flutter admin/attendee screens that read/write
+these exact fields (`batchEnroll_service.dart` posts `{batch, member}` to
+`LMS Batch Enrollment` today; `batchList_response.dart`/`getLesson_
+response.dart` parse `title`/`start_date`/`end_date`/`published`/`course`
+back from real API responses). Not a guess — a second live-proven source
+for each field, same discipline as the Quiz/Ticket slice above.
 """
 
 import frappe
@@ -183,10 +196,96 @@ def _on_user_created(doc):
 
 def on_enrollment_created(doc, method=None):
 	try:
-		handle_event(
-			"NEW_ENROLLMENT",
-			None,
-			{"member": doc.get("member") or "", "course": doc.get("course") or ""},
-		)
+		_on_enrollment_created(doc)
 	except Exception:
 		frappe.log_error(title="Notification trigger: on_enrollment_created", message=frappe.get_traceback())
+
+
+def _on_enrollment_created(doc):
+	member = doc.get("member") or ""
+	course = doc.get("course") or ""
+	# Admin-audience copy (unchanged from before this slice).
+	handle_event("NEW_ENROLLMENT", None, {"member": member, "course": course})
+	# User-audience copy — confirms the enrollment to the person themselves.
+	# Same doc_event, same fields, just a second handle_event call: this is
+	# NOTIFICATION_ENGINE_PLAN.md's `COURSE_ENROLLED` (Courses category,
+	# still-unused preference toggle before this slice).
+	if member:
+		handle_event("COURSE_ENROLLED", member, {"course": course})
+
+
+# ─────────────────────── Course/batch lifecycle events ───────────────────────
+# NOTIFICATION_ENGINE_PLAN.md "What's still open" item 5. All User-audience,
+# Courses category — the same preference toggle COURSE_ENROLLED above uses,
+# already real (engine.py's _CATEGORY_PREFERENCE_FIELD), just unused until
+# this slice gave it real triggers.
+
+# Same reasoning/cap as _MAX_QUIZ_FANOUT above — a lesson publish or a batch
+# date change shouldn't turn one save into an unbounded fan-out.
+_MAX_LESSON_FANOUT = 200
+_MAX_BATCH_FANOUT = 200
+
+
+def on_batch_enrollment_created(doc, method=None):
+	try:
+		_on_batch_enrollment_created(doc)
+	except Exception:
+		frappe.log_error(
+			title="Notification trigger: on_batch_enrollment_created", message=frappe.get_traceback()
+		)
+
+
+def _on_batch_enrollment_created(doc):
+	member = doc.get("member") or ""
+	batch = doc.get("batch") or ""
+	if not member or not batch:
+		return
+	batch_title = frappe.db.get_value("LMS Batch", batch, "title") or batch
+	handle_event("USER_ADDED_TO_BATCH", member, {"batch": batch, "batch_title": batch_title})
+
+
+def on_lesson_created(doc, method=None):
+	try:
+		_on_lesson_created(doc)
+	except Exception:
+		frappe.log_error(title="Notification trigger: on_lesson_created", message=frappe.get_traceback())
+
+
+def _on_lesson_created(doc):
+	course = doc.get("course")
+	if not course:
+		return
+	members = frappe.get_all(
+		"LMS Enrollment", filters={"course": course}, pluck="member", limit_page_length=_MAX_LESSON_FANOUT
+	)
+	for member in members:
+		handle_event(
+			"LESSON_AVAILABLE",
+			member,
+			{"lesson_title": doc.get("title") or "", "lesson_id": doc.name, "course": course},
+		)
+
+
+def on_batch_updated(doc, method=None):
+	try:
+		_on_batch_updated(doc)
+	except Exception:
+		frappe.log_error(title="Notification trigger: on_batch_updated", message=frappe.get_traceback())
+
+
+def _on_batch_updated(doc):
+	# Only fields a batch member would actually want to know about — not
+	# every save (e.g. an admin fixing a typo in a long description field
+	# shouldn't page every enrolled member).
+	changed = [f for f in ("start_date", "end_date", "published") if doc.has_value_changed(f)]
+	if not changed:
+		return
+	members = frappe.get_all(
+		"LMS Batch Enrollment", filters={"batch": doc.name}, pluck="member", limit_page_length=_MAX_BATCH_FANOUT
+	)
+	for member in members:
+		handle_event(
+			"BATCH_UPDATED",
+			member,
+			{"batch_title": doc.get("title") or doc.name, "batch": doc.name},
+		)

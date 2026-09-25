@@ -1,6 +1,13 @@
-"""Receives Discourse's `notification` webhook (community.truthofbible.org)
-and turns select notification types into User-audience Community
-notifications (a reply to your post, being mentioned).
+"""Receives Discourse's `notification` and `flag_created` webhooks
+(community.truthofbible.org) and turns them into User-audience Community
+notifications (a reply to your post, being mentioned) and an Admin-
+audience moderation alert (a post was flagged) — the latter is
+NOTIFICATION_ENGINE_PLAN.md "What's still open" item 2, added once the
+`notification` receiver below was already live and proven (same HMAC
+verification, same webhook secret, same "log unmapped, never guess"
+caution — `flag_created`'s payload shape is exactly as unverified as
+`notification`'s `notification_type` values were before those were
+confirmed live).
 
 **UNVERIFIED — needs a live test delivery before this can be trusted.**
 Unlike `shop_webhook.py`'s WooCommerce receiver (whose payload shape is
@@ -65,6 +72,43 @@ def notification_created():
 
 	_handle_notification(payload.get("notification") or {})
 	return {"ok": True}
+
+
+@frappe.whitelist(allow_guest=True, methods=["POST"])
+def flag_created():
+	"""**More uncertain than `notification_created` above** — Discourse's
+	standard webhook groups are documented for "Post"/"Topic"/"Notification"
+	events; whether a distinct "flag" event group/payload exists on this
+	Discourse version (vs. flags only surfacing as a `post` event with
+	`hidden`/`flag_count` changed, or needing a plugin) is genuinely
+	unconfirmed — the plan doc flags this explicitly rather than guessing
+	further. The full raw payload is always logged (not just on an
+	unrecognized shape, unlike `notification_created`) so the real shape
+	Discourse actually sends can be read from Error Log after this webhook
+	is registered, and this parser corrected to match if needed."""
+	if not _verify_signature():
+		frappe.throw("Invalid signature", frappe.PermissionError)
+
+	try:
+		payload = json.loads(frappe.request.data or b"{}")
+	except Exception:
+		frappe.throw("Invalid payload", frappe.ValidationError)
+
+	frappe.log_error(
+		title="Notification engine: flag_created payload (shape discovery)",
+		message=f"Raw payload: {payload}",
+	)
+	_handle_flag(payload)
+	return {"ok": True}
+
+
+def _handle_flag(payload: dict) -> None:
+	post = payload.get("post") or payload
+	post_id = post.get("id")
+	topic_title = post.get("topic_title") or post.get("topic_slug") or ""
+	if not post_id:
+		return
+	handle_event("COMMUNITY_REPORT", None, {"post_id": post_id, "topic_title": topic_title})
 
 
 def _handle_notification(notification: dict) -> None:
