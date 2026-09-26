@@ -103,7 +103,19 @@ def _verify_request() -> bool:
 			message="site_config.json has no 'chatwoot_webhook_secret' key — every Chatwoot webhook delivery is being rejected until this is set.",
 		)
 		return False
-	provided = frappe.form_dict.get("secret") or frappe.get_request_header("X-Chatwoot-Webhook-Secret") or ""
+	# `frappe.form_dict` merges query-string args with a JSON POST body, and
+	# in practice (2026-09-26 live test — see the Error Log entry this same
+	# check produced) came back completely empty for this exact request
+	# shape: an `allow_guest` whitelisted POST with a `Content-Type:
+	# application/json` body. `frappe.request.args` is werkzeug's own,
+	# unmerged read of the raw query string — checked first as the more
+	# reliable source, with form_dict/header kept only as a fallback.
+	provided = (
+		frappe.request.args.get("secret")
+		or frappe.form_dict.get("secret")
+		or frappe.get_request_header("X-Chatwoot-Webhook-Secret")
+		or ""
+	)
 	if not hmac.compare_digest(provided, secret):
 		# A mismatch here is otherwise completely silent — `receive()`'s
 		# `frappe.throw(..., PermissionError)` produces a clean 403 that
@@ -112,12 +124,16 @@ def _verify_request() -> bool:
 		# site_config.json (e.g. pasting Chatwoot's own separate "Secret"
 		# field from its webhook edit dialog, instead of the `?secret=`
 		# value actually in the registered URL) looks identical to "the
-		# webhook never fired at all". Never logs the real secret values.
+		# webhook never fired at all". Never logs the real secret values —
+		# the raw query string is logged instead, which proves whether
+		# Chatwoot is even sending `?secret=...` at all (if it's missing
+		# from here too, the gap is Chatwoot/the reverse proxy, not Frappe).
 		frappe.log_error(
 			title="Communication Center: chatwoot_webhook signature mismatch",
 			message=(
 				f"Provided secret ({len(provided)} chars, empty={not provided}) does not match "
-				f"site_config's chatwoot_webhook_secret ({len(secret)} chars). Check that "
+				f"site_config's chatwoot_webhook_secret ({len(secret)} chars). Raw query string "
+				f"received: {frappe.request.query_string.decode(errors='replace')!r}. Check that "
 				"chatwoot_webhook_secret is set to the `?secret=` query-param value from the "
 				"registered webhook URL in Chatwoot (Settings -> Integrations -> Webhooks), "
 				"NOT that same dialog's separate 'Secret' field — this receiver never reads that one."
