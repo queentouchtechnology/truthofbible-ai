@@ -113,4 +113,14 @@ def _verify_signature() -> bool:
 	signature = frappe.get_request_header("X-WC-Webhook-Signature") or ""
 	body = frappe.request.data or b""
 	computed = base64.b64encode(hmac.new(secret.encode(), body, hashlib.sha256).digest()).decode()
-	return hmac.compare_digest(signature, computed)
+	if not hmac.compare_digest(signature, computed):
+		# A mismatch is otherwise silent — `order_updated()`'s
+		# `frappe.throw(..., PermissionError)` is a clean 403 Frappe does
+		# NOT write to Error Log by default, so a wrong
+		# woocommerce_webhook_secret looks identical to "never fired".
+		frappe.log_error(
+			title="Notification engine: shop_webhook signature mismatch",
+			message=f"X-WC-Webhook-Signature present={bool(signature)}. Check woocommerce_webhook_secret in site_config.json matches the secret set when this webhook was registered in WooCommerce.",
+		)
+		return False
+	return True

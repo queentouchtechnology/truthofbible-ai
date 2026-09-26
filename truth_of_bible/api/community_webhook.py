@@ -182,4 +182,13 @@ def _verify_signature() -> bool:
 	signature = frappe.get_request_header("X-Discourse-Event-Signature") or ""
 	body = frappe.request.data or b""
 	computed = "sha256=" + hmac.new(secret.encode(), body, hashlib.sha256).hexdigest()
-	return hmac.compare_digest(signature, computed)
+	if not hmac.compare_digest(signature, computed):
+		# A mismatch is otherwise silent — see chatwoot_webhook.py's
+		# `_verify_request` for why (a 403 from frappe.throw isn't
+		# Error-Logged by default).
+		frappe.log_error(
+			title="Notification engine: community_webhook signature mismatch",
+			message=f"X-Discourse-Event-Signature present={bool(signature)}. Check discourse_webhook_secret in site_config.json matches the secret set when this webhook was registered in Discourse.",
+		)
+		return False
+	return True

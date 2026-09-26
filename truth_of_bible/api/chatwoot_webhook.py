@@ -104,7 +104,27 @@ def _verify_request() -> bool:
 		)
 		return False
 	provided = frappe.form_dict.get("secret") or frappe.get_request_header("X-Chatwoot-Webhook-Secret") or ""
-	return hmac.compare_digest(provided, secret)
+	if not hmac.compare_digest(provided, secret):
+		# A mismatch here is otherwise completely silent — `receive()`'s
+		# `frappe.throw(..., PermissionError)` produces a clean 403 that
+		# Frappe does NOT write to Error Log (only unhandled exceptions
+		# are, by default), so without this a wrong secret in
+		# site_config.json (e.g. pasting Chatwoot's own separate "Secret"
+		# field from its webhook edit dialog, instead of the `?secret=`
+		# value actually in the registered URL) looks identical to "the
+		# webhook never fired at all". Never logs the real secret values.
+		frappe.log_error(
+			title="Communication Center: chatwoot_webhook signature mismatch",
+			message=(
+				f"Provided secret ({len(provided)} chars, empty={not provided}) does not match "
+				f"site_config's chatwoot_webhook_secret ({len(secret)} chars). Check that "
+				"chatwoot_webhook_secret is set to the `?secret=` query-param value from the "
+				"registered webhook URL in Chatwoot (Settings -> Integrations -> Webhooks), "
+				"NOT that same dialog's separate 'Secret' field — this receiver never reads that one."
+			),
+		)
+		return False
+	return True
 
 
 def _handle_message_created(payload: dict) -> None:
@@ -114,12 +134,31 @@ def _handle_message_created(payload: dict) -> None:
 	# by whatsapp.send_message/campaign.py at the moment they're made.
 	message_type = payload.get("message_type")
 	if message_type not in (0, "incoming"):
+		# Every other event this webhook is subscribed to (Conversation
+		# Created/Updated, Contact Created/Updated, typing events, ...) also
+		# arrives here as message_created's sibling events do NOT call this
+		# function at all — this branch only sees message_created payloads,
+		# so an outbound reply (message_type 1/"outgoing") is the expected,
+		# silent case. Logged at low volume specifically to catch the OTHER
+		# possibility: this instance's Chatwoot version representing
+		# "incoming" differently than 0/"incoming" (e.g. a nested field, a
+		# different string) would silently drop every real customer message
+		# forever without this trace.
+		if message_type not in (1, "outgoing"):
+			frappe.log_error(
+				title="Communication Center: chatwoot message_created unrecognized message_type",
+				message=f"message_type={message_type!r}. Raw payload: {payload}",
+			)
 		return
 
 	conversation = payload.get("conversation") or {}
 	chatwoot_conversation_id = str(conversation.get("id") or payload.get("conversation_id") or "").strip()
 	chatwoot_message_id = str(payload.get("id") or "").strip()
 	if not chatwoot_conversation_id or not chatwoot_message_id:
+		frappe.log_error(
+			title="Communication Center: chatwoot message_created missing id(s)",
+			message=f"conversation_id={chatwoot_conversation_id!r}, message_id={chatwoot_message_id!r}. Raw payload: {payload}",
+		)
 		return
 
 	if frappe.db.exists("TOB WhatsApp Message", {"chatwoot_message_id": chatwoot_message_id}):

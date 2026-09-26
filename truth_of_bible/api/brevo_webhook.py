@@ -59,7 +59,18 @@ def _verify_request() -> bool:
 		)
 		return False
 	provided = frappe.form_dict.get("token") or frappe.get_request_header("X-Brevo-Webhook-Token") or ""
-	return hmac.compare_digest(provided, secret)
+	if not hmac.compare_digest(provided, secret):
+		# Unlike the other three webhooks, `receive()` above swallows a
+		# failed verification into a plain {"status": "ok"} rather than
+		# `frappe.throw` — so a mismatch was previously not just unlogged
+		# but literally indistinguishable from success. Logged here for
+		# the same reason as chatwoot_webhook.py's `_verify_request`.
+		frappe.log_error(
+			title="Communication Center: brevo_webhook token mismatch",
+			message=f"Provided token present={bool(provided)}. Check brevo_webhook_secret in site_config.json matches the token set when this webhook was registered in Brevo.",
+		)
+		return False
+	return True
 
 
 def _handle_event(payload: dict) -> None:
