@@ -3,9 +3,11 @@
 Credentials live ONLY in site_config.json — see WHATSAPP_CHATWOOT_SETUP.md.
 Never logged, never included in an exception message or API response.
 
-v1's two-way Inbox sends/receives free-form TEXT only (contract SS3.6) —
-media is explicitly out of scope for this pass. Campaigns are different:
-see the "24-hour window" note below.
+The two-way Inbox sends/receives free-form TEXT and media (image/document/
+audio/video) both ways — `send_message` below takes an optional attachment.
+Campaigns are different: see the "24-hour window" note below (a Campaign
+send is still text/template only; media there is out of scope, not this
+Inbox reply path).
 
 **Campaigns must use an approved WhatsApp template, never free text —
 confirmed live, not a style choice.** WhatsApp's own Business Platform
@@ -145,35 +147,63 @@ def find_or_create_conversation(phone: str, contact_name: str) -> tuple[str | No
 		return None, "Could not reach WhatsApp."
 
 
-def send_message(chatwoot_conversation_id: str, message: str) -> tuple[bool, str | None, str | None]:
-	"""Returns (ok, chatwoot_message_id, error). Uses the Agent Bot token —
-	this is the action Chatwoot's bot tokens are actually scoped for. Never
-	raises."""
+def send_message(
+	chatwoot_conversation_id: str,
+	message: str = "",
+	attachment_bytes: bytes | None = None,
+	attachment_filename: str | None = None,
+	attachment_content_type: str | None = None,
+) -> tuple[bool, str | None, str | None, str | None]:
+	"""Returns (ok, chatwoot_message_id, attachment_url, error). Uses the
+	Agent Bot token — this is the action Chatwoot's bot tokens are actually
+	scoped for. Sends multipart/form-data (Chatwoot's own documented shape
+	for an attachment: `content` + `message_type` as regular fields,
+	`attachments[]` as the file) when `attachment_bytes` is given, plain
+	JSON otherwise — unchanged from the original text-only behavior in that
+	case. Never raises."""
 	base_url, api_token, bot_token, account_id, inbox_id = _config()
 	if not _configured():
 		_log_not_configured()
-		return False, None, "WhatsApp is not configured on this site."
+		return False, None, None, "WhatsApp is not configured on this site."
 
-	headers = {"api_access_token": bot_token, "Content-Type": "application/json"}
+	url = f"{base_url}/api/v1/accounts/{account_id}/conversations/{chatwoot_conversation_id}/messages"
 	try:
-		response = requests.post(
-			f"{base_url}/api/v1/accounts/{account_id}/conversations/{chatwoot_conversation_id}/messages",
-			headers=headers,
-			json={"content": message, "message_type": "outgoing"},
-			timeout=20,
-		)
+		if attachment_bytes:
+			response = requests.post(
+				url,
+				headers={"api_access_token": bot_token},
+				data={"content": message or "", "message_type": "outgoing"},
+				files={
+					"attachments[]": (
+						attachment_filename or "attachment",
+						attachment_bytes,
+						attachment_content_type or "application/octet-stream",
+					)
+				},
+				timeout=30,
+			)
+		else:
+			response = requests.post(
+				url,
+				headers={"api_access_token": bot_token, "Content-Type": "application/json"},
+				json={"content": message, "message_type": "outgoing"},
+				timeout=20,
+			)
 	except Exception:
 		frappe.log_error(title="Communication Center: Chatwoot send failed", message=frappe.get_traceback())
-		return False, None, "Could not reach WhatsApp."
+		return False, None, None, "Could not reach WhatsApp."
 
 	if response.status_code in (200, 201):
-		return True, str(response.json().get("id")), None
+		body = response.json()
+		attachments = body.get("attachments") or []
+		attachment_url = attachments[0].get("data_url") if attachments else None
+		return True, str(body.get("id")), attachment_url, None
 
 	frappe.log_error(
 		title="Communication Center: Chatwoot send rejected",
 		message=f"HTTP {response.status_code}: {response.text[:2000]}",
 	)
-	return False, None, "WhatsApp rejected this message."
+	return False, None, None, "WhatsApp rejected this message."
 
 
 def list_templates() -> tuple[list[dict] | None, str | None]:

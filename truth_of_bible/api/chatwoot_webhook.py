@@ -202,25 +202,46 @@ def _handle_message_created(payload: dict) -> None:
 		convo_name = convo.name
 
 	content = payload.get("content") or ""
+	# An attachment-bearing message carries its real type/URL in
+	# `attachments[0]` (`file_type`: "image"/"file"/"audio"/"video",
+	# `data_url`) — `content_type` on the message itself is Chatwoot's UI
+	# widget type ("text", "input_select", ...), not the attachment kind,
+	# so it's only the right source for a plain text message.
+	attachments = payload.get("attachments") or []
+	if attachments:
+		file_type = attachments[0].get("file_type")
+		message_type = _CONTENT_TYPE_MAP.get(file_type, "UNSUPPORTED")
+		if message_type == "UNSUPPORTED":
+			frappe.log_error(
+				title="Communication Center: chatwoot attachment unrecognized file_type",
+				message=f"file_type={file_type!r}. Raw payload: {payload}",
+			)
+		attachment_url = attachments[0].get("data_url") or ""
+	else:
+		message_type = _CONTENT_TYPE_MAP.get(payload.get("content_type"), "TEXT")
+		attachment_url = ""
+
 	frappe.get_doc(
 		{
 			"doctype": "TOB WhatsApp Message",
 			"conversation": convo_name,
 			"chatwoot_message_id": chatwoot_message_id,
 			"direction": "INBOUND",
-			"message_type": _CONTENT_TYPE_MAP.get(payload.get("content_type"), "UNSUPPORTED"),
+			"message_type": message_type,
 			"message": content,
+			"attachment_url": attachment_url,
 			"status": "DELIVERED",
 		}
 	).insert(ignore_permissions=True)
 
 	current_unread = frappe.db.get_value("TOB WhatsApp Conversation", convo_name, "unread_count") or 0
+	preview = content[:140] if content else f"[{message_type.title()}]"
 	frappe.db.set_value(
 		"TOB WhatsApp Conversation",
 		convo_name,
 		{
 			"last_message_at": now_datetime(),
-			"last_message_preview": content[:140],
+			"last_message_preview": preview,
 			"unread_count": current_unread + 1,
 		},
 	)

@@ -12,7 +12,7 @@
  "sort_field": "creation",
  "sort_order": "ASC",
  "engine": "InnoDB",
- "description": "One row per WhatsApp message (inbound, mirrored from a Chatwoot webhook; outbound, recorded when the admin/a campaign sends one) mirrored under a TOB WhatsApp Conversation. v1 sends/receives TEXT only (contract SS3.6); other message_type values are modeled so an inbound image/document from a real user renders as a labeled placeholder instead of being dropped. Never stores a Chatwoot credential, only correlation IDs.",
+ "description": "One row per WhatsApp message (inbound, mirrored from a Chatwoot webhook; outbound, recorded when the admin/a campaign sends one) mirrored under a TOB WhatsApp Conversation. Sends/receives text and media (image/document/audio/video) both ways — attachment_url points at Chatwoot's own hosted copy of the file (this backend never proxies or stores the media itself, only the URL Chatwoot returns/reports). Never stores a Chatwoot credential, only correlation IDs.",
  "field_order": [
   "conversation",
   "chatwoot_message_id",
@@ -20,7 +20,8 @@
   "column_break_1",
   "message_type",
   "status",
-  "message"
+  "message",
+  "attachment_url"
  ],
  "fields": [
   {
@@ -71,6 +72,12 @@
    "fieldtype": "Long Text",
    "label": "Message",
    "description": "Text content; for a non-text message_type, a caption if any. The media itself is not proxied or stored by this backend."
+  },
+  {
+   "fieldname": "attachment_url",
+   "fieldtype": "Data",
+   "label": "Attachment URL",
+   "description": "Chatwoot's own hosted URL for this message's attachment (its `data_url`), set for a non-TEXT message_type both directions. Points at Chatwoot, not this site — never uploaded/proxied here."
   }
  ],
  "permissions": [

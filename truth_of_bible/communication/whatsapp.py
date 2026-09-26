@@ -105,7 +105,7 @@ def get_messages(conversation_id, before_message_id=None, since_message_id=None,
 	messages = frappe.get_all(
 		"TOB WhatsApp Message",
 		filters=filters,
-		fields=["name", "direction", "message_type", "message", "status", "creation"],
+		fields=["name", "direction", "message_type", "message", "attachment_url", "status", "creation"],
 		order_by=order_by,
 		limit_page_length=limit_page_length or None,
 	)
@@ -120,6 +120,7 @@ def get_messages(conversation_id, before_message_id=None, since_message_id=None,
 			"direction": m.direction,
 			"message_type": m.message_type,
 			"message": m.message,
+			"attachment_url": m.attachment_url or "",
 			"status": m.status,
 			"created_at": m.creation,
 		}
@@ -128,10 +129,26 @@ def get_messages(conversation_id, before_message_id=None, since_message_id=None,
 	return {"messages": rows, "has_more_older": has_more_older}
 
 
+_ATTACHMENT_TYPE_PREFIX = {
+	"image/": "IMAGE",
+	"video/": "VIDEO",
+	"audio/": "AUDIO",
+}
+
+
 @frappe.whitelist(methods=["POST"])
-def send_message(conversation_id, message):
+def send_message(conversation_id, message=""):
+	"""`message` may be empty when an attachment carries the send (a bare
+	image with no caption) — the opposite (empty message AND no attachment)
+	is the only rejected case. The attachment itself, if any, arrives as a
+	regular multipart file field named `file` on this same request
+	(`frappe.request.files`), not a separate endpoint — matches how the
+	Flutter client already uploads elsewhere in this app (see
+	uploadTicketImage_api.dart's identical single-POST shape)."""
 	require_admin()
-	if not (message or "").strip():
+	message = (message or "").strip()
+	uploaded = frappe.request.files.get("file") if frappe.request.files else None
+	if not message and not uploaded:
 		frappe.throw(_("Message cannot be empty."), frappe.ValidationError)
 
 	convo = frappe.get_doc("TOB WhatsApp Conversation", conversation_id)
@@ -144,7 +161,23 @@ def send_message(conversation_id, message):
 		if chatwoot.toggle_status(convo.chatwoot_conversation_id, "open"):
 			reopened = True
 
-	ok, chatwoot_message_id, err = chatwoot.send_message(convo.chatwoot_conversation_id, message)
+	message_type = "TEXT"
+	attachment_bytes = None
+	if uploaded:
+		attachment_bytes = uploaded.read()
+		content_type = uploaded.content_type or ""
+		message_type = next(
+			(v for prefix, v in _ATTACHMENT_TYPE_PREFIX.items() if content_type.startswith(prefix)),
+			"DOCUMENT",
+		)
+
+	ok, chatwoot_message_id, attachment_url, err = chatwoot.send_message(
+		convo.chatwoot_conversation_id,
+		message,
+		attachment_bytes=attachment_bytes,
+		attachment_filename=uploaded.filename if uploaded else None,
+		attachment_content_type=uploaded.content_type if uploaded else None,
+	)
 	if not ok:
 		frappe.throw(err or _("Could not send this message."), frappe.ValidationError)
 
@@ -154,15 +187,16 @@ def send_message(conversation_id, message):
 			"conversation": convo.name,
 			"chatwoot_message_id": chatwoot_message_id,
 			"direction": "OUTBOUND",
-			"message_type": "TEXT",
+			"message_type": message_type,
 			"message": message,
+			"attachment_url": attachment_url or "",
 			"status": "SENT",
 		}
 	)
 	doc.insert(ignore_permissions=True)
 
 	convo.last_message_at = now_datetime()
-	convo.last_message_preview = message[:140]
+	convo.last_message_preview = message[:140] if message else f"[{message_type.title()}]"
 	if reopened:
 		convo.status = "OPEN"
 	convo.save(ignore_permissions=True)
@@ -173,6 +207,7 @@ def send_message(conversation_id, message):
 		"direction": doc.direction,
 		"message_type": doc.message_type,
 		"message": doc.message,
+		"attachment_url": doc.attachment_url,
 		"status": doc.status,
 		"created_at": doc.creation,
 	}
