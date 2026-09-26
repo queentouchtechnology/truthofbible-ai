@@ -84,6 +84,7 @@ after_install = [
 	"truth_of_bible.install.seed_bible_battle_questions",
 	"truth_of_bible.install.seed_blessing_verses",
 	"truth_of_bible.install.seed_notification_templates",
+	"truth_of_bible.install.sync_notification_template_deeplinks",
 	"truth_of_bible.install.ensure_social_worker_role",
 	"truth_of_bible.install.seed_social_content",
 ]
@@ -93,6 +94,7 @@ after_migrate = [
 	"truth_of_bible.install.seed_bible_battle_questions",
 	"truth_of_bible.install.seed_blessing_verses",
 	"truth_of_bible.install.seed_notification_templates",
+	"truth_of_bible.install.sync_notification_template_deeplinks",
 	"truth_of_bible.install.ensure_social_worker_role",
 	"truth_of_bible.install.seed_social_content",
 ]

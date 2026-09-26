@@ -37,7 +37,7 @@ def daily_scan() -> None:
 	rows = frappe.get_all(
 		"TOB User Reading State",
 		filters={"last_book": ["is", "set"]},
-		fields=["name", "user", "last_book", "last_read_date"],
+		fields=["name", "user", "last_book", "last_book_id", "last_read_date"],
 	)
 	for row in rows:
 		try:
@@ -67,7 +67,8 @@ def _scan_one(row) -> None:
 	if _sent_this_week(row.user) >= _MAX_PER_WEEK:
 		return
 
-	handle_event(_EVENT, row.user, {"book": row.last_book})
+	deeplink_ref = f"{row.last_book_id}|1|1" if row.last_book_id else ""
+	handle_event(_EVENT, row.user, {"book": row.last_book, "deeplink_ref": deeplink_ref})
 
 
 def _sent_this_week(user: str) -> int:

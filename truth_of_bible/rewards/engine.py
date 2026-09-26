@@ -95,9 +95,27 @@ def lifetime(user: str) -> int:
 	)
 
 
+def _lock_user(user: str) -> None:
+	"""Serialises concurrent writes for one member (e.g. the app's verify call
+	and Razorpay's webhook arriving together) so an idempotency check can't be
+	raced past. Held until the request's transaction ends."""
+	frappe.db.sql("select name from `tabUser` where name=%s for update", user)
+
+
+def _ledger_has(doctype: str, user: str, dedupe_key: str) -> bool:
+	"""Locking read: sees rows another request has just committed."""
+	return bool(
+		frappe.db.sql(
+			f"select name from `tab{doctype}` where user=%s and dedupe_key=%s limit 1 for update",
+			(user, dedupe_key),
+		)
+	)
+
+
 def _award(user: str, code: str, points: int, title: str, dedupe_key: str) -> bool:
 	"""True if points were actually granted (False = already granted)."""
-	if frappe.db.exists("TOB Reward Ledger", {"user": user, "dedupe_key": dedupe_key}):
+	_lock_user(user)
+	if _ledger_has("TOB Reward Ledger", user, dedupe_key):
 		return False
 	frappe.get_doc(
 		{
@@ -299,7 +317,8 @@ def wallet_spend(user: str, amount: float, title: str, ref: str) -> bool:
 	"""Debits the wallet (e.g. for AI usage). False if the balance can't
 	cover it. Idempotent per `ref`."""
 	key = f"spend:{ref}"
-	if frappe.db.exists("TOB Reward Wallet Ledger", {"user": user, "dedupe_key": key}):
+	_lock_user(user)
+	if _ledger_has("TOB Reward Wallet Ledger", user, key):
 		return True
 	if wallet_balance(user) < amount:
 		return False

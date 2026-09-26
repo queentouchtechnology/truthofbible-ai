@@ -25,12 +25,17 @@ from truth_of_bible.notifications.preferences import get_or_create_preference
 _INACTIVE_TIERS = (30, 14, 7, 3)
 
 
-def record_reading(user: str, book: str | None, chapter, verse=None) -> None:
+def record_reading(user: str, book: str | None, chapter, verse=None, book_id=None) -> None:
 	"""Called from `truth_of_bible.api.notifications.record_reading_activity`
 	right after the Flutter client logs the same activity locally. Only
 	ever updates state — it never itself sends a notification, so opening
 	the app and reading normally can never, by itself, trigger a push;
 	only the scheduled scan below decides that, and only after the fact.
+
+	`book_id` is the app's numeric book id (kept alongside `book`, the
+	localized display name used in notification copy) — it's the only
+	form of "book" a deep link can actually navigate to, see
+	`_try_continue_nudge`'s `deeplink_ref`.
 	"""
 	pref = get_or_create_preference(user)
 	today_local = timeutils.local_now(pref.timezone).date()
@@ -40,6 +45,8 @@ def record_reading(user: str, book: str | None, chapter, verse=None) -> None:
 	doc.user = user
 	is_new_day = doc.get("last_read_date") != today_local
 	doc.last_book = book
+	if book_id is not None:
+		doc.last_book_id = book_id
 	doc.last_chapter = chapter
 	doc.last_verse = str(verse) if verse is not None else None
 	doc.last_read_at = now_datetime()
@@ -66,7 +73,7 @@ def daily_scan() -> None:
 	rows = frappe.get_all(
 		"TOB User Reading State",
 		fields=[
-			"name", "user", "last_book", "last_chapter", "last_read_at",
+			"name", "user", "last_book", "last_book_id", "last_chapter", "last_read_at",
 			"last_read_date", "inactive_tier_notified", "last_notified_continue_date",
 		],
 	)
@@ -106,7 +113,17 @@ def _try_continue_nudge(row, pref, now_local, today_local) -> bool:
 		return False
 
 	if row.last_book:
-		event, variables = "BIBLE_READING_CONTINUE", {"book": row.last_book, "chapter": row.last_chapter}
+		# `deeplink_ref` is "<book_id>|<chapter>|1" for the app's
+		# `/continueReading` route (see deepLink_routes.dart) to open the
+		# reader at this exact chapter — empty when this row predates
+		# `last_book_id` (e.g. not read again yet on the updated app), in
+		# which case that route falls back to the generic verse screen.
+		deeplink_ref = f"{row.last_book_id}|{row.last_chapter or 1}|1" if row.last_book_id else ""
+		event, variables = "BIBLE_READING_CONTINUE", {
+			"book": row.last_book,
+			"chapter": row.last_chapter,
+			"deeplink_ref": deeplink_ref,
+		}
 	else:
 		event, variables = "BIBLE_READING_CONTINUE_GENERIC", {}
 

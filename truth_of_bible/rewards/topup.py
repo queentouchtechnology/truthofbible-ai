@@ -105,7 +105,8 @@ def create_topup(user: str, amount, country: str | None = None) -> dict:
 def _credit(user: str, amount: float, payment_id: str) -> bool:
 	"""Credits the wallet once per payment. True if newly credited."""
 	key = f"topup:{payment_id}"
-	if frappe.db.exists("TOB Reward Wallet Ledger", {"user": user, "dedupe_key": key}):
+	engine._lock_user(user)
+	if engine._ledger_has("TOB Reward Wallet Ledger", user, key):
 		return False
 	frappe.get_doc(
 		{

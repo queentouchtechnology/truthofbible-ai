@@ -13,13 +13,17 @@ from truth_of_bible.notifications import reading
 
 
 @frappe.whitelist(methods=["POST"])
-def record_reading_activity(book: str | None = None, chapter=None, verse=None) -> dict:
+def record_reading_activity(book: str | None = None, chapter=None, verse=None, book_id=None) -> dict:
 	"""Fire-and-forget from the Flutter client right after it logs a Bible
 	reading activity locally. Never returns an error the client needs to
 	handle specially — reading must never be blocked by this call.
+
+	`book_id` is the app's own numeric book id — `book` alone is the
+	localized display name and isn't enough to build a working deep link
+	back into the reader (see reading.record_reading).
 	"""
 	try:
-		reading.record_reading(frappe.session.user, book, chapter, verse)
+		reading.record_reading(frappe.session.user, book, chapter, verse, book_id=book_id)
 		return {"ok": True}
 	except Exception:
 		frappe.log_error(title="record_reading_activity", message=frappe.get_traceback())

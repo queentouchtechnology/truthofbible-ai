@@ -989,16 +989,21 @@ def seed_blessing_verses():
 # spiritual failure, never claims to know God's will, never shames
 # inactivity, never gamifies reading into a score. `deeplink_route` points
 # at the existing `/todayVerse` screen as a safe, always-real interim
-# target — a precise "open at exactly this book/chapter" route doesn't
-# exist in the Flutter app yet (see the plan's Phase 9), so this
-# deliberately does not invent one on the backend side ahead of the client.
+# target for the tiers/generic copy below, where no specific book/chapter
+# is known. BIBLE_READING_CONTINUE (and BIBLE_STUDY_SUGGESTION, further
+# down) instead deep-link to `/continueReading`, which opens the reader at
+# the exact book/chapter carried in the `deeplink_ref` variable (see
+# reading.py's `_try_continue_nudge` and deepLink_routes.dart) — that route
+# falls back to the generic verse screen itself if `deeplink_ref` is empty
+# (e.g. a reading-state row from before this field existed).
 _NOTIFICATION_TEMPLATES = [
 	{
 		"event_code": "BIBLE_READING_CONTINUE",
 		"audience": "User",
 		"category": "Bible Reading",
 		"priority": "Low",
-		"deeplink_route": "/todayVerse",
+		"deeplink_route": "/continueReading",
+		"deeplink_id_field": "deeplink_ref",
 		"title": "Continue your reading in {{ book }} {{ chapter }}",
 		"body": "Pick up right where you left off.",
 		"description": "Sent at most once per day, only in the user's own configured reminder hour, only if they haven't read yet today (any device).",
@@ -1446,7 +1451,8 @@ _NOTIFICATION_TEMPLATES = [
 		"audience": "User",
 		"category": "Bible Study",
 		"priority": "Low",
-		"deeplink_route": "/todayVerse",
+		"deeplink_route": "/continueReading",
+		"deeplink_id_field": "deeplink_ref",
 		"title": "Go deeper into {{ book }}",
 		"body": "There's always more to discover in God's Word.",
 		"description": "Hourly scan, at most 2/week per user, only for someone who read today — see bible_study.py.",
@@ -1514,6 +1520,36 @@ def seed_notification_templates():
 			frappe.db.commit()
 		except frappe.ValidationError:
 			frappe.db.rollback()
+
+
+def sync_notification_template_deeplinks():
+	"""`seed_notification_templates` above is create-only (by design, so an
+	admin's own edits to title/body copy in Desk are never clobbered on the
+	next migrate) — it never revisits a template that already exists. A
+	`deeplink_route`/`deeplink_id_field` change here in code (e.g. wiring
+	BIBLE_READING_CONTINUE to the new `/continueReading` route instead of
+	the old `/todayVerse` placeholder) would otherwise never reach an
+	already-seeded site. This narrowly re-syncs just those two routing
+	fields — never title/body/category — for templates whose code value no
+	longer matches what's stored.
+	"""
+	for entry in _NOTIFICATION_TEMPLATES:
+		if "deeplink_route" not in entry:
+			continue
+		current = frappe.db.get_value(
+			"TOB Notification Template", entry["event_code"], ["deeplink_route", "deeplink_id_field"], as_dict=True
+		)
+		if not current:
+			continue
+		wanted_id_field = entry.get("deeplink_id_field")
+		if current.deeplink_route == entry["deeplink_route"] and current.deeplink_id_field == wanted_id_field:
+			continue
+		frappe.db.set_value(
+			"TOB Notification Template",
+			entry["event_code"],
+			{"deeplink_route": entry["deeplink_route"], "deeplink_id_field": wanted_id_field},
+		)
+	frappe.db.commit()
 
 
 def ensure_social_worker_role():
