@@ -1,3 +1,5 @@
-# No data migrations — this app defines its own DocTypes (created directly,
-# not via patches) plus one Custom Field fixture on Frappe's core Language
-# doctype (applied by `bench migrate` from fixtures/custom_field.json).
+# This app defines its own DocTypes directly (not via patches) plus one
+# Custom Field fixture on Frappe's core Language doctype (applied by
+# `bench migrate` from fixtures/custom_field.json). One-off DATA cleanups
+# (as opposed to schema) do belong here — see the entry below.
+truth_of_bible.patches.v1_0.merge_duplicate_whatsapp_conversations

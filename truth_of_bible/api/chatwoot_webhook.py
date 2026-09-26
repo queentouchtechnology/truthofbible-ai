@@ -145,26 +145,34 @@ def _verify_request() -> bool:
 
 def _handle_message_created(payload: dict) -> None:
 	# Chatwoot's message_type on the base webhook payload: 0 = incoming
-	# (from the WhatsApp contact), 1 = outgoing (an agent/bot reply) — only
-	# the former needs mirroring here; outbound sends are already recorded
-	# by whatsapp.send_message/campaign.py at the moment they're made.
-	message_type = payload.get("message_type")
-	if message_type not in (0, "incoming"):
+	# (from the WhatsApp contact), 1 = outgoing (an agent/bot reply).
+	# BOTH get mirrored below — an earlier version of this function skipped
+	# outgoing entirely, on the assumption every outbound message originates
+	# from this app's own `whatsapp.send_message` (which already inserts its
+	# own row at send time). That assumption doesn't hold: an agent replying
+	# directly in Chatwoot's own dashboard (not through this app) is a real,
+	# observed case, and was silently invisible in the admin's in-app inbox
+	# as a result. The `chatwoot_message_id` idempotency check further down
+	# is what prevents this from double-recording a message `send_message`
+	# already inserted — it's the same guard that already existed for
+	# webhook replays, just now also covering "this app sent it first."
+	raw_message_type = payload.get("message_type")
+	if raw_message_type in (0, "incoming"):
+		direction = "INBOUND"
+	elif raw_message_type in (1, "outgoing"):
+		direction = "OUTBOUND"
+	else:
 		# Every other event this webhook is subscribed to (Conversation
 		# Created/Updated, Contact Created/Updated, typing events, ...) also
 		# arrives here as message_created's sibling events do NOT call this
 		# function at all — this branch only sees message_created payloads,
-		# so an outbound reply (message_type 1/"outgoing") is the expected,
-		# silent case. Logged at low volume specifically to catch the OTHER
-		# possibility: this instance's Chatwoot version representing
-		# "incoming" differently than 0/"incoming" (e.g. a nested field, a
-		# different string) would silently drop every real customer message
-		# forever without this trace.
-		if message_type not in (1, "outgoing"):
-			frappe.log_error(
-				title="Communication Center: chatwoot message_created unrecognized message_type",
-				message=f"message_type={message_type!r}. Raw payload: {payload}",
-			)
+		# so an unrecognized message_type means this Chatwoot version
+		# represents incoming/outgoing differently than 0/1 — logged so it
+		# can be corrected rather than silently dropping messages forever.
+		frappe.log_error(
+			title="Communication Center: chatwoot message_created unrecognized message_type",
+			message=f"message_type={raw_message_type!r}. Raw payload: {payload}",
+		)
 		return
 
 	conversation = payload.get("conversation") or {}
@@ -178,16 +186,30 @@ def _handle_message_created(payload: dict) -> None:
 		return
 
 	if frappe.db.exists("TOB WhatsApp Message", {"chatwoot_message_id": chatwoot_message_id}):
-		return  # already mirrored — a webhook replay
-
-	sender = payload.get("sender") or {}
-	phone = (sender.get("phone_number") or "").strip()
-	contact_name = sender.get("name") or phone
+		return  # already mirrored — a webhook replay, or this app's own send_message() already inserted it
 
 	convo_name = frappe.db.get_value(
 		"TOB WhatsApp Conversation", {"chatwoot_conversation_id": chatwoot_conversation_id}, "name"
 	)
+
+	sender = payload.get("sender") or {}
+	# For INBOUND, `sender` is the contact (customer) — phone_number is
+	# real. For OUTBOUND, `sender` is the Chatwoot AGENT who replied (no
+	# phone_number), so it's never used to create/identify a conversation.
+	phone = (sender.get("phone_number") or "").strip() if direction == "INBOUND" else ""
+	contact_name = (sender.get("name") or phone) if direction == "INBOUND" else ""
+
 	if not convo_name:
+		if direction == "OUTBOUND":
+			# An outbound message on a conversation this app has never seen
+			# at all (no prior inbound message ever mirrored it) — too rare
+			# to fabricate a conversation row with no real contact info for;
+			# logged so it can be investigated rather than silently dropped.
+			frappe.log_error(
+				title="Communication Center: chatwoot outbound message on unknown conversation",
+				message=f"chatwoot_conversation_id={chatwoot_conversation_id!r}. Raw payload: {payload}",
+			)
+			return
 		user = frappe.db.get_value("User", {"mobile_no": phone}, "name") if phone else None
 		convo = frappe.get_doc(
 			{
@@ -226,14 +248,17 @@ def _handle_message_created(payload: dict) -> None:
 			"doctype": "TOB WhatsApp Message",
 			"conversation": convo_name,
 			"chatwoot_message_id": chatwoot_message_id,
-			"direction": "INBOUND",
+			"direction": direction,
 			"message_type": message_type,
 			"message": content,
 			"attachment_url": attachment_url,
-			"status": "DELIVERED",
+			"status": "SENT" if direction == "OUTBOUND" else "DELIVERED",
 		}
 	).insert(ignore_permissions=True)
 
+	# Only an inbound (customer) message bumps the "needs a reply" unread
+	# badge and pings admins — an agent's own reply, wherever it was sent
+	# from, isn't something admins need to be notified about.
 	current_unread = frappe.db.get_value("TOB WhatsApp Conversation", convo_name, "unread_count") or 0
 	preview = content[:140] if content else f"[{message_type.title()}]"
 	frappe.db.set_value(
@@ -242,12 +267,13 @@ def _handle_message_created(payload: dict) -> None:
 		{
 			"last_message_at": now_datetime(),
 			"last_message_preview": preview,
-			"unread_count": current_unread + 1,
+			"unread_count": current_unread + (1 if direction == "INBOUND" else 0),
 		},
 	)
 	frappe.db.commit()
 
-	handle_event("NEW_WHATSAPP_MESSAGE", None, {"conversation_id": convo_name, "contact_name": contact_name})
+	if direction == "INBOUND":
+		handle_event("NEW_WHATSAPP_MESSAGE", None, {"conversation_id": convo_name, "contact_name": contact_name})
 
 
 def _handle_status_changed(payload: dict) -> None:

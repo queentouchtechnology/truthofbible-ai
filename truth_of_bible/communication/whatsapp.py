@@ -29,6 +29,7 @@ def list_templates():
 def _conversation_dict(c) -> dict:
 	user_name = frappe.db.get_value("User", c.user, "full_name") if c.user else ""
 	email = frappe.db.get_value("User", c.user, "email") if c.user else None
+	assignee_name = frappe.db.get_value("User", c.assigned_to, "full_name") if c.assigned_to else ""
 	return {
 		"conversation_id": c.name,
 		"user": c.user,
@@ -40,6 +41,7 @@ def _conversation_dict(c) -> dict:
 		"last_message_preview": c.last_message_preview or "",
 		"last_message_at": c.last_message_at,
 		"assigned_to": c.assigned_to,
+		"assigned_to_name": assignee_name or c.assigned_to or "",
 	}
 
 
@@ -211,6 +213,32 @@ def send_message(conversation_id, message=""):
 		"status": doc.status,
 		"created_at": doc.creation,
 	}
+
+
+@frappe.whitelist(methods=["GET"])
+def list_admins():
+	"""Every enabled System Manager — the same role `require_admin()` itself
+	checks, so this is exactly "who is allowed to be assigned a
+	conversation", not `admin_audience.ADMIN_ROLES` (an unrelated concept —
+	see this module's own docstring)."""
+	require_admin()
+	rows = frappe.get_all("Has Role", filters={"role": "System Manager", "parenttype": "User"}, pluck="parent")
+	users = [u for u in dict.fromkeys(rows) if u not in ("Administrator", "Guest")]
+	if not users:
+		return {"admins": []}
+	people = frappe.get_all("User", filters={"name": ["in", users], "enabled": 1}, fields=["name", "full_name"])
+	return {"admins": [{"user": p.name, "full_name": p.full_name or p.name} for p in people]}
+
+
+@frappe.whitelist(methods=["POST"])
+def assign_conversation(conversation_id, assigned_to=None):
+	require_admin()
+	assigned_to = (assigned_to or "").strip() or None
+	if assigned_to and not frappe.db.exists("User", assigned_to):
+		frappe.throw(_("That user doesn't exist."), frappe.ValidationError)
+	frappe.db.set_value("TOB WhatsApp Conversation", conversation_id, "assigned_to", assigned_to)
+	frappe.db.commit()
+	return {"conversation_id": conversation_id, "assigned_to": assigned_to}
 
 
 @frappe.whitelist(methods=["POST"])

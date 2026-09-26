@@ -80,10 +80,21 @@ def _log_not_configured():
 
 def find_or_create_conversation(phone: str, contact_name: str) -> tuple[str | None, str | None]:
 	"""Returns (chatwoot_conversation_id, error). Looks up an existing
-	contact by phone number first, creating one (and a fresh conversation
-	on this inbox) if none exists. Uses the account-level api_token — the
-	bot token is not authorized for contact/conversation management (see
-	module docstring). Never raises."""
+	contact by phone number first, creating one if none exists — THEN looks
+	for that contact's existing conversation on this inbox before creating
+	a fresh one. Uses the account-level api_token — the bot token is not
+	authorized for contact/conversation management (see module docstring).
+	Never raises.
+
+	**Bug fixed 2026-09-26**: despite the name, this used to only find-or-
+	create the CONTACT — it unconditionally created a brand-new conversation
+	on every call, so every campaign sent to someone who'd already messaged
+	(or been messaged) before spawned a duplicate conversation, each
+	mirrored into `TOB WhatsApp Conversation` as its own row (same phone
+	number showing multiple times in the admin's WhatsApp inbox list). The
+	conversation-search step below is the fix; if it can't be parsed for any
+	reason this falls back to the old create-new behavior rather than
+	failing the send outright."""
 	base_url, api_token, bot_token, account_id, inbox_id = _config()
 	if not _configured():
 		_log_not_configured()
@@ -121,6 +132,15 @@ def find_or_create_conversation(phone: str, contact_name: str) -> tuple[str | No
 				return None, "Could not create this contact in WhatsApp."
 			body = create.json()
 			contact_id = (body.get("payload") or {}).get("contact", {}).get("id") or body.get("id")
+		else:
+			# An existing contact may already have a conversation on this
+			# inbox (from an earlier campaign, or from the contact
+			# messaging in first) — reuse it instead of forking a new one.
+			# A newly-created contact (the branch above) can't have one yet,
+			# so this lookup is skipped there, not just redundant.
+			existing_id = _find_existing_conversation(base_url, headers, account_id, contact_id, inbox_id)
+			if existing_id:
+				return existing_id, None
 
 		# Confirmed live (2026-09-22): a WhatsApp inbox's `source_id` must
 		# match Chatwoot's own validation regex `\A(?:\d{1,15}|...)\z` —
@@ -145,6 +165,39 @@ def find_or_create_conversation(phone: str, contact_name: str) -> tuple[str | No
 	except Exception:
 		frappe.log_error(title="Communication Center: Chatwoot request failed", message=frappe.get_traceback())
 		return None, "Could not reach WhatsApp."
+
+
+def _find_existing_conversation(base_url, headers, account_id, contact_id, inbox_id) -> str | None:
+	"""Returns a conversation id already open on THIS inbox for this
+	contact, or None (never raises — a lookup failure just means the caller
+	falls back to creating a new conversation, same as before this existed).
+	Prefers an open/pending conversation over a resolved one, so a contact
+	who was resolved and is now being messaged again reopens their existing
+	thread instead of forking — falls back to the most recent resolved one
+	if that's all there is, still better than a third duplicate thread."""
+	try:
+		response = requests.get(
+			f"{base_url}/api/v1/accounts/{account_id}/contacts/{contact_id}/conversations",
+			headers=headers,
+			timeout=20,
+		)
+		if response.status_code != 200:
+			return None
+		candidates = [
+			c for c in (response.json().get("payload") or [])
+			if str(c.get("inbox_id")) == str(inbox_id)
+		]
+		if not candidates:
+			return None
+		open_or_pending = [c for c in candidates if c.get("status") in ("open", "pending")]
+		chosen = (open_or_pending or candidates)[0]
+		return str(chosen.get("id")) if chosen.get("id") is not None else None
+	except Exception:
+		frappe.log_error(
+			title="Communication Center: Chatwoot existing-conversation lookup failed",
+			message=frappe.get_traceback(),
+		)
+		return None
 
 
 def send_message(

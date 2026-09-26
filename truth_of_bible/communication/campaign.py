@@ -534,7 +534,24 @@ def _send_whatsapp(
 	messaged first, so WhatsApp's 24-hour free-text window cannot be
 	assumed open)."""
 	phone = frappe.db.get_value("User", user, "mobile_no")
-	conversation_id = frappe.db.get_value("TOB WhatsApp Conversation", {"user": user}, "chatwoot_conversation_id")
+	existing = frappe.db.get_value(
+		"TOB WhatsApp Conversation", {"user": user}, ["name", "chatwoot_conversation_id"], as_dict=True
+	)
+	# A conversation for this phone number may already exist WITHOUT a
+	# `user` link — e.g. mirrored from an inbound webhook message before
+	# any campaign ever linked it to this account. Checking by `user` alone
+	# (the only lookup here before 2026-09-26) missed that row entirely and
+	# went on to call find_or_create_conversation for a phone that already
+	# had a thread, which is exactly what produced duplicate rows for the
+	# same number in the admin's WhatsApp inbox.
+	if not existing and phone:
+		existing = frappe.db.get_value(
+			"TOB WhatsApp Conversation", {"phone": phone}, ["name", "chatwoot_conversation_id"], as_dict=True
+		)
+		if existing:
+			frappe.db.set_value("TOB WhatsApp Conversation", existing.name, "user", user)
+
+	conversation_id = existing.chatwoot_conversation_id if existing else None
 
 	if not conversation_id:
 		conversation_id, err = chatwoot.find_or_create_conversation(phone, user_name)
