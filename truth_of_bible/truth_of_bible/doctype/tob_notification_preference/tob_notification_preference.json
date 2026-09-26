@@ -22,6 +22,7 @@
   "spiritual_growth",
   "bible_study",
   "prayer",
+  "encouragement",
   "column_break_cat",
   "quiz",
   "courses",
@@ -49,7 +50,8 @@
   "section_break_campaigns",
   "communication_center_push_opt_out",
   "communication_center_email_opt_out",
-  "communication_center_whatsapp_opt_out"
+  "communication_center_whatsapp_opt_out",
+  "last_encouragement_message"
  ],
  "fields": [
   {
@@ -100,6 +102,13 @@
    "fieldtype": "Check",
    "label": "Prayer",
    "default": "1"
+  },
+  {
+   "fieldname": "encouragement",
+   "fieldtype": "Check",
+   "label": "Daily Encouragement",
+   "default": "1",
+   "description": "A short, randomly-picked spiritual/emotional encouragement message once a day (notifications/encouragement.py) — separate from the structured Bible Reading and Prayer nudges above."
   },
   {
    "fieldname": "column_break_cat",
@@ -262,6 +271,14 @@
    "fieldtype": "Check",
    "label": "Opt out of campaign WhatsApp messages",
    "default": "0"
+  },
+  {
+   "fieldname": "last_encouragement_message",
+   "fieldtype": "Link",
+   "options": "TOB Encouragement Message",
+   "label": "Last Encouragement Message Sent",
+   "read_only": 1,
+   "description": "Internal bookkeeping (notifications/encouragement.py) — excluded from the next day's random pick so the same message never repeats twice in a row. Not user-editable."
   }
  ],
  "permissions": [

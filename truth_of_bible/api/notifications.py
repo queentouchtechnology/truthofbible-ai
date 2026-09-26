@@ -39,7 +39,7 @@ def get_notification_preferences() -> dict:
 @frappe.whitelist(methods=["POST"])
 def update_notification_preferences(
 	bible_reading=None, spiritual_growth=None, bible_study=None, prayer=None,
-	quiz=None, courses=None, community=None, shopping=None, account=None,
+	encouragement=None, quiz=None, courses=None, community=None, shopping=None, account=None,
 	announcements=None, marketing_opt_in=None, daily_reminder_time=None,
 	quiet_hours_start=None, quiet_hours_end=None, max_daily_notifications=None,
 	timezone=None, preferred_prayer_time=None, admin_new_user=None,
@@ -49,7 +49,8 @@ def update_notification_preferences(
 ) -> dict:
 	values = {
 		"bible_reading": bible_reading, "spiritual_growth": spiritual_growth,
-		"bible_study": bible_study, "prayer": prayer, "quiz": quiz, "courses": courses,
+		"bible_study": bible_study, "prayer": prayer, "encouragement": encouragement,
+		"quiz": quiz, "courses": courses,
 		"community": community, "shopping": shopping, "account": account,
 		"announcements": announcements, "marketing_opt_in": marketing_opt_in,
 		"daily_reminder_time": daily_reminder_time, "quiet_hours_start": quiet_hours_start,

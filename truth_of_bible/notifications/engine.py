@@ -37,6 +37,7 @@ _CATEGORY_PREFERENCE_FIELD = {
 	"Spiritual Growth": "spiritual_growth",
 	"Bible Study": "bible_study",
 	"Prayer": "prayer",
+	"Encouragement": "encouragement",
 	"Quiz": "quiz",
 	"Courses": "courses",
 	"Community": "community",
@@ -124,6 +125,13 @@ def _send_one(template: dict, user: str, variables: dict, event_code: str) -> bo
 		return False
 	body = frappe.render_template(template.body or "", variables).strip() if template.body else ""
 
+	# `deeplink_route_override` lets a caller whose content varies per-send
+	# (e.g. encouragement.py's randomly-picked message pool, where each
+	# pool row can point somewhere different) supply its own route instead
+	# of the template's fixed one — every existing caller never sets this
+	# key, so `template.deeplink_route` still wins for every event exactly
+	# as before.
+	route = variables.get("deeplink_route_override") or template.deeplink_route
 	route_id = variables.get(template.deeplink_id_field) if template.deeplink_id_field else None
 
 	# Writing the in-app Notification Log row can trigger OTHER doc_events/
@@ -150,7 +158,7 @@ def _send_one(template: dict, user: str, variables: dict, event_code: str) -> bo
 		user=user,
 		title=title,
 		body=body,
-		route=template.deeplink_route,
+		route=route,
 		ref_id=str(route_id) if route_id is not None else None,
 		notif_type=event_code,
 		send_id=send_id,

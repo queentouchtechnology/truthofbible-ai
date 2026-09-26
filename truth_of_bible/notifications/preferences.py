@@ -11,6 +11,7 @@ DEFAULTS = {
 	"spiritual_growth": 1,
 	"bible_study": 1,
 	"prayer": 1,
+	"encouragement": 1,
 	"quiz": 1,
 	"courses": 1,
 	"community": 1,

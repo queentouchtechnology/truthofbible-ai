@@ -1,0 +1,111 @@
+{
+ "doctype": "DocType",
+ "name": "TOB Encouragement Message",
+ "module": "Truth Of Bible",
+ "custom": 0,
+ "istable": 0,
+ "issingle": 0,
+ "quick_entry": 0,
+ "track_changes": 1,
+ "autoname": "hash",
+ "naming_rule": "Random",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "engine": "InnoDB",
+ "description": "An admin-growable pool of short, emotional/evangelistic encouragement messages ('You don't have to suffer alone — Jesus is here', 'Just say, Jesus help me', ...). notifications/encouragement.py picks one at random per user per day (the DAILY_ENCOURAGEMENT event, see TOB Notification Template) so no two users are guaranteed to see the same message on the same day. Unlike TOB Notification Template (one fixed row per code event), this doctype is a free-form content library admins add to directly — adding a new message needs no code deploy.",
+ "field_order": [
+  "title",
+  "body",
+  "column_break_1",
+  "deeplink_route",
+  "tag",
+  "enabled",
+  "weight",
+  "section_break_stats",
+  "times_sent",
+  "last_sent_at"
+ ],
+ "fields": [
+  {
+   "fieldname": "title",
+   "fieldtype": "Data",
+   "label": "Title",
+   "reqd": 1,
+   "in_list_view": 1,
+   "description": "The push notification's title — short, e.g. \"Jesus is ready to speak\"."
+  },
+  {
+   "fieldname": "body",
+   "fieldtype": "Small Text",
+   "label": "Body",
+   "reqd": 1,
+   "in_list_view": 1,
+   "description": "The message itself — gentle, personal, an invitation rather than a demand. e.g. \"You don't have to carry this alone. Just say, 'Jesus, help me.'\""
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "deeplink_route",
+   "fieldtype": "Data",
+   "label": "Opens (deep link route)",
+   "default": "/prayer",
+   "description": "An existing Flutter named route this message opens when tapped, e.g. /prayer, /todayVerse, /dashboard — matches deepLink_routes.dart exactly. Different messages can open different screens (a 'click here to pray' message vs. an 'open this verse' message)."
+  },
+  {
+   "fieldname": "tag",
+   "fieldtype": "Select",
+   "label": "Tag",
+   "options": "\nComfort\nInvitation to Pray\nInvitation to Read\nReassurance\nHope\nGeneral",
+   "description": "Purely organizational — for filtering/browsing this list in the app, no effect on when or to whom a message is sent."
+  },
+  {
+   "fieldname": "enabled",
+   "fieldtype": "Check",
+   "label": "Enabled",
+   "default": "1",
+   "in_list_view": 1,
+   "description": "Disabled messages are never picked, but stay in the library (not deleted)."
+  },
+  {
+   "fieldname": "weight",
+   "fieldtype": "Int",
+   "label": "Weight",
+   "default": "1",
+   "description": "Relative chance of being picked on any given day — 2 is roughly twice as likely as 1. Leave at 1 for every message to have an equal chance."
+  },
+  {
+   "fieldname": "section_break_stats",
+   "fieldtype": "Section Break",
+   "label": "Delivery stats",
+   "collapsible": 1
+  },
+  {
+   "fieldname": "times_sent",
+   "fieldtype": "Int",
+   "label": "Times Sent",
+   "default": "0",
+   "read_only": 1,
+   "description": "How many times this exact message has been picked and successfully pushed."
+  },
+  {
+   "fieldname": "last_sent_at",
+   "fieldtype": "Datetime",
+   "label": "Last Sent At",
+   "read_only": 1
+  }
+ ],
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "report": 1,
+   "export": 1
+  }
+ ],
+ "links": []
+}

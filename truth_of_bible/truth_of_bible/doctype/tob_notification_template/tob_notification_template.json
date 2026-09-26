@@ -22,6 +22,8 @@
   "column_break_1",
   "deeplink_route",
   "deeplink_id_field",
+  "trigger_note",
+  "live_status",
   "section_break_1",
   "title",
   "body",
@@ -59,7 +61,7 @@
    "fieldname": "category",
    "fieldtype": "Select",
    "label": "Category",
-   "options": "Bible Reading\nSpiritual Growth\nBible Study\nPrayer\nQuiz\nCourses\nCommunity\nShopping\nAccount\nAnnouncements\nUsers\nSupport\nOrders\nLMS\nModeration\nPayments\nSystem",
+   "options": "Bible Reading\nSpiritual Growth\nBible Study\nPrayer\nEncouragement\nQuiz\nCourses\nCommunity\nShopping\nAccount\nAnnouncements\nUsers\nSupport\nOrders\nLMS\nModeration\nPayments\nSystem",
    "reqd": 1,
    "in_list_view": 1,
    "description": "Matches one toggle on TOB Notification Preference (User audience) or an admin role bucket (Admin audience)."
@@ -88,6 +90,20 @@
    "fieldtype": "Data",
    "label": "Deep Link Id Variable",
    "description": "Which variable name (from the event's own variables dict) supplies the record id the route needs, e.g. 'quiz_id', 'ticket_id'. Leave blank for a route that takes no id."
+  },
+  {
+   "fieldname": "trigger_note",
+   "fieldtype": "Small Text",
+   "label": "When This Fires",
+   "description": "Human-readable trigger/schedule description shown to admins (e.g. 'Hourly scan · sent during your Daily Reminder Time'). Purely informational — editing it never changes when the event actually fires; update the linked scan/trigger code for that."
+  },
+  {
+   "fieldname": "live_status",
+   "fieldtype": "Select",
+   "label": "Live Status",
+   "options": "Working\nNeeds Setup\nUnverified",
+   "default": "Working",
+   "description": "Working: fully wired and firing today. Needs Setup: correctly wired in code but blocked on an external step (e.g. a webhook not yet registered, a site_config key not yet set) — flip to Working once that step is done. Unverified: wired but the payload/trigger shape hasn't been confirmed against a live delivery yet."
   },
   {
    "fieldname": "section_break_1",

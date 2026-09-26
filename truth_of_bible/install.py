@@ -1004,6 +1004,8 @@ _NOTIFICATION_TEMPLATES = [
 		"priority": "Low",
 		"deeplink_route": "/continueReading",
 		"deeplink_id_field": "deeplink_ref",
+		"trigger_note": "Hourly scan · sent once during your Daily Reminder Time (default 7am), only if you haven't read yet today.",
+		"live_status": "Working",
 		"title": "Continue your reading in {{ book }} {{ chapter }}",
 		"body": "Pick up right where you left off.",
 		"description": "Sent at most once per day, only in the user's own configured reminder hour, only if they haven't read yet today (any device).",
@@ -1014,6 +1016,8 @@ _NOTIFICATION_TEMPLATES = [
 		"category": "Bible Reading",
 		"priority": "Low",
 		"deeplink_route": "/todayVerse",
+		"trigger_note": "Hourly scan · same trigger as Continue Reading, used when no last-read book is known yet.",
+		"live_status": "Working",
 		"title": "Take a few quiet moments in God's Word today",
 		"body": "",
 		"description": "Same trigger as BIBLE_READING_CONTINUE, used when there's no known last-read location yet (e.g. a brand new reader).",
@@ -1024,6 +1028,8 @@ _NOTIFICATION_TEMPLATES = [
 		"category": "Spiritual Growth",
 		"priority": "Low",
 		"deeplink_route": "/todayVerse",
+		"trigger_note": "Hourly scan · sent once you've gone 3 days without reading.",
+		"live_status": "Working",
 		"title": "It's a new day. Spend a few moments in God's Word.",
 		"body": "",
 		"description": "3-day inactivity tier. Never mentions the gap in days — see the plan's Phase 12/9 tone rules.",
@@ -1034,6 +1040,8 @@ _NOTIFICATION_TEMPLATES = [
 		"category": "Spiritual Growth",
 		"priority": "Low",
 		"deeplink_route": "/todayVerse",
+		"trigger_note": "Hourly scan · sent once you've gone 7 days without reading.",
+		"live_status": "Working",
 		"title": "Whenever you're ready, God's Word is here for you.",
 		"body": "",
 		"description": "7-day inactivity tier.",
@@ -1044,6 +1052,8 @@ _NOTIFICATION_TEMPLATES = [
 		"category": "Spiritual Growth",
 		"priority": "Low",
 		"deeplink_route": "/todayVerse",
+		"trigger_note": "Hourly scan · sent once you've gone 14 days without reading.",
+		"live_status": "Working",
 		"title": "A quiet moment in Scripture is always waiting for you.",
 		"body": "",
 		"description": "14-day inactivity tier.",
@@ -1054,6 +1064,8 @@ _NOTIFICATION_TEMPLATES = [
 		"category": "Spiritual Growth",
 		"priority": "Low",
 		"deeplink_route": "/todayVerse",
+		"trigger_note": "Hourly scan · sent once you've gone 30 days without reading.",
+		"live_status": "Working",
 		"title": "We'd love to walk through God's Word with you again.",
 		"body": "",
 		"description": "30-day inactivity tier — the gentlest, most welcoming copy of the four, not the most urgent.",
@@ -1072,6 +1084,8 @@ _NOTIFICATION_TEMPLATES = [
 		"priority": "Low",
 		"deeplink_route": "/viewQuiz",
 		"deeplink_id_field": "quiz_id",
+		"trigger_note": "Instant · fires the moment a new quiz is published for an enrolled course.",
+		"live_status": "Working",
 		"title": "New quiz available: {{ quiz_title }}",
 		"body": "Test what you've learned.",
 		"description": "Fired when a new LMS Quiz is created for a course, fanned out to that course's enrolled members.",
@@ -1083,6 +1097,8 @@ _NOTIFICATION_TEMPLATES = [
 		"priority": "Low",
 		"deeplink_route": "/viewQuiz",
 		"deeplink_id_field": "quiz_id",
+		"trigger_note": "Instant · fires the moment a quiz submission is graded.",
+		"live_status": "Working",
 		"title": "Your result for {{ quiz_title }} is ready",
 		"body": "You scored {{ percentage }}%.",
 		"description": "Fired when an LMS Quiz Submission is created for a member.",
@@ -1094,6 +1110,8 @@ _NOTIFICATION_TEMPLATES = [
 		"priority": "Normal",
 		"deeplink_route": "/viewTicket",
 		"deeplink_id_field": "ticket_id",
+		"trigger_note": "Instant · fires when a support agent (not the customer) replies to a ticket.",
+		"live_status": "Working",
 		"title": "New reply on your support ticket",
 		"body": "A support agent has responded to your ticket.",
 		"description": (
@@ -1116,6 +1134,8 @@ _NOTIFICATION_TEMPLATES = [
 		"category": "Prayer",
 		"priority": "Low",
 		"deeplink_route": "/prayer",
+		"trigger_note": "Hourly scan · sent once during your Preferred Prayer Time (default 12pm) — general variant.",
+		"live_status": "Working",
 		"title": "Take a moment to pray today",
 		"body": "",
 		"description": "Daily-eligible prayer variant — general, time-of-day-agnostic.",
@@ -1126,6 +1146,8 @@ _NOTIFICATION_TEMPLATES = [
 		"category": "Prayer",
 		"priority": "Low",
 		"deeplink_route": "/prayer",
+		"trigger_note": "Hourly scan · picked when your Preferred Prayer Time falls in the morning (before 11am).",
+		"live_status": "Working",
 		"title": "Begin your day with a moment of prayer",
 		"body": "",
 		"description": "Picked when the user's preferred prayer hour falls in the morning (before 11am local).",
@@ -1136,6 +1158,8 @@ _NOTIFICATION_TEMPLATES = [
 		"category": "Prayer",
 		"priority": "Low",
 		"deeplink_route": "/prayer",
+		"trigger_note": "Hourly scan · picked when your Preferred Prayer Time falls in the evening (6pm or later).",
+		"live_status": "Working",
 		"title": "Before your day ends, take a quiet moment to pray",
 		"body": "",
 		"description": "Picked when the user's preferred prayer hour falls in the evening (6pm local or later).",
@@ -1146,6 +1170,8 @@ _NOTIFICATION_TEMPLATES = [
 		"category": "Prayer",
 		"priority": "Low",
 		"deeplink_route": "/prayer",
+		"trigger_note": "Hourly scan · daily-eligible variant, pairs Scripture with prayer.",
+		"live_status": "Working",
 		"title": "Read today's verse, then take a moment to pray",
 		"body": "",
 		"description": "Daily-eligible prayer variant pairing Scripture with prayer.",
@@ -1156,6 +1182,8 @@ _NOTIFICATION_TEMPLATES = [
 		"category": "Prayer",
 		"priority": "Low",
 		"deeplink_route": "/prayer",
+		"trigger_note": "Hourly scan · variety variant, roughly 2-3x/week.",
+		"live_status": "Working",
 		"title": "Pause for a moment",
 		"body": "What would you like to bring before God today?",
 		"description": "Variety variant, roughly 2-3x/week (see prayer.py's _pick_variant weighting).",
@@ -1166,6 +1194,8 @@ _NOTIFICATION_TEMPLATES = [
 		"category": "Prayer",
 		"priority": "Low",
 		"deeplink_route": "/prayer",
+		"trigger_note": "Hourly scan · daily-eligible variant, a stillness/peace framing.",
+		"live_status": "Working",
 		"title": "Take a quiet moment, be still, and pray",
 		"body": "",
 		"description": "Daily-eligible prayer variant, a stillness/peace framing.",
@@ -1176,6 +1206,8 @@ _NOTIFICATION_TEMPLATES = [
 		"category": "Prayer",
 		"priority": "Low",
 		"deeplink_route": "/prayer",
+		"trigger_note": "Hourly scan · variety variant, roughly 1-2x/week.",
+		"live_status": "Working",
 		"title": "Take a moment today to thank God for His goodness",
 		"body": "",
 		"description": "Variety variant, roughly 1-2x/week.",
@@ -1186,6 +1218,8 @@ _NOTIFICATION_TEMPLATES = [
 		"category": "Prayer",
 		"priority": "Low",
 		"deeplink_route": "/prayer",
+		"trigger_note": "Hourly scan · variety variant, roughly 1-2x/week, intercessory framing.",
+		"live_status": "Working",
 		"title": "Is there someone you can remember in prayer today?",
 		"body": "",
 		"description": "Variety variant, roughly 1-2x/week — intercessory framing.",
@@ -1196,9 +1230,31 @@ _NOTIFICATION_TEMPLATES = [
 		"category": "Prayer",
 		"priority": "Low",
 		"deeplink_route": "/prayer",
+		"trigger_note": "Hourly scan · daily-eligible variant, framed around your own chosen time.",
+		"live_status": "Working",
 		"title": "It's your usual prayer time",
 		"body": "Take a few quiet moments with God.",
 		"description": "Daily-eligible prayer variant framed around the user's own chosen time.",
+	},
+	# --- Daily Encouragement (notifications/encouragement.py). One shared
+	# event_code for an admin-growable POOL of interchangeable messages
+	# (TOB Encouragement Message) — unlike every other template here, this
+	# row's title/body are pure passthrough placeholders for whichever
+	# message got randomly picked that day (`enc_title`/`enc_body`), and its
+	# `deeplink_route` is only the fallback for a message with no route of
+	# its own (each message can carry its own, via `deeplink_route_override`
+	# — see engine.py's `_send_one`).
+	{
+		"event_code": "DAILY_ENCOURAGEMENT",
+		"audience": "User",
+		"category": "Encouragement",
+		"priority": "Low",
+		"deeplink_route": "/prayer",
+		"trigger_note": "Hourly scan · sent once during your Daily Reminder Time, a different message chosen at random each day.",
+		"live_status": "Working",
+		"title": "{{ enc_title }}",
+		"body": "{{ enc_body }}",
+		"description": "Passthrough template for the Daily Encouragement pool — edit individual messages in the Encouragement Messages screen, not here.",
 	},
 	# --- Admin-audience events (engine.py fans these out to
 	# admin_audience.admin_users() — Batch Evaluator / Moderator / Course
@@ -1215,6 +1271,8 @@ _NOTIFICATION_TEMPLATES = [
 		"category": "Support",
 		"priority": "High",
 		"deeplink_route": "/dashboard",
+		"trigger_note": "Instant · fires when a new support ticket is raised, to every admin.",
+		"live_status": "Working",
 		"title": "New support ticket",
 		"body": "{{ subject }}",
 		"description": "Fired when a new Issue (support ticket) is raised, to every admin.",
@@ -1225,6 +1283,8 @@ _NOTIFICATION_TEMPLATES = [
 		"category": "Support",
 		"priority": "High",
 		"deeplink_route": "/dashboard",
+		"trigger_note": "Instant · fires when a ticket's priority changes to High or Urgent.",
+		"live_status": "Working",
 		"title": "Ticket escalated to {{ priority }}",
 		"body": "{{ subject }}",
 		"description": "Fired when an existing Issue's priority changes to High or Urgent.",
@@ -1235,6 +1295,8 @@ _NOTIFICATION_TEMPLATES = [
 		"category": "Users",
 		"priority": "Normal",
 		"deeplink_route": "/dashboard",
+		"trigger_note": "Instant · fires when a real app sign-up completes (not a Desk-created staff account).",
+		"live_status": "Working",
 		"title": "New user joined",
 		"body": "{{ user_name }}",
 		"description": "Fired when a new Website User account is created (a real app sign-up, not a Desk-created System User).",
@@ -1245,6 +1307,8 @@ _NOTIFICATION_TEMPLATES = [
 		"category": "LMS",
 		"priority": "Low",
 		"deeplink_route": "/dashboard",
+		"trigger_note": "Instant · fires when a member enrolls in a course.",
+		"live_status": "Working",
 		"title": "New course enrollment",
 		"body": "{{ member }} enrolled in {{ course }}",
 		"description": "Fired when a new LMS Enrollment is created.",
@@ -1260,6 +1324,8 @@ _NOTIFICATION_TEMPLATES = [
 		"priority": "Normal",
 		"deeplink_route": "/orderHistory",
 		"deeplink_id_field": "order_id",
+		"trigger_note": "Instant, once connected · fires on a WooCommerce order status change. Needs the WooCommerce webhook registered on edenza.org — not done yet.",
+		"live_status": "Needs Setup",
 		"title": "Your order has been placed",
 		"body": "Order #{{ order_id }} is being processed.",
 		"description": "WooCommerce order status -> processing.",
@@ -1271,6 +1337,8 @@ _NOTIFICATION_TEMPLATES = [
 		"priority": "Normal",
 		"deeplink_route": "/orderHistory",
 		"deeplink_id_field": "order_id",
+		"trigger_note": "Instant, once connected · fires on a WooCommerce order status change. Needs the WooCommerce webhook registered on edenza.org — not done yet.",
+		"live_status": "Needs Setup",
 		"title": "Your order has arrived",
 		"body": "Order #{{ order_id }} is complete.",
 		"description": "WooCommerce order status -> completed.",
@@ -1282,6 +1350,8 @@ _NOTIFICATION_TEMPLATES = [
 		"priority": "Normal",
 		"deeplink_route": "/orderHistory",
 		"deeplink_id_field": "order_id",
+		"trigger_note": "Instant, once connected · fires on a WooCommerce order status change. Needs the WooCommerce webhook registered on edenza.org — not done yet.",
+		"live_status": "Needs Setup",
 		"title": "Your order was cancelled",
 		"body": "Order #{{ order_id }} has been cancelled.",
 		"description": "WooCommerce order status -> cancelled.",
@@ -1293,6 +1363,8 @@ _NOTIFICATION_TEMPLATES = [
 		"priority": "Normal",
 		"deeplink_route": "/orderHistory",
 		"deeplink_id_field": "order_id",
+		"trigger_note": "Instant, once connected · fires on a WooCommerce order status change. Needs the WooCommerce webhook registered on edenza.org — not done yet.",
+		"live_status": "Needs Setup",
 		"title": "Your refund has been processed",
 		"body": "Order #{{ order_id }} has been refunded.",
 		"description": "WooCommerce order status -> refunded.",
@@ -1304,6 +1376,8 @@ _NOTIFICATION_TEMPLATES = [
 		"priority": "High",
 		"deeplink_route": "/orderHistory",
 		"deeplink_id_field": "order_id",
+		"trigger_note": "Instant, once connected · fires on a WooCommerce order status change. Needs the WooCommerce webhook registered on edenza.org — not done yet.",
+		"live_status": "Needs Setup",
 		"title": "Payment issue with your order",
 		"body": "We couldn't process payment for order #{{ order_id }}. Please try again.",
 		"description": "WooCommerce order status -> failed.",
@@ -1315,6 +1389,8 @@ _NOTIFICATION_TEMPLATES = [
 		"priority": "Normal",
 		"deeplink_route": "/dashboard",
 		"deeplink_id_field": "order_id",
+		"trigger_note": "Instant, once connected · admin copy of Order Placed. Needs the WooCommerce webhook registered.",
+		"live_status": "Needs Setup",
 		"title": "New order received",
 		"body": "Order #{{ order_id }} has been placed.",
 		"description": "Admin copy of ORDER_PLACED — WooCommerce order status -> processing.",
@@ -1326,6 +1402,8 @@ _NOTIFICATION_TEMPLATES = [
 		"priority": "High",
 		"deeplink_route": "/dashboard",
 		"deeplink_id_field": "order_id",
+		"trigger_note": "Instant, once connected · admin copy of Payment Failed. Needs the WooCommerce webhook registered.",
+		"live_status": "Needs Setup",
 		"title": "Payment failed",
 		"body": "Order #{{ order_id }} — payment could not be processed.",
 		"description": "Admin copy of PAYMENT_FAILED.",
@@ -1341,6 +1419,8 @@ _NOTIFICATION_TEMPLATES = [
 		"category": "Community",
 		"priority": "Normal",
 		"deeplink_route": "/communityActivity",
+		"trigger_note": "Instant, once connected · Discourse notification webhook isn't registered yet, and the exact trigger values are unverified.",
+		"live_status": "Unverified",
 		"title": "New reply on your post",
 		"body": "{{ topic_title }}",
 		"description": "Discourse notification_type 'replied' (unverified for this instance — see community_webhook.py).",
@@ -1351,6 +1431,8 @@ _NOTIFICATION_TEMPLATES = [
 		"category": "Community",
 		"priority": "Normal",
 		"deeplink_route": "/communityActivity",
+		"trigger_note": "Instant, once connected · Discourse notification webhook isn't registered yet, and the exact trigger values are unverified.",
+		"live_status": "Unverified",
 		"title": "You were mentioned",
 		"body": "{{ topic_title }}",
 		"description": "Discourse notification_type 'mentioned' (unverified for this instance — see community_webhook.py).",
@@ -1361,6 +1443,8 @@ _NOTIFICATION_TEMPLATES = [
 		"category": "Community",
 		"priority": "Low",
 		"deeplink_route": "/communityActivity",
+		"trigger_note": "Instant, once connected · Discourse notification webhook isn't registered yet (the trigger values themselves are confirmed).",
+		"live_status": "Needs Setup",
 		"title": "Someone liked your post",
 		"body": "{{ topic_title }}",
 		"description": "Discourse notification_type 'liked'/'liked_consolidated' (5/15) — confirmed values, already used by the in-app My Activity list.",
@@ -1371,6 +1455,8 @@ _NOTIFICATION_TEMPLATES = [
 		"category": "Community",
 		"priority": "Normal",
 		"deeplink_route": "/communityActivity",
+		"trigger_note": "Instant, once connected · Discourse notification webhook isn't registered yet (the trigger value itself is confirmed).",
+		"live_status": "Needs Setup",
 		"title": "You earned a badge!",
 		"body": "{{ badge_name }}",
 		"description": "Discourse notification_type 'granted_badge' (12) — confirmed value, already used by the in-app My Activity list.",
@@ -1390,6 +1476,8 @@ _NOTIFICATION_TEMPLATES = [
 		"category": "Support",
 		"priority": "Normal",
 		"deeplink_route": "/dashboard",
+		"trigger_note": "Instant · fires when a new inbound WhatsApp message arrives (Communication Center).",
+		"live_status": "Working",
 		"title": "New WhatsApp message",
 		"body": "{{ contact_name }} sent a message.",
 		"description": "Fired when api/chatwoot_webhook.py mirrors a new inbound WhatsApp message.",
@@ -1405,6 +1493,8 @@ _NOTIFICATION_TEMPLATES = [
 		"priority": "Low",
 		"deeplink_route": "/viewCourse",
 		"deeplink_id_field": "course",
+		"trigger_note": "Instant · fires when a member enrolls in a course (their own copy of New Enrollment).",
+		"live_status": "Working",
 		"title": "You're enrolled!",
 		"body": "Your course is ready whenever you are.",
 		"description": "Fired alongside the existing admin-only NEW_ENROLLMENT, same LMS Enrollment.after_insert trigger — this copy goes to the member themselves.",
@@ -1416,6 +1506,8 @@ _NOTIFICATION_TEMPLATES = [
 		"priority": "Low",
 		"deeplink_route": "/batch",
 		"deeplink_id_field": "batch",
+		"trigger_note": "Instant · fires when a member is added to a batch.",
+		"live_status": "Working",
 		"title": "You've been added to {{ batch_title }}",
 		"body": "Check your batch for schedule and details.",
 		"description": "Fired on LMS Batch Enrollment.after_insert.",
@@ -1427,6 +1519,8 @@ _NOTIFICATION_TEMPLATES = [
 		"priority": "Low",
 		"deeplink_route": "/viewLesson",
 		"deeplink_id_field": "lesson_id",
+		"trigger_note": "Instant · fires when a new lesson is published in an enrolled course.",
+		"live_status": "Working",
 		"title": "New lesson available: {{ lesson_title }}",
 		"body": "Continue your course.",
 		"description": "Fired on Course Lesson.after_insert, fanned out to that course's enrolled members (capped at 200, same convention as NEW_QUIZ_AVAILABLE).",
@@ -1438,6 +1532,8 @@ _NOTIFICATION_TEMPLATES = [
 		"priority": "Normal",
 		"deeplink_route": "/batch",
 		"deeplink_id_field": "batch",
+		"trigger_note": "Instant · fires when a batch's dates or publish status change.",
+		"live_status": "Working",
 		"title": "{{ batch_title }} has been updated",
 		"body": "Check the batch for what changed.",
 		"description": "Fired on LMS Batch.on_update when start_date/end_date/published actually changed, fanned to that batch's enrolled members only.",
@@ -1453,6 +1549,8 @@ _NOTIFICATION_TEMPLATES = [
 		"priority": "Low",
 		"deeplink_route": "/continueReading",
 		"deeplink_id_field": "deeplink_ref",
+		"trigger_note": "Hourly scan · at most 2 per week, only sent to someone who already read today.",
+		"live_status": "Working",
 		"title": "Go deeper into {{ book }}",
 		"body": "There's always more to discover in God's Word.",
 		"description": "Hourly scan, at most 2/week per user, only for someone who read today — see bible_study.py.",
@@ -1465,6 +1563,8 @@ _NOTIFICATION_TEMPLATES = [
 		"category": "System",
 		"priority": "Critical",
 		"deeplink_route": "/dashboard",
+		"trigger_note": "Daily check · fires if notification errors spike in the last 24 hours. Bypasses quiet hours and daily caps.",
+		"live_status": "Working",
 		"title": "Notification system needs attention",
 		"body": "{{ count }} notification errors in the last {{ window_hours }} hours — check Error Log.",
 		"description": "Fired when Error Log rows titled 'Notification ...' exceed a threshold in a rolling 24h window — see selfcheck.py.",
@@ -1480,6 +1580,8 @@ _NOTIFICATION_TEMPLATES = [
 		"category": "Orders",
 		"priority": "Normal",
 		"deeplink_route": "/dashboard",
+		"trigger_note": "Daily poll, once connected · needs a WooCommerce API key (woocommerce_api_auth) added to site config — not confirmed set.",
+		"live_status": "Needs Setup",
 		"title": "{{ count }} product(s) out of stock",
 		"body": "{{ products }}",
 		"description": "Daily WooCommerce stock poll — see stock.py. Needs 'woocommerce_api_auth' in site_config.json before it can fire.",
@@ -1490,6 +1592,8 @@ _NOTIFICATION_TEMPLATES = [
 		"category": "Orders",
 		"priority": "Low",
 		"deeplink_route": "/dashboard",
+		"trigger_note": "Daily poll, once connected · needs a WooCommerce API key (woocommerce_api_auth) added to site config — not confirmed set.",
+		"live_status": "Needs Setup",
 		"title": "{{ count }} product(s) running low",
 		"body": "{{ products }}",
 		"description": "Daily WooCommerce stock poll — see stock.py. Needs 'woocommerce_api_auth' in site_config.json before it can fire.",
@@ -1502,11 +1606,245 @@ _NOTIFICATION_TEMPLATES = [
 		"category": "Moderation",
 		"priority": "High",
 		"deeplink_route": "/dashboard",
+		"trigger_note": "Instant, once connected · Discourse moderation-flag webhook isn't registered yet, payload shape unverified.",
+		"live_status": "Unverified",
 		"title": "A post was flagged for review",
 		"body": "{{ topic_title }}",
 		"description": "Fired by community_webhook.py's flag_created receiver — payload shape UNVERIFIED, see that function's own docstring.",
 	},
 ]
+
+
+# Starter library for the Daily Encouragement pool (notifications/
+# encouragement.py) — deliberately gentle per this whole engine's existing
+# tone rules (never implies failure, never claims to know someone's
+# situation, always an invitation not a demand). Meant as a real starting
+# set an admin can immediately use, then grow from the Encouragement
+# Messages admin screen — adding a new one needs no code deploy.
+_ENCOURAGEMENT_MESSAGES = [
+	{
+		"title": "You don't have to carry this alone",
+		"body": "Jesus is right here with you. Whatever today has been, you don't have to face it by yourself.",
+		"deeplink_route": "/prayer",
+		"tag": "Comfort",
+	},
+	{
+		"title": "Three words are enough to start",
+		"body": "Just say, \"Jesus, help me.\" He's already listening.",
+		"deeplink_route": "/prayer",
+		"tag": "Invitation to Pray",
+	},
+	{
+		"title": "Don't know how to pray?",
+		"body": "There's no right way to begin. Tap here and we'll help you find the words.",
+		"deeplink_route": "/prayer",
+		"tag": "Invitation to Pray",
+	},
+	{
+		"title": "Someone is listening",
+		"body": "It might feel like no one has time for you today. Jesus does.",
+		"deeplink_route": "/prayer",
+		"tag": "Reassurance",
+	},
+	{
+		"title": "He's ready to speak",
+		"body": "Open today's verse — He has something for you in it.",
+		"deeplink_route": "/todayVerse",
+		"tag": "Invitation to Read",
+	},
+	{
+		"title": "You're not forgotten",
+		"body": "Whatever today has been, you're seen, you're loved, and you're not alone.",
+		"deeplink_route": "/prayer",
+		"tag": "Comfort",
+	},
+	{
+		"title": "A quiet place for you",
+		"body": "Step away for a moment. Bring whatever's on your heart to Him.",
+		"deeplink_route": "/prayer",
+		"tag": "Invitation to Pray",
+	},
+	{
+		"title": "Still worth showing up",
+		"body": "You don't need the right words or a good day to open His Word.",
+		"deeplink_route": "/todayVerse",
+		"tag": "Invitation to Read",
+	},
+	{
+		"title": "Hope for today",
+		"body": "Whatever's heavy right now, it doesn't get the final word.",
+		"deeplink_route": "/prayer",
+		"tag": "Hope",
+	},
+	{
+		"title": "He already knows",
+		"body": "You don't have to explain everything. He already understands.",
+		"deeplink_route": "/prayer",
+		"tag": "Reassurance",
+	},
+		{
+		"title": "He knows your name",
+		"body": "Not a number, not a stranger. He knows exactly who you are and what you're carrying.",
+		"deeplink_route": "/prayer",
+		"tag": "Reassurance",
+	},
+	{
+		"title": "This moment counts",
+		"body": "You don't need a perfect setting or a clear head. Right now is enough.",
+		"deeplink_route": "/prayer",
+		"tag": "Invitation to Pray",
+	},
+	{
+		"title": "A word for right now",
+		"body": "Today's verse was chosen for a moment just like this one.",
+		"deeplink_route": "/todayVerse",
+		"tag": "Invitation to Read",
+	},
+	{
+		"title": "Tired is okay",
+		"body": "You don't have to have it together to come to Him. Come as you are.",
+		"deeplink_route": "/prayer",
+		"tag": "Comfort",
+	},
+	{
+		"title": "Small prayers still reach Him",
+		"body": "It doesn't have to be long or eloquent. He hears the small ones too.",
+		"deeplink_route": "/prayer",
+		"tag": "Invitation to Pray",
+	},
+	{
+		"title": "Not the end of the story",
+		"body": "Whatever's unresolved today, it's still being written.",
+		"deeplink_route": "/prayer",
+		"tag": "Hope",
+	},
+	{
+		"title": "Rest for a minute",
+		"body": "You don't have to solve everything before you talk to Him. Just rest here for a moment.",
+		"deeplink_route": "/prayer",
+		"tag": "Comfort",
+	},
+	{
+		"title": "Worth the pause",
+		"body": "A minute with His Word can shift the rest of your day.",
+		"deeplink_route": "/todayVerse",
+		"tag": "Invitation to Read",
+	},
+	{
+		"title": "He's not keeping score",
+		"body": "However long it's been, He's not waiting to bring it up. He's just glad you're here.",
+		"deeplink_route": "/prayer",
+		"tag": "Reassurance",
+	},
+	{
+		"title": "You're allowed to ask",
+		"body": "For peace, for strength, for anything. He wants to hear it from you.",
+		"deeplink_route": "/prayer",
+		"tag": "Invitation to Pray",
+	},
+	{
+		"title": "Even now, there's hope",
+		"body": "Nothing you're facing today is bigger than what He can carry with you.",
+		"deeplink_route": "/prayer",
+		"tag": "Hope",
+	},
+	{
+		"title": "A light in the noise",
+		"body": "In everything pulling for your attention today, His Word is worth the pause.",
+		"deeplink_route": "/todayVerse",
+		"tag": "Invitation to Read",
+	},
+		{
+		"title": "Jesus already knows",
+		"body": "You don't have to explain the whole day. Jesus already understands it.",
+		"deeplink_route": "/prayer",
+		"tag": "Reassurance",
+	},
+	{
+		"title": "Talk to Jesus about it",
+		"body": "Whatever's on your mind right now, He wants to hear it from you.",
+		"deeplink_route": "/prayer",
+		"tag": "Invitation to Pray",
+	},
+	{
+		"title": "Jesus isn't rushing you",
+		"body": "Take your time. He's not going anywhere.",
+		"deeplink_route": "/prayer",
+		"tag": "Comfort",
+	},
+	{
+		"title": "Jesus has something to say today",
+		"body": "Open today's verse and see what He's speaking into your day.",
+		"deeplink_route": "/todayVerse",
+		"tag": "Invitation to Read",
+	},
+	{
+		"title": "Jesus is still with you",
+		"body": "However today has gone, He hasn't stepped away.",
+		"deeplink_route": "/prayer",
+		"tag": "Reassurance",
+	},
+	{
+		"title": "Bring it to Jesus",
+		"body": "You don't have to carry it alone. Bring it to Him, just as it is.",
+		"deeplink_route": "/prayer",
+		"tag": "Invitation to Pray",
+	},
+	{
+		"title": "Jesus sees what today cost you",
+		"body": "Even the parts no one else noticed. Come rest for a minute.",
+		"deeplink_route": "/prayer",
+		"tag": "Comfort",
+	},
+	{
+		"title": "A minute with Jesus",
+		"body": "That's all it takes to start. He'll meet you there.",
+		"deeplink_route": "/prayer",
+		"tag": "Invitation to Pray",
+	},
+	{
+		"title": "Jesus is not keeping His distance",
+		"body": "Whatever's between you and today, He's closer than you think.",
+		"deeplink_route": "/prayer",
+		"tag": "Reassurance",
+	},
+	{
+		"title": "Jesus goes first",
+		"body": "Before you find the words, He's already listening.",
+		"deeplink_route": "/prayer",
+		"tag": "Invitation to Pray",
+	},
+	{
+		"title": "What Jesus is saying today",
+		"body": "Today's verse carries something for exactly where you are.",
+		"deeplink_route": "/todayVerse",
+		"tag": "Invitation to Read",
+	},
+	{
+		"title": "Jesus doesn't need a good day from you",
+		"body": "Come as you are, hard day and all.",
+		"deeplink_route": "/prayer",
+		"tag": "Comfort",
+	},
+]
+
+
+def seed_encouragement_messages():
+	"""Create-only, matching `seed_notification_templates`' own reasoning —
+	an admin's later edits (or a message they've disabled) must never be
+	reset by a future migrate. Matched by `title` alone (this doctype has no
+	natural unique key), so re-running never creates duplicates of the
+	starter set."""
+	for entry in _ENCOURAGEMENT_MESSAGES:
+		if frappe.db.exists("TOB Encouragement Message", {"title": entry["title"]}):
+			continue
+		try:
+			frappe.get_doc({"doctype": "TOB Encouragement Message", "enabled": 1, **entry}).insert(
+				ignore_permissions=True
+			)
+			frappe.db.commit()
+		except frappe.ValidationError:
+			frappe.db.rollback()
 
 
 def seed_notification_templates():
@@ -1522,33 +1860,45 @@ def seed_notification_templates():
 			frappe.db.rollback()
 
 
-def sync_notification_template_deeplinks():
+def backfill_notification_template_metadata():
 	"""`seed_notification_templates` above is create-only (by design, so an
-	admin's own edits to title/body copy in Desk are never clobbered on the
-	next migrate) — it never revisits a template that already exists. A
-	`deeplink_route`/`deeplink_id_field` change here in code (e.g. wiring
-	BIBLE_READING_CONTINUE to the new `/continueReading` route instead of
-	the old `/todayVerse` placeholder) would otherwise never reach an
-	already-seeded site. This narrowly re-syncs just those two routing
-	fields — never title/body/category — for templates whose code value no
-	longer matches what's stored.
+	admin's own edits are never clobbered on the next migrate) — it never
+	revisits a template that already exists, so a brand new field added to
+	`_NOTIFICATION_TEMPLATES` (like `trigger_note`/`live_status` below) would
+	otherwise never reach a row seeded before that field existed.
+
+	Deliberately fills a field ONLY when it's currently blank — never
+	overwrites a value that's already there, whether it got there from an
+	earlier run of this same function or from an admin editing it directly
+	in the app's Notification Templates screen (both `trigger_note` and
+	`live_status` are admin-editable there: `live_status` in particular is
+	meant to be flipped from "Needs Setup" to "Working" once an admin
+	finishes a step like registering the WooCommerce/Discourse webhook —
+	this function must never fight that by resetting it back). Safe to
+	leave wired into after_install/after_migrate indefinitely on that basis.
+
+	(The previous version of this function, `sync_notification_template_
+	deeplinks`, force-corrected `deeplink_route`/`deeplink_id_field` for
+	BIBLE_READING_CONTINUE/BIBLE_STUDY_SUGGESTION from the old `/todayVerse`
+	placeholder to `/continueReading` — a one-time fix already applied to
+	this site. It was removed rather than kept running because those two
+	fields are now ALSO admin-editable in the app, and force-syncing them
+	forever would have silently undone any admin's own edit on every
+	future migrate.)
 	"""
 	for entry in _NOTIFICATION_TEMPLATES:
-		if "deeplink_route" not in entry:
+		fields_to_fill = {k: entry[k] for k in ("trigger_note", "live_status") if entry.get(k)}
+		if not fields_to_fill:
 			continue
 		current = frappe.db.get_value(
-			"TOB Notification Template", entry["event_code"], ["deeplink_route", "deeplink_id_field"], as_dict=True
+			"TOB Notification Template", entry["event_code"], list(fields_to_fill.keys()), as_dict=True
 		)
 		if not current:
 			continue
-		wanted_id_field = entry.get("deeplink_id_field")
-		if current.deeplink_route == entry["deeplink_route"] and current.deeplink_id_field == wanted_id_field:
+		blank_only = {k: v for k, v in fields_to_fill.items() if not current.get(k)}
+		if not blank_only:
 			continue
-		frappe.db.set_value(
-			"TOB Notification Template",
-			entry["event_code"],
-			{"deeplink_route": entry["deeplink_route"], "deeplink_id_field": wanted_id_field},
-		)
+		frappe.db.set_value("TOB Notification Template", entry["event_code"], blank_only)
 	frappe.db.commit()
 
 
