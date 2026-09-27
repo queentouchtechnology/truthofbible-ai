@@ -59,9 +59,9 @@ def get_user_communication(user):
 	titles = {}
 	if campaign_names:
 		titles = {
-			c.name: c.title
+			c.name: c.campaign_name
 			for c in frappe.get_all(
-				"TOB Communication Campaign", filters={"name": ["in", campaign_names]}, fields=["name", "title"]
+				"TOB Communication Campaign", filters={"name": ["in", campaign_names]}, fields=["name", "campaign_name"]
 			)
 		}
 	campaigns = [
