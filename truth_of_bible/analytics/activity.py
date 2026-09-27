@@ -54,6 +54,11 @@ _ALLOWED_EVENTS = {
 	# with `data.duration_seconds` — see notifications/engagement.py's real
 	# session-length calculation.
 	"app_session_ended",
+	# Bible Places module — see api/bible_places.py, api/church_finder.py.
+	"bible_place_viewed",
+	"bible_journey_started",
+	"bible_journey_completed",
+	"church_finder_searched",
 }
 
 _MAX_BATCH_SIZE = 100

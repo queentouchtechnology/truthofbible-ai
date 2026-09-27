@@ -1,0 +1,129 @@
+{
+ "doctype": "DocType",
+ "name": "TOB Bible Place",
+ "module": "Truth Of Bible",
+ "custom": 0,
+ "istable": 0,
+ "issingle": 0,
+ "quick_entry": 0,
+ "track_changes": 1,
+ "autoname": "hash",
+ "naming_rule": "Random",
+ "sort_field": "sort_order",
+ "sort_order": "ASC",
+ "engine": "InnoDB",
+ "description": "One biblical place (e.g. Jerusalem, Mount Sinai). Admin-authored content, browsed by every logged-in user via truth_of_bible.api.bible_places (never raw REST for a normal user — see that module's docstring). Referenced by TOB Bible Journey Stop to build guided journeys through multiple places.",
+ "field_order": [
+  "title",
+  "category",
+  "region",
+  "status",
+  "column_break_1",
+  "latitude",
+  "longitude",
+  "primary_verse_ref",
+  "sort_order",
+  "section_break_content",
+  "photo_url",
+  "description",
+  "facts"
+ ],
+ "fields": [
+  {
+   "fieldname": "title",
+   "fieldtype": "Data",
+   "label": "Title",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "category",
+   "fieldtype": "Select",
+   "label": "Category",
+   "options": "City\nMountain\nRiver\nSea\nRegion\nOther",
+   "default": "City",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "region",
+   "fieldtype": "Data",
+   "label": "Region",
+   "in_list_view": 1,
+   "description": "e.g. \"Israel\", \"Jordan\", \"Asia Minor\", \"Greece\", \"Rome\" — the app groups places by this on the Bible Places browse screen."
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Draft\nPublished",
+   "default": "Draft",
+   "in_list_view": 1,
+   "description": "Only Published places are ever returned to the app."
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "latitude",
+   "fieldtype": "Float",
+   "label": "Latitude",
+   "reqd": 1,
+   "precision": "6"
+  },
+  {
+   "fieldname": "longitude",
+   "fieldtype": "Float",
+   "label": "Longitude",
+   "reqd": 1,
+   "precision": "6"
+  },
+  {
+   "fieldname": "primary_verse_ref",
+   "fieldtype": "Data",
+   "label": "Primary Verse Reference",
+   "description": "e.g. \"Genesis 22:2\" — the main verse this place is associated with, shown on its card."
+  },
+  {
+   "fieldname": "sort_order",
+   "fieldtype": "Int",
+   "label": "Sort Order",
+   "default": "0",
+   "description": "Lower shows first within the place's region on the browse screen."
+  },
+  {
+   "fieldname": "section_break_content",
+   "fieldtype": "Section Break",
+   "label": "Content"
+  },
+  {
+   "fieldname": "photo_url",
+   "fieldtype": "Data",
+   "label": "Photo URL",
+   "description": "A direct image URL shown on the place's card and map popover. Seeded with a curated stock photo; replace with a real photo any time."
+  },
+  {
+   "fieldname": "description",
+   "fieldtype": "Small Text",
+   "label": "Description"
+  },
+  {
+   "fieldname": "facts",
+   "fieldtype": "Long Text",
+   "label": "Facts",
+   "description": "One fact per line — shown as a bulleted list on the place's detail view."
+  }
+ ],
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "report": 1,
+   "export": 1
+  }
+ ],
+ "links": []
+}

@@ -2220,3 +2220,350 @@ def seed_reading_plans():
 				frappe.db.commit()
 			except frappe.ValidationError:
 				frappe.db.rollback()
+
+
+_BIBLE_PLACES = [
+	# --- Israel ---
+	{"title": "Jerusalem", "category": "City", "region": "Israel", "latitude": 31.7683, "longitude": 35.2137,
+		"primary_verse_ref": "Psalm 122:6",
+		"description": "The City of David, site of Solomon's Temple, and where Jesus was crucified and rose again.",
+		"facts": "Called the City of David\nSite of Solomon's Temple\nWhere Jesus was crucified, buried, and rose again\nWhere the Holy Spirit came at Pentecost",
+		"photo_url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/91/Temple_Mount_%28Aerial_view%2C_2007%29_07.jpg/330px-Temple_Mount_%28Aerial_view%2C_2007%29_07.jpg",
+		"status": "Published", "sort_order": 1},
+	{"title": "Bethlehem", "category": "City", "region": "Israel", "latitude": 31.7054, "longitude": 35.2024,
+		"primary_verse_ref": "Luke 2:4-7",
+		"description": "The small town where Jesus was born, fulfilling centuries-old prophecy.",
+		"facts": "Also called the City of David (David's hometown)\nForetold by the prophet Micah 700 years earlier\nHome to the Church of the Nativity",
+		"photo_url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/61/Church_of_the_Nativity_%287703592746%29.jpg/330px-Church_of_the_Nativity_%287703592746%29.jpg",
+		"status": "Published", "sort_order": 2},
+	{"title": "Nazareth", "category": "City", "region": "Israel", "latitude": 32.6996, "longitude": 35.3035,
+		"primary_verse_ref": "Luke 1:26-31",
+		"description": "The town where Jesus grew up, and where the angel Gabriel appeared to Mary.",
+		"facts": "Jesus lived here from early childhood until He began His ministry\nA small, unremarkable village in Jesus' day\nSite of the Annunciation",
+		"photo_url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/3e/Nazareth_Panorama_Dafna_Tal_IMOT_%2814532097313%29.jpg/330px-Nazareth_Panorama_Dafna_Tal_IMOT_%2814532097313%29.jpg",
+		"status": "Published", "sort_order": 3},
+	{"title": "Capernaum", "category": "City", "region": "Israel", "latitude": 32.8807, "longitude": 35.5753,
+		"primary_verse_ref": "Matthew 4:13",
+		"description": "A fishing town on the Sea of Galilee that became Jesus' ministry headquarters.",
+		"facts": "Jesus called it 'his own city'\nHome to Peter, Andrew, James and John\nSite of a synagogue where Jesus taught and healed",
+		"photo_url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/fb/Sites_of_Christianity_in_the_Galillee_-_Ruins_of_the_ancient_Great_Synagogue_at_Capernaum_%28or_Kfar_Nahum%29_on_the_shore_of_the_Lake_of_Galilee%2C_Northern_Israel.jpg/330px-thumbnail.jpg",
+		"status": "Published", "sort_order": 4},
+	{"title": "Sea of Galilee", "category": "Sea", "region": "Israel", "latitude": 32.8000, "longitude": 35.5833,
+		"primary_verse_ref": "Mark 4:39",
+		"description": "The freshwater lake where Jesus called His first disciples, walked on water, and calmed the storm.",
+		"facts": "Also called the Sea of Tiberias or Lake Kinneret\nSurrounded by many of Jesus' ministry towns\nSite of the miraculous catch of fish",
+		"photo_url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/f7/Kinneret_cropped.jpg/330px-Kinneret_cropped.jpg",
+		"status": "Published", "sort_order": 5},
+	{"title": "Jordan River", "category": "River", "region": "Israel", "latitude": 31.8467, "longitude": 35.5494,
+		"primary_verse_ref": "Matthew 3:13-17",
+		"description": "The river where John the Baptist baptized Jesus.",
+		"facts": "Israel crossed it to enter the Promised Land\nNaaman was healed after washing in it\nStill a baptism site for pilgrims today",
+		"photo_url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/78/20100923_mer_morte13.JPG/330px-20100923_mer_morte13.JPG",
+		"status": "Published", "sort_order": 6},
+	{"title": "Jericho", "category": "City", "region": "Israel", "latitude": 31.8667, "longitude": 35.4500,
+		"primary_verse_ref": "Joshua 6:20",
+		"description": "One of the oldest continuously inhabited cities in the world, whose walls fell by faith.",
+		"facts": "Called 'the city of palms'\nIts walls fell after Israel marched around it for seven days\nWhere Jesus healed blind Bartimaeus and met Zacchaeus",
+		"photo_url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/f4/Tell_es-sultan.jpg/330px-Tell_es-sultan.jpg",
+		"status": "Published", "sort_order": 7},
+	{"title": "Mount of Olives", "category": "Mountain", "region": "Israel", "latitude": 31.7784, "longitude": 35.2450,
+		"primary_verse_ref": "Acts 1:9-12",
+		"description": "The hill overlooking Jerusalem from which Jesus ascended into heaven.",
+		"facts": "Jesus often taught and prayed here, including in Gethsemane\nSite of His agony the night before the crucifixion\nWhere He ascended, and where He is prophesied to return",
+		"photo_url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/4c/2013-Aerial-Mount_of_Olives.jpg/330px-2013-Aerial-Mount_of_Olives.jpg",
+		"status": "Published", "sort_order": 8},
+	{"title": "Bethany", "category": "City", "region": "Israel", "latitude": 31.7717, "longitude": 35.2603,
+		"primary_verse_ref": "John 11:43-44",
+		"description": "A village near Jerusalem, home to Jesus' close friends Mary, Martha, and Lazarus.",
+		"facts": "Where Jesus raised Lazarus from the dead\nWhere Mary anointed Jesus' feet with perfume\nJesus' base near Jerusalem during His final week",
+		"photo_url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/3e/%D7%94%D7%A0%D7%95%D7%A3_%D7%9C%D7%9E%D7%AA%D7%97%D7%9D_%D7%90%D7%95%D7%92%D7%95%D7%A1%D7%98%D7%94_%D7%95%D7%99%D7%A7%D7%98%D7%95%D7%A8%D7%99%D7%94.jpg/330px-%D7%94%D7%A0%D7%95%D7%A3_%D7%9C%D7%9E%D7%AA%D7%97%D7%9D_%D7%90%D7%95%D7%92%D7%95%D7%A1%D7%98%D7%94_%D7%95%D7%99%D7%A7%D7%98%D7%95%D7%A8%D7%99%D7%94.jpg",
+		"status": "Published", "sort_order": 9},
+	{"title": "Cana", "category": "City", "region": "Israel", "latitude": 32.7492, "longitude": 35.3378,
+		"primary_verse_ref": "John 2:1-11",
+		"description": "The village where Jesus performed His first public miracle.",
+		"facts": "Jesus turned water into wine at a wedding here\nHis first recorded miracle\nAlso where He healed an official's son from a distance",
+		"photo_url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/88/Cana_of_Galilee._90.Holy_land_photographed._Daniel_B._Shepp._1894-1.jpg/330px-Cana_of_Galilee._90.Holy_land_photographed._Daniel_B._Shepp._1894-1.jpg",
+		"status": "Published", "sort_order": 10},
+	{"title": "Hebron", "category": "City", "region": "Israel", "latitude": 31.5326, "longitude": 35.0998,
+		"primary_verse_ref": "Genesis 23:19",
+		"description": "One of the oldest cities in the world; where Abraham settled and is buried.",
+		"facts": "Burial place of Abraham, Sarah, Isaac, Rebekah, Jacob, and Leah\nDavid reigned here for 7 years before ruling from Jerusalem\nAlso called Kiriath Arba",
+		"photo_url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/32/BTS_Hebron_Tour_280215_24.jpg/330px-BTS_Hebron_Tour_280215_24.jpg",
+		"status": "Published", "sort_order": 11},
+	{"title": "Beersheba", "category": "City", "region": "Israel", "latitude": 31.2589, "longitude": 34.7994,
+		"primary_verse_ref": "Genesis 21:31",
+		"description": "The southernmost city of ancient Israel, where Abraham made a covenant and dug a well.",
+		"facts": "Its name means 'well of the oath'\nAssociated with Abraham, Isaac, and Jacob\n'From Dan to Beersheba' described the full extent of Israel",
+		"photo_url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/8f/Beersheba_City_Hall_6.jpg/330px-Beersheba_City_Hall_6.jpg",
+		"status": "Published", "sort_order": 12},
+	{"title": "Mount Carmel", "category": "Mountain", "region": "Israel", "latitude": 32.7256, "longitude": 35.0472,
+		"primary_verse_ref": "1 Kings 18:38-39",
+		"description": "The mountain where Elijah defeated the prophets of Baal in a dramatic contest.",
+		"facts": "Fire fell from heaven to consume Elijah's offering\nOverlooks the Jezreel Valley\nA symbol of God's power over false gods",
+		"photo_url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/5b/Caiobadner_-_mount_carmel.JPG/330px-Caiobadner_-_mount_carmel.JPG",
+		"status": "Published", "sort_order": 13},
+	# --- Jordan ---
+	{"title": "Mount Nebo", "category": "Mountain", "region": "Jordan", "latitude": 31.7681, "longitude": 35.7256,
+		"primary_verse_ref": "Deuteronomy 34:1-4",
+		"description": "Where Moses viewed the Promised Land before he died, never entering it himself.",
+		"facts": "Moses saw the whole land of Canaan from its summit\nHe died and was buried nearby, in an unknown location\nOffers sweeping views toward Jericho and the Dead Sea",
+		"photo_url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/07/Mount_Nebo_BW_6.JPG/330px-Mount_Nebo_BW_6.JPG",
+		"status": "Published", "sort_order": 14},
+	{"title": "Jerash", "category": "City", "region": "Jordan", "latitude": 32.2811, "longitude": 35.8994,
+		"primary_verse_ref": "Mark 5:1-20",
+		"description": "A Greco-Roman city (ancient Gerasa) where Jesus healed a man possessed by a legion of demons.",
+		"facts": "One of the best-preserved Roman provincial cities anywhere\nPart of the Decapolis, ten Greco-Roman cities east of the Jordan\nSite of Jesus' healing of the Gerasene demoniac",
+		"photo_url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/51/Oval_Plaza_%28Forum_Romanum%2C_Gerasa_-_Jerash%2C_Jordan%29_-_%D8%B3%D8%A7%D8%AD%D8%A9_%D8%A7%D9%84%D9%86%D8%AF%D9%88%D8%A9%2C_%D8%AC%D8%B1%D8%B4.jpg/330px-Oval_Plaza_%28Forum_Romanum%2C_Gerasa_-_Jerash%2C_Jordan%29_-_%D8%B3%D8%A7%D8%AD%D8%A9_%D8%A7%D9%84%D9%86%D8%AF%D9%88%D8%A9%2C_%D8%AC%D8%B1%D8%B4.jpg",
+		"status": "Published", "sort_order": 15},
+	{"title": "Amman", "category": "City", "region": "Jordan", "latitude": 31.9552, "longitude": 35.9450,
+		"primary_verse_ref": "2 Samuel 12:26",
+		"description": "The ancient capital of the Ammonites (Rabbah), mentioned throughout the Old Testament.",
+		"facts": "Capital of the Ammonites in Old Testament times\nDavid's general Joab besieged it\nKnown today as Jordan's capital, Amman",
+		"photo_url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/24/New_Abdali_2024.png/330px-New_Abdali_2024.png",
+		"status": "Published", "sort_order": 16},
+	# --- Asia Minor ---
+	{"title": "Ephesus", "category": "City", "region": "Asia Minor", "latitude": 37.9394, "longitude": 27.3417,
+		"primary_verse_ref": "Acts 19:10",
+		"description": "A major city where Paul ministered for nearly three years; home to one of the seven churches of Revelation.",
+		"facts": "Paul spent about 3 years here, his longest stay anywhere\nHome to the Temple of Artemis, a wonder of the ancient world\nFirst of the seven churches addressed in Revelation",
+		"photo_url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/84/Ephesus_Celsus_Library_Fa%C3%A7ade.jpg/330px-Ephesus_Celsus_Library_Fa%C3%A7ade.jpg",
+		"status": "Published", "sort_order": 17},
+	{"title": "Antioch", "category": "City", "region": "Asia Minor", "latitude": 36.2021, "longitude": 36.1603,
+		"primary_verse_ref": "Acts 11:26",
+		"description": "The city where followers of Jesus were first called Christians.",
+		"facts": "Believers were first called 'Christians' here\nSent out Paul and Barnabas on their first missionary journey\nAn early center of Gentile Christianity",
+		"photo_url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/e2/Antakya_Views_from_hill_at_SE_in_1990%27s_05.jpg/330px-Antakya_Views_from_hill_at_SE_in_1990%27s_05.jpg",
+		"status": "Published", "sort_order": 18},
+	{"title": "Tarsus", "category": "City", "region": "Asia Minor", "latitude": 36.9081, "longitude": 34.8950,
+		"primary_verse_ref": "Acts 22:3",
+		"description": "The birthplace and hometown of the Apostle Paul.",
+		"facts": "Paul's hometown, 'no ordinary city'\nA center of learning in the Roman world\nPaul was raised here before studying under Gamaliel",
+		"photo_url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/2b/Old_Town_of_Tarsus%2C_Mersin.jpg/330px-Old_Town_of_Tarsus%2C_Mersin.jpg",
+		"status": "Published", "sort_order": 19},
+	{"title": "Colossae", "category": "City", "region": "Asia Minor", "latitude": 37.7833, "longitude": 29.3667,
+		"primary_verse_ref": "Colossians 1:2",
+		"description": "A city whose church received Paul's letter to the Colossians.",
+		"facts": "Paul likely never visited in person\nEpaphras founded the church here\nRecipient of the letter warning against false teaching",
+		"photo_url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/4e/TR_Colossae_site_asv2020-02_img08.jpg/330px-TR_Colossae_site_asv2020-02_img08.jpg",
+		"status": "Published", "sort_order": 20},
+	{"title": "Laodicea", "category": "City", "region": "Asia Minor", "latitude": 37.8382, "longitude": 29.1081,
+		"primary_verse_ref": "Revelation 3:15-16",
+		"description": "One of the seven churches of Revelation, rebuked for being 'lukewarm.'",
+		"facts": "Famously rebuked for being neither hot nor cold\nA wealthy banking and textile city\nLast of the seven churches addressed in Revelation",
+		"photo_url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/36/TR_Pamukkale_Laodicea_asv2020-02_img11.jpg/330px-TR_Pamukkale_Laodicea_asv2020-02_img11.jpg",
+		"status": "Published", "sort_order": 21},
+	# --- Greece ---
+	{"title": "Athens", "category": "City", "region": "Greece", "latitude": 37.9838, "longitude": 23.7275,
+		"primary_verse_ref": "Acts 17:22-31",
+		"description": "Where Paul preached to philosophers at the Areopagus, reasoning from their own altar 'To an Unknown God.'",
+		"facts": "Paul's famous sermon at the Areopagus (Mars Hill)\nCenter of Greek philosophy and idolatry in Paul's day\nFew converts, but a landmark moment for the gospel among Gentile intellectuals",
+		"photo_url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/68/Athens_Acropolis_at_Daybreak.jpg/330px-Athens_Acropolis_at_Daybreak.jpg",
+		"status": "Published", "sort_order": 22},
+	{"title": "Corinth", "category": "City", "region": "Greece", "latitude": 37.9060, "longitude": 22.8790,
+		"primary_verse_ref": "Acts 18:1-11",
+		"description": "A major trade city where Paul planted a church and stayed for 18 months.",
+		"facts": "Paul lived and worked here as a tentmaker with Aquila and Priscilla\nRecipient of 1 and 2 Corinthians\nKnown for wealth, diversity, and moral compromise",
+		"photo_url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/41/Ravel_1008.2.jpg/330px-Ravel_1008.2.jpg",
+		"status": "Published", "sort_order": 23},
+	{"title": "Philippi", "category": "City", "region": "Greece", "latitude": 41.0138, "longitude": 24.2874,
+		"primary_verse_ref": "Acts 16:12-15",
+		"description": "The first church planted in Europe; where Paul and Silas were jailed and miraculously freed.",
+		"facts": "First convert in Europe was Lydia, a seller of purple cloth\nPaul and Silas sang hymns in jail before an earthquake freed them\nRecipient of the joyful letter to the Philippians",
+		"photo_url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/5c/Philippi_city_center.jpg/330px-Philippi_city_center.jpg",
+		"status": "Published", "sort_order": 24},
+	{"title": "Thessalonica", "category": "City", "region": "Greece", "latitude": 40.6401, "longitude": 22.9444,
+		"primary_verse_ref": "Acts 17:1-9",
+		"description": "A busy port city where Paul planted a church amid fierce opposition.",
+		"facts": "Paul preached in the synagogue for three Sabbaths\nRecipient of 1 and 2 Thessalonians\nStill a major city today, known as Thessaloniki",
+		"photo_url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/fa/Tessaloniki_BW_2017-10-05_18-22-47.jpg/330px-Tessaloniki_BW_2017-10-05_18-22-47.jpg",
+		"status": "Published", "sort_order": 25},
+	{"title": "Berea", "category": "City", "region": "Greece", "latitude": 40.5167, "longitude": 22.2000,
+		"primary_verse_ref": "Acts 17:11",
+		"description": "Praised for eagerly examining Scripture to test Paul's teaching.",
+		"facts": "Its people 'searched the Scriptures daily' to verify Paul's message\nCalled 'more noble' than the Thessalonians for their openness\nA model for how believers should test what they're taught",
+		"photo_url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/3a/%CE%92%CE%AD%CF%81%CE%BF%CE%B9%CE%B1.jpg/330px-%CE%92%CE%AD%CF%81%CE%BF%CE%B9%CE%B1.jpg",
+		"status": "Published", "sort_order": 26},
+	{"title": "Patmos", "category": "Region", "region": "Greece", "latitude": 37.3000, "longitude": 26.5333,
+		"primary_verse_ref": "Revelation 1:9-11",
+		"description": "The small island where the apostle John received the vision recorded in Revelation.",
+		"facts": "John was exiled here for his faith\nReceived the entire vision of the book of Revelation\nStill a pilgrimage site today",
+		"photo_url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a5/Chora-of-Patmos.JPG/330px-Chora-of-Patmos.JPG",
+		"status": "Published", "sort_order": 27},
+	# --- Rome ---
+	{"title": "Rome", "category": "City", "region": "Rome", "latitude": 41.9028, "longitude": 12.4964,
+		"primary_verse_ref": "Acts 28:16",
+		"description": "The capital of the empire, where Paul was imprisoned and, by tradition, martyred.",
+		"facts": "Paul was under house arrest here, still preaching freely\nTraditional site of both Paul's and Peter's martyrdom\nThe gospel reached 'the ends of the earth' as the book of Acts closes",
+		"photo_url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/7e/Trevi_Fountain%2C_Rome%2C_Italy_2_-_May_2007.jpg/330px-Trevi_Fountain%2C_Rome%2C_Italy_2_-_May_2007.jpg",
+		"status": "Published", "sort_order": 28},
+	{"title": "Puteoli", "category": "City", "region": "Rome", "latitude": 40.8236, "longitude": 14.1214,
+		"primary_verse_ref": "Acts 28:13-14",
+		"description": "The Italian port where Paul landed on his final journey toward Rome.",
+		"facts": "Paul found fellow believers here and stayed a week\nA major port for grain ships from Egypt\nKnown today as Pozzuoli, near Naples",
+		"photo_url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/ab/Pozzuoli_2010-by-RaBoe-23.jpg/330px-Pozzuoli_2010-by-RaBoe-23.jpg",
+		"status": "Published", "sort_order": 29},
+	# --- Mesopotamia, Sinai & other Old Testament settings ---
+	{"title": "Ur", "category": "City", "region": "Mesopotamia", "latitude": 30.9625, "longitude": 46.1039,
+		"primary_verse_ref": "Genesis 11:31",
+		"description": "Abraham's hometown before God called him to leave everything and follow.",
+		"facts": "A major Sumerian city in Abraham's day\nGod called Abram to leave here for a land he'd never seen\nOne of the earliest cities in recorded history",
+		"photo_url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/8e/Urimki_inscription.jpg/330px-Urimki_inscription.jpg",
+		"status": "Published", "sort_order": 30},
+	{"title": "Haran", "category": "City", "region": "Mesopotamia", "latitude": 36.8636, "longitude": 39.0322,
+		"primary_verse_ref": "Genesis 11:31",
+		"description": "Where Abraham's family settled for a time on the journey toward Canaan.",
+		"facts": "Abraham's father Terah died here\nGod renewed His call to Abraham here (Genesis 12:1)\nStill known for its distinctive beehive-shaped houses",
+		"photo_url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/22/Harran_2015.jpg/330px-Harran_2015.jpg",
+		"status": "Published", "sort_order": 31},
+	{"title": "Damascus", "category": "City", "region": "Syria", "latitude": 33.5138, "longitude": 36.2765,
+		"primary_verse_ref": "Acts 9:3-9",
+		"description": "Where Saul encountered the risen Jesus and was transformed into Paul.",
+		"facts": "One of the oldest continuously inhabited cities in the world\nSaul was blinded by a light from heaven on the road here\nHe was baptized by Ananias in this city",
+		"photo_url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/53/Damascus%2C_Syria%2C_Panoramic_view_of_Damascus.jpg/330px-Damascus%2C_Syria%2C_Panoramic_view_of_Damascus.jpg",
+		"status": "Published", "sort_order": 32},
+	{"title": "Nineveh", "category": "City", "region": "Mesopotamia", "latitude": 36.3603, "longitude": 43.1189,
+		"primary_verse_ref": "Jonah 3:5",
+		"description": "The great city that repented at Jonah's preaching.",
+		"facts": "Capital of the Assyrian Empire\nJonah initially fled rather than preach here\nThe entire city, from king to commoner, repented",
+		"photo_url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/27/Nineveh_-_Mashki_Gate.jpg/330px-Nineveh_-_Mashki_Gate.jpg",
+		"status": "Published", "sort_order": 33},
+	{"title": "Babylon", "category": "City", "region": "Mesopotamia", "latitude": 32.5364, "longitude": 44.4208,
+		"primary_verse_ref": "Daniel 1:8",
+		"description": "Where Judah was exiled, and where Daniel served faithfully in a foreign court.",
+		"facts": "Judah was exiled here after Jerusalem's fall\nDaniel and his friends served in the royal court\nSite of the fiery furnace and the writing on the wall",
+		"photo_url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/e6/Ishtar_Gate.jpg/330px-Ishtar_Gate.jpg",
+		"status": "Published", "sort_order": 34},
+	{"title": "Mount Ararat", "category": "Mountain", "region": "Turkey", "latitude": 39.7019, "longitude": 44.2983,
+		"primary_verse_ref": "Genesis 8:4",
+		"description": "The traditional resting place of Noah's ark after the flood.",
+		"facts": "The ark came to rest 'on the mountains of Ararat'\nThe highest peak in modern-day Turkey\nA lasting symbol of God's judgment and mercy",
+		"photo_url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/75/Mount_Ararat_and_the_Yerevan_skyline_in_spring_%2850mm%29.jpg/330px-Mount_Ararat_and_the_Yerevan_skyline_in_spring_%2850mm%29.jpg",
+		"status": "Published", "sort_order": 35},
+	{"title": "Mount Sinai", "category": "Mountain", "region": "Sinai", "latitude": 28.5392, "longitude": 33.9734,
+		"primary_verse_ref": "Exodus 19:20",
+		"description": "Where God gave Moses the Ten Commandments amid fire and thunder.",
+		"facts": "Israel camped here for about a year after the Exodus\nGod gave the Ten Commandments and the Law here\nAlso called Horeb, 'the mountain of God'",
+		"photo_url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/36/Mount_Sinai_from_the_southwest.jpg/330px-Mount_Sinai_from_the_southwest.jpg",
+		"status": "Published", "sort_order": 36},
+	{"title": "Red Sea", "category": "Sea", "region": "Sinai", "latitude": 29.9668, "longitude": 32.5498,
+		"primary_verse_ref": "Exodus 14:21-22",
+		"description": "Where God parted the waters for Israel to cross on dry ground.",
+		"facts": "God parted the sea so Israel could escape Pharaoh's army\nThe pursuing Egyptian army was destroyed when the waters returned\nCelebrated in the Song of Moses (Exodus 15)",
+		"photo_url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/78/EG-suez-20-bg-suez.jpg/330px-EG-suez-20-bg-suez.jpg",
+		"status": "Published", "sort_order": 37},
+	{"title": "Goshen", "category": "Region", "region": "Egypt", "latitude": 30.8000, "longitude": 31.9000,
+		"primary_verse_ref": "Genesis 47:6",
+		"description": "The fertile region where the Israelites lived during their centuries in Egypt.",
+		"facts": "Given to Jacob's family by Joseph, then a ruler in Egypt\nWhere the Israelites multiplied over 400 years\nSpared several of the plagues that struck the rest of Egypt",
+		"photo_url": "https://upload.wikimedia.org/wikipedia/commons/4/40/Gosen.jpg",
+		"status": "Published", "sort_order": 38},
+]
+
+_BIBLE_JOURNEYS = [
+	{"title": "Jesus' Ministry", "description": "Walk the road of Jesus' earthly ministry — from a humble birth in Bethlehem to His ascension from the Mount of Olives.",
+		"icon": "auto_stories", "accent_color": "Blue", "status": "Published", "sort_order": 1},
+	{"title": "Paul's Missionary Journeys", "description": "Follow the apostle Paul from his hometown, through conversion, and across the ancient world spreading the gospel to Rome.",
+		"icon": "route", "accent_color": "Purple", "status": "Published", "sort_order": 2},
+	{"title": "Exodus Journey", "description": "Trace Israel's journey from slavery in Egypt to the edge of the Promised Land.",
+		"icon": "hiking", "accent_color": "Amber", "status": "Published", "sort_order": 3},
+	{"title": "David's Kingdom", "description": "Follow David from shepherd boy to anointed king, and the kingdom he built.",
+		"icon": "flag", "accent_color": "Rose", "status": "Published", "sort_order": 4},
+	{"title": "Abraham's Journey", "description": "Follow Abraham's journey of faith, from his homeland to the land God promised him.",
+		"icon": "public", "accent_color": "Green", "status": "Published", "sort_order": 5},
+]
+
+_BIBLE_JOURNEY_STOPS = {
+	"Jesus' Ministry": [
+		{"stop_number": 1, "place": "Bethlehem", "note": "Where it all began: God became flesh in a manger."},
+		{"stop_number": 2, "place": "Nazareth", "note": "Jesus grew up here in obscurity, in an ordinary carpenter's home."},
+		{"stop_number": 3, "place": "Jordan River", "note": "Jesus was baptized here, and the Father's voice confirmed Him as His beloved Son."},
+		{"stop_number": 4, "place": "Cana", "note": "His first miracle — turning water into wine — happened at a wedding here."},
+		{"stop_number": 5, "place": "Capernaum", "note": "Jesus made this fishing town His ministry headquarters in Galilee."},
+		{"stop_number": 6, "place": "Sea of Galilee", "note": "He calmed a raging storm and walked on these very waters."},
+		{"stop_number": 7, "place": "Bethany", "note": "He raised His friend Lazarus from the dead here, days before His own death."},
+		{"stop_number": 8, "place": "Jerusalem", "note": "He was betrayed, crucified, buried — and rose again on the third day."},
+		{"stop_number": 9, "place": "Mount of Olives", "note": "From this hill, the risen Jesus ascended into heaven before His disciples' eyes."},
+	],
+	"Paul's Missionary Journeys": [
+		{"stop_number": 1, "place": "Tarsus", "note": "Paul's hometown, where he was born a Roman citizen and trained as a Pharisee."},
+		{"stop_number": 2, "place": "Damascus", "note": "On the road here, the risen Jesus confronted Saul and changed his life forever."},
+		{"stop_number": 3, "place": "Antioch", "note": "The church here first called believers 'Christians,' and sent Paul out to preach."},
+		{"stop_number": 4, "place": "Ephesus", "note": "Paul stayed nearly three years, his longest ministry stop anywhere."},
+		{"stop_number": 5, "place": "Philippi", "note": "The first church in Europe began here, after Paul and Silas were jailed and freed."},
+		{"stop_number": 6, "place": "Thessalonica", "note": "Paul preached boldly here despite fierce opposition from the synagogue."},
+		{"stop_number": 7, "place": "Berea", "note": "Its people searched the Scriptures daily to test everything Paul taught them."},
+		{"stop_number": 8, "place": "Athens", "note": "Paul reasoned with philosophers at the Areopagus about the 'unknown God.'"},
+		{"stop_number": 9, "place": "Corinth", "note": "He stayed 18 months, working as a tentmaker while planting a thriving church."},
+		{"stop_number": 10, "place": "Puteoli", "note": "After a shipwreck and long voyage, Paul finally landed in Italy here."},
+		{"stop_number": 11, "place": "Rome", "note": "Under house arrest, Paul kept preaching freely until the very end of Acts."},
+	],
+	"Exodus Journey": [
+		{"stop_number": 1, "place": "Goshen", "note": "Israel's home in Egypt, where their cries for freedom reached God's ears."},
+		{"stop_number": 2, "place": "Red Sea", "note": "God parted the waters, and Israel walked to freedom on dry ground."},
+		{"stop_number": 3, "place": "Mount Sinai", "note": "Here God gave Moses the Ten Commandments and the Law for His people."},
+		{"stop_number": 4, "place": "Mount Nebo", "note": "Moses climbed this mountain to see the Promised Land he would never enter."},
+		{"stop_number": 5, "place": "Jericho", "note": "Israel finally crossed into Canaan, and its walls fell at God's command."},
+	],
+	"David's Kingdom": [
+		{"stop_number": 1, "place": "Bethlehem", "note": "David was born and anointed king here as a young shepherd boy."},
+		{"stop_number": 2, "place": "Hebron", "note": "David reigned here for seven years before uniting the kingdom."},
+		{"stop_number": 3, "place": "Jerusalem", "note": "David captured this city and made it his capital — the City of David."},
+		{"stop_number": 4, "place": "Beersheba", "note": "The southern edge of David's kingdom — 'from Dan to Beersheba.'"},
+	],
+	"Abraham's Journey": [
+		{"stop_number": 1, "place": "Ur", "note": "Abraham's hometown, which he left behind at God's call, not knowing where he was going."},
+		{"stop_number": 2, "place": "Haran", "note": "His family settled here for a time before God renewed His call to move on."},
+		{"stop_number": 3, "place": "Hebron", "note": "Abraham finally settled in this land, and was buried here alongside Sarah."},
+		{"stop_number": 4, "place": "Beersheba", "note": "Here Abraham made a covenant and dug a well that gave the city its name."},
+	],
+}
+
+
+def seed_bible_places():
+	"""Create-only by `title`, same idempotent shape as `seed_reading_plans`.
+	Places are seeded first (and their name looked up by title) so journeys
+	seeded right after can link TOB Bible Journey Stop rows to them. An
+	admin's own edits to a place, journey, or its stops must never be reset
+	by a future migrate."""
+	place_names_by_title = {}
+	for entry in _BIBLE_PLACES:
+		existing = frappe.db.get_value("TOB Bible Place", {"title": entry["title"]}, "name")
+		if existing:
+			place_names_by_title[entry["title"]] = existing
+			continue
+		try:
+			place_doc = frappe.get_doc({"doctype": "TOB Bible Place", **entry})
+			place_doc.insert(ignore_permissions=True)
+			frappe.db.commit()
+			place_names_by_title[entry["title"]] = place_doc.name
+		except frappe.ValidationError:
+			frappe.db.rollback()
+
+	for entry in _BIBLE_JOURNEYS:
+		if frappe.db.exists("TOB Bible Journey", {"title": entry["title"]}):
+			continue
+		try:
+			journey_doc = frappe.get_doc({"doctype": "TOB Bible Journey", **entry})
+			journey_doc.insert(ignore_permissions=True)
+			frappe.db.commit()
+		except frappe.ValidationError:
+			frappe.db.rollback()
+			continue
+
+		for stop in _BIBLE_JOURNEY_STOPS.get(entry["title"], []):
+			place_name = place_names_by_title.get(stop["place"])
+			if not place_name:
+				continue
+			try:
+				frappe.get_doc(
+					{
+						"doctype": "TOB Bible Journey Stop",
+						"journey": journey_doc.name,
+						"stop_number": stop["stop_number"],
+						"place": place_name,
+						"note": stop["note"],
+					}
+				).insert(ignore_permissions=True)
+				frappe.db.commit()
+			except frappe.ValidationError:
+				frappe.db.rollback()

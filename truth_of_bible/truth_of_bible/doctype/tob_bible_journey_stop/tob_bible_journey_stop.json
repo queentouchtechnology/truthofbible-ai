@@ -1,0 +1,67 @@
+{
+ "doctype": "DocType",
+ "name": "TOB Bible Journey Stop",
+ "module": "Truth Of Bible",
+ "custom": 0,
+ "istable": 0,
+ "issingle": 0,
+ "quick_entry": 0,
+ "track_changes": 0,
+ "autoname": "hash",
+ "naming_rule": "Random",
+ "sort_field": "stop_number",
+ "sort_order": "ASC",
+ "engine": "InnoDB",
+ "description": "One stop within a TOB Bible Journey, pointing at a TOB Bible Place plus a journey-specific narrative note. A top-level doctype (not a child table) so an admin can add/edit/reorder stops independently via generic REST, same pattern as TOB Reading Plan Day.",
+ "field_order": [
+  "journey",
+  "stop_number",
+  "place",
+  "note"
+ ],
+ "fields": [
+  {
+   "fieldname": "journey",
+   "fieldtype": "Link",
+   "options": "TOB Bible Journey",
+   "label": "Journey",
+   "reqd": 1,
+   "in_list_view": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "stop_number",
+   "fieldtype": "Int",
+   "label": "Stop",
+   "reqd": 1,
+   "in_list_view": 1,
+   "description": "1-indexed position within the journey."
+  },
+  {
+   "fieldname": "place",
+   "fieldtype": "Link",
+   "options": "TOB Bible Place",
+   "label": "Place",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "note",
+   "fieldtype": "Small Text",
+   "label": "Note",
+   "description": "A short narrative line specific to this journey's visit to this place, e.g. \"Jesus began His public ministry here...\"."
+  }
+ ],
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "report": 1,
+   "export": 1
+  }
+ ],
+ "links": []
+}
