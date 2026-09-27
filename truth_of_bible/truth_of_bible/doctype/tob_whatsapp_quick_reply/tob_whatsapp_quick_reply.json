@@ -1,0 +1,57 @@
+{
+ "doctype": "DocType",
+ "name": "TOB WhatsApp Quick Reply",
+ "module": "Truth Of Bible",
+ "custom": 0,
+ "istable": 0,
+ "issingle": 0,
+ "quick_entry": 0,
+ "track_changes": 1,
+ "autoname": "hash",
+ "naming_rule": "Random",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "engine": "InnoDB",
+ "description": "A short list of saved responses an admin can insert with one tap while replying in the WhatsApp inbox (Communication Center) — e.g. a welcome message or a prayer-request acknowledgement, so common replies don't need retyping. Admin-growable: add/delete directly from the WhatsApp conversation screen's quick-reply picker, no code deploy needed.",
+ "field_order": [
+  "title",
+  "body",
+  "enabled"
+ ],
+ "fields": [
+  {
+   "fieldname": "title",
+   "fieldtype": "Data",
+   "label": "Title",
+   "reqd": 1,
+   "in_list_view": 1,
+   "description": "Short label shown in the picker, e.g. \"Welcome\" — not sent itself."
+  },
+  {
+   "fieldname": "body",
+   "fieldtype": "Small Text",
+   "label": "Reply Text",
+   "reqd": 1,
+   "in_list_view": 1,
+   "description": "The actual text inserted into the composer when picked."
+  },
+  {
+   "fieldname": "enabled",
+   "fieldtype": "Check",
+   "label": "Enabled",
+   "default": "1"
+  }
+ ],
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "report": 1,
+   "export": 1
+  }
+ ],
+ "links": []
+}

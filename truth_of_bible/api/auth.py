@@ -86,7 +86,7 @@ def google_login(access_token, referralCode=None):
 			)
 			user.insert(ignore_permissions=True)
 
-			for role in ["Customer", "Blogger", "LMS Student"]:
+			for role in ["Customer", "LMS Student"]:
 				user.append("roles", {"role": role})
 
 			user.save(ignore_permissions=True)

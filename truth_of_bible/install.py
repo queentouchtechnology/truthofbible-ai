@@ -1847,6 +1847,46 @@ def seed_encouragement_messages():
 			frappe.db.rollback()
 
 
+# Starter library for the WhatsApp inbox's Quick Reply picker
+# (communication/whatsapp.py, TOB WhatsApp Quick Reply) — a real starting
+# set an admin can use immediately, then grow themselves from the
+# conversation screen's quick-reply picker.
+_WHATSAPP_QUICK_REPLIES = [
+	{
+		"title": "Welcome",
+		"body": "Welcome to Truth of Bible! How can we help you today?",
+	},
+	{
+		"title": "Prayer request received",
+		"body": "Thank you for sharing this with us. We're praying for you.",
+	},
+	{
+		"title": "We'll get back to you",
+		"body": "Thank you for reaching out — we'll get back to you shortly.",
+	},
+	{
+		"title": "Closing",
+		"body": "God bless you! Feel free to message us anytime.",
+	},
+]
+
+
+def seed_whatsapp_quick_replies():
+	"""Create-only, matched by `title` (this doctype has no natural unique
+	key) — same reasoning as `seed_encouragement_messages`: an admin's own
+	edits or deletions must never be reset by a future migrate."""
+	for entry in _WHATSAPP_QUICK_REPLIES:
+		if frappe.db.exists("TOB WhatsApp Quick Reply", {"title": entry["title"]}):
+			continue
+		try:
+			frappe.get_doc({"doctype": "TOB WhatsApp Quick Reply", "enabled": 1, **entry}).insert(
+				ignore_permissions=True
+			)
+			frappe.db.commit()
+		except frappe.ValidationError:
+			frappe.db.rollback()
+
+
 def seed_notification_templates():
 	for entry in _NOTIFICATION_TEMPLATES:
 		if frappe.db.exists("TOB Notification Template", entry["event_code"]):
