@@ -60,7 +60,7 @@ def search_nearby(lat, lng, radius_m=5000):
 	api_key = _config()
 	if not api_key:
 		_log_not_configured()
-		return {"churches": [], "error": "Church Finder is not configured on this site."}
+		frappe.throw(_("Church Finder is not configured on this site."), frappe.ValidationError)
 
 	payload = {
 		"includedTypes": ["church"],
@@ -79,14 +79,14 @@ def search_nearby(lat, lng, radius_m=5000):
 		response = requests.post(_PLACES_URL, headers=headers, json=payload, timeout=20)
 	except Exception:
 		frappe.log_error(title="Church Finder: request failed", message=frappe.get_traceback())
-		return {"churches": [], "error": "Could not reach the places service. Try again."}
+		frappe.throw(_("Could not reach the places service. Try again."), frappe.ValidationError)
 
 	if response.status_code != 200:
 		frappe.log_error(
 			title="Church Finder: Places API error",
 			message=f"HTTP {response.status_code}: {response.text[:2000]}",
 		)
-		return {"churches": [], "error": "Could not search nearby churches right now."}
+		frappe.throw(_("Could not search nearby churches right now."), frappe.ValidationError)
 
 	churches = []
 	for place in response.json().get("places", []):
