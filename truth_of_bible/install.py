@@ -1976,3 +1976,247 @@ def seed_social_content():
 			frappe.db.commit()
 		except frappe.ValidationError:
 			frappe.db.rollback()
+
+
+# Starter Bible Reading Plans — one per age tier plus one All Ages plan, each
+# 7 days, so the Reading Plans hub has real, immediately usable content on a
+# fresh install rather than an empty screen. book_id follows the app's fixed
+# 1-66 canonical order (Genesis=1 ... Revelation=66, see
+# bible_books_screen.dart on the Flutter side).
+_READING_PLANS = [
+	{
+		"title": "Bible Stories for Little Hearts",
+		"age_group": "Kids",
+		"description": "Seven favorite Bible stories, told simply — perfect for reading together before bed.",
+		"duration_days": 7,
+		"difficulty": "Easy",
+		"icon": "child_care",
+		"accent_color": "Rose",
+		"status": "Published",
+		"sort_order": 1,
+	},
+	{
+		"title": "Faith That Fits Your Life",
+		"age_group": "Teens",
+		"description": "A week of scripture on identity, love, peace, and handling the pressure of everyday life.",
+		"duration_days": 7,
+		"difficulty": "Easy",
+		"icon": "school",
+		"accent_color": "Blue",
+		"status": "Published",
+		"sort_order": 1,
+	},
+	{
+		"title": "Foundations for the Real World",
+		"age_group": "Young Adults",
+		"description": "Seven passages on wisdom, hope, identity in Christ, and pressing on into what's next.",
+		"duration_days": 7,
+		"difficulty": "Moderate",
+		"icon": "self_improvement",
+		"accent_color": "Purple",
+		"status": "Published",
+		"sort_order": 1,
+	},
+	{
+		"title": "Walking in Wisdom",
+		"age_group": "Adults",
+		"description": "A week in the wisdom books and the words of Jesus — for the steady, daily walk of faith.",
+		"duration_days": 7,
+		"difficulty": "Moderate",
+		"icon": "menu_book",
+		"accent_color": "Amber",
+		"status": "Published",
+		"sort_order": 1,
+	},
+	{
+		"title": "A Faithful Legacy",
+		"age_group": "Seniors",
+		"description": "Seven passages of comfort, strength, and hope — for a lifetime of faith and the road ahead.",
+		"duration_days": 7,
+		"difficulty": "Easy",
+		"icon": "favorite",
+		"accent_color": "Teal",
+		"status": "Published",
+		"sort_order": 1,
+	},
+	{
+		"title": "The Story of Jesus",
+		"age_group": "All Ages",
+		"description": "The life of Jesus in seven readings — from Bethlehem to the empty tomb. Read it together as a family.",
+		"duration_days": 7,
+		"difficulty": "Easy",
+		"icon": "auto_stories",
+		"accent_color": "Green",
+		"status": "Published",
+		"sort_order": 1,
+	},
+]
+
+_READING_PLAN_DAYS = {
+	"Bible Stories for Little Hearts": [
+		{"day_number": 1, "title": "Creation Begins", "book_id": 1, "chapter_start": 1, "chapter_end": 1,
+			"reference_label": "Genesis 1",
+			"note": "In the beginning, God made everything — the sky, the sea, the animals, and you!"},
+		{"day_number": 2, "title": "Noah's Big Boat", "book_id": 1, "chapter_start": 6, "chapter_end": 9,
+			"reference_label": "Genesis 6-9",
+			"note": "God asked Noah to build a huge boat, and Noah trusted Him — even when it didn't make sense yet."},
+		{"day_number": 3, "title": "Baby Moses in the Basket", "book_id": 2, "chapter_start": 2, "chapter_end": 2,
+			"reference_label": "Exodus 2",
+			"note": "God watched over baby Moses and kept him safe, even in a scary time."},
+		{"day_number": 4, "title": "David and the Giant", "book_id": 9, "chapter_start": 17, "chapter_end": 17,
+			"reference_label": "1 Samuel 17",
+			"note": "David was small, but he was brave because he trusted God to help him."},
+		{"day_number": 5, "title": "Daniel and the Lions", "book_id": 27, "chapter_start": 6, "chapter_end": 6,
+			"reference_label": "Daniel 6",
+			"note": "Daniel kept praying even when it was dangerous, and God kept him safe."},
+		{"day_number": 6, "title": "Jesus is Born", "book_id": 42, "chapter_start": 2, "chapter_end": 2,
+			"reference_label": "Luke 2",
+			"note": "On a starry night in Bethlehem, God's own Son came into the world as a baby."},
+		{"day_number": 7, "title": "Jesus Loves the Children", "book_id": 41, "chapter_start": 10, "chapter_end": 10,
+			"reference_label": "Mark 10",
+			"note": "Jesus welcomed the children who came to Him — just like He welcomes you."},
+	],
+	"Faith That Fits Your Life": [
+		{"day_number": 1, "title": "You Are Fearfully Made", "book_id": 19, "chapter_start": 139, "chapter_end": 139,
+			"reference_label": "Psalm 139",
+			"note": "Before anyone else had an opinion about you, God already knew and loved who you are."},
+		{"day_number": 2, "title": "Trust Beyond Yourself", "book_id": 20, "chapter_start": 3, "chapter_end": 3,
+			"reference_label": "Proverbs 3",
+			"note": "You don't have to have it all figured out — trust doesn't mean having every answer."},
+		{"day_number": 3, "title": "What Really Matters", "book_id": 40, "chapter_start": 5, "chapter_end": 5,
+			"reference_label": "Matthew 5",
+			"note": "Jesus flips the script on what it means to be \"blessed.\" It's not what you'd expect."},
+		{"day_number": 4, "title": "Don't Copy the World", "book_id": 45, "chapter_start": 12, "chapter_end": 12,
+			"reference_label": "Romans 12",
+			"note": "You don't have to think, act, or scroll like everyone else. Let your mind be renewed."},
+		{"day_number": 5, "title": "Love, Defined", "book_id": 46, "chapter_start": 13, "chapter_end": 13,
+			"reference_label": "1 Corinthians 13",
+			"note": "This is what real love actually looks like — not just the feeling, the practice."},
+		{"day_number": 6, "title": "Don't Be Anxious", "book_id": 50, "chapter_start": 4, "chapter_end": 4,
+			"reference_label": "Philippians 4",
+			"note": "Whatever's stressing you out right now, you're invited to bring it to God directly."},
+		{"day_number": 7, "title": "Trials Have a Purpose", "book_id": 59, "chapter_start": 1, "chapter_end": 1,
+			"reference_label": "James 1",
+			"note": "Hard seasons aren't wasted — they're building something in you."},
+	],
+	"Foundations for the Real World": [
+		{"day_number": 1, "title": "Where Wisdom Begins", "book_id": 20, "chapter_start": 1, "chapter_end": 1,
+			"reference_label": "Proverbs 1",
+			"note": "Real wisdom starts with respect for God, not with having life figured out."},
+		{"day_number": 2, "title": "Plans to Give You Hope", "book_id": 24, "chapter_start": 29, "chapter_end": 29,
+			"reference_label": "Jeremiah 29",
+			"note": "Even in an uncertain season, God says His plans for you are good."},
+		{"day_number": 3, "title": "No Condemnation", "book_id": 45, "chapter_start": 8, "chapter_end": 8,
+			"reference_label": "Romans 8",
+			"note": "Whatever you carry from your past, it doesn't define how God sees you now."},
+		{"day_number": 4, "title": "The Fruit That Lasts", "book_id": 48, "chapter_start": 5, "chapter_end": 5,
+			"reference_label": "Galatians 5",
+			"note": "Love, joy, peace, patience — this is what a Spirit-led life actually grows."},
+		{"day_number": 5, "title": "Grow Up Into Him", "book_id": 49, "chapter_start": 4, "chapter_end": 4,
+			"reference_label": "Ephesians 4",
+			"note": "Maturity isn't about having it all together — it's about growing, together."},
+		{"day_number": 6, "title": "Put On the New Self", "book_id": 51, "chapter_start": 3, "chapter_end": 3,
+			"reference_label": "Colossians 3",
+			"note": "Whoever you were before doesn't get the final say in who you're becoming."},
+		{"day_number": 7, "title": "Press On", "book_id": 50, "chapter_start": 3, "chapter_end": 3,
+			"reference_label": "Philippians 3",
+			"note": "You don't have to have arrived. Keep pressing toward what's ahead."},
+	],
+	"Walking in Wisdom": [
+		{"day_number": 1, "title": "Planted by the Water", "book_id": 19, "chapter_start": 1, "chapter_end": 1,
+			"reference_label": "Psalm 1",
+			"note": "A life rooted in God's word stays steady, whatever season comes."},
+		{"day_number": 2, "title": "A Life Well Lived", "book_id": 20, "chapter_start": 31, "chapter_end": 31,
+			"reference_label": "Proverbs 31",
+			"note": "A picture of character, diligence, and strength worth reflecting on."},
+		{"day_number": 3, "title": "A Time for Everything", "book_id": 21, "chapter_start": 3, "chapter_end": 3,
+			"reference_label": "Ecclesiastes 3",
+			"note": "Every season of life — the hard ones too — has its own purpose and place."},
+		{"day_number": 4, "title": "Strength Renewed", "book_id": 23, "chapter_start": 40, "chapter_end": 40,
+			"reference_label": "Isaiah 40",
+			"note": "When you're weary, this is a promise worth returning to."},
+		{"day_number": 5, "title": "What Matters Most", "book_id": 40, "chapter_start": 6, "chapter_end": 6,
+			"reference_label": "Matthew 6",
+			"note": "Jesus teaches on prayer, priorities, and where to put your trust."},
+		{"day_number": 6, "title": "Wisdom From Above", "book_id": 59, "chapter_start": 3, "chapter_end": 3,
+			"reference_label": "James 3",
+			"note": "There's a kind of wisdom that's pure, peaceable, and worth asking God for."},
+		{"day_number": 7, "title": "Set Your Mind Above", "book_id": 51, "chapter_start": 3, "chapter_end": 3,
+			"reference_label": "Colossians 3",
+			"note": "A short passage worth carrying into the rest of your week."},
+	],
+	"A Faithful Legacy": [
+		{"day_number": 1, "title": "Do Not Forsake Me", "book_id": 19, "chapter_start": 71, "chapter_end": 71,
+			"reference_label": "Psalm 71",
+			"note": "A prayer of someone older in years, still trusting God as they always have."},
+		{"day_number": 2, "title": "Teach Us to Number Our Days", "book_id": 19, "chapter_start": 90, "chapter_end": 90,
+			"reference_label": "Psalm 90",
+			"note": "A reflection on time, and on God's faithfulness across every one of our years."},
+		{"day_number": 3, "title": "I Will Sustain You", "book_id": 23, "chapter_start": 46, "chapter_end": 46,
+			"reference_label": "Isaiah 46",
+			"note": "\"Even to your old age I am He... I will carry you.\" A promise worth holding onto."},
+		{"day_number": 4, "title": "Be Strong and Courageous", "book_id": 6, "chapter_start": 1, "chapter_end": 1,
+			"reference_label": "Joshua 1",
+			"note": "God's charge to Joshua as he took on a new season — courage rooted in God's presence."},
+		{"day_number": 5, "title": "The Lord is My Shepherd", "book_id": 19, "chapter_start": 23, "chapter_end": 23,
+			"reference_label": "Psalm 23",
+			"note": "A familiar, well-loved chapter — worth reading slowly today."},
+		{"day_number": 6, "title": "I Have Finished the Race", "book_id": 55, "chapter_start": 4, "chapter_end": 4,
+			"reference_label": "2 Timothy 4",
+			"note": "Paul looks back on a life of faith with peace, not regret."},
+		{"day_number": 7, "title": "He Will Wipe Every Tear", "book_id": 66, "chapter_start": 21, "chapter_end": 21,
+			"reference_label": "Revelation 21",
+			"note": "A picture of the hope that awaits — no more tears, no more pain."},
+	],
+	"The Story of Jesus": [
+		{"day_number": 1, "title": "The Baby in Bethlehem", "book_id": 42, "chapter_start": 2, "chapter_end": 2,
+			"reference_label": "Luke 2",
+			"note": "The story of the night Jesus was born."},
+		{"day_number": 2, "title": "Jesus is Baptized", "book_id": 40, "chapter_start": 3, "chapter_end": 3,
+			"reference_label": "Matthew 3",
+			"note": "The moment Jesus began His public ministry."},
+		{"day_number": 3, "title": "Jesus Teaches on the Mountain", "book_id": 40, "chapter_start": 5, "chapter_end": 5,
+			"reference_label": "Matthew 5",
+			"note": "Some of Jesus' most famous teaching, given on a hillside to His followers."},
+		{"day_number": 4, "title": "Jesus Calms the Storm", "book_id": 41, "chapter_start": 4, "chapter_end": 4,
+			"reference_label": "Mark 4",
+			"note": "A reminder that Jesus has power over even the scariest storms."},
+		{"day_number": 5, "title": "The Last Supper", "book_id": 42, "chapter_start": 22, "chapter_end": 22,
+			"reference_label": "Luke 22",
+			"note": "Jesus' final meal with His disciples, the night before He was crucified."},
+		{"day_number": 6, "title": "Jesus on the Cross", "book_id": 43, "chapter_start": 19, "chapter_end": 19,
+			"reference_label": "John 19",
+			"note": "The hardest day of the story — but not the end of it."},
+		{"day_number": 7, "title": "He is Risen!", "book_id": 43, "chapter_start": 20, "chapter_end": 20,
+			"reference_label": "John 20",
+			"note": "The empty tomb, and the beginning of everything after."},
+	],
+}
+
+
+def seed_reading_plans():
+	"""Create-only by `title` (no natural unique key), same reasoning as
+	`seed_encouragement_messages`/`seed_whatsapp_quick_replies` — an admin's
+	own edits to a plan or its days must never be reset by a future migrate.
+	A plan's days are only ever seeded at the moment the plan itself is first
+	created; adding a day to a plan an admin has already customized needs a
+	manual add through the app/Desk, not a code change here."""
+	for entry in _READING_PLANS:
+		if frappe.db.exists("TOB Reading Plan", {"title": entry["title"]}):
+			continue
+		try:
+			plan_doc = frappe.get_doc({"doctype": "TOB Reading Plan", **entry})
+			plan_doc.insert(ignore_permissions=True)
+			frappe.db.commit()
+		except frappe.ValidationError:
+			frappe.db.rollback()
+			continue
+
+		for day in _READING_PLAN_DAYS.get(entry["title"], []):
+			try:
+				frappe.get_doc({"doctype": "TOB Reading Plan Day", "plan": plan_doc.name, **day}).insert(
+					ignore_permissions=True
+				)
+				frappe.db.commit()
+			except frappe.ValidationError:
+				frappe.db.rollback()

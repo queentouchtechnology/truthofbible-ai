@@ -1,0 +1,119 @@
+{
+ "doctype": "DocType",
+ "name": "TOB Reading Plan",
+ "module": "Truth Of Bible",
+ "custom": 0,
+ "istable": 0,
+ "issingle": 0,
+ "quick_entry": 0,
+ "track_changes": 1,
+ "autoname": "hash",
+ "naming_rule": "Random",
+ "sort_field": "sort_order",
+ "sort_order": "ASC",
+ "engine": "InnoDB",
+ "description": "One reading plan (e.g. 'Bible Stories for Little Hearts', a 7-day Kids plan). Admin-authored content, browsed by every logged-in user via truth_of_bible.api.reading_plan (never raw REST for a normal user — see that module's docstring). A plan's actual daily readings live in TOB Reading Plan Day, one row per day, linked back here.",
+ "field_order": [
+  "title",
+  "age_group",
+  "status",
+  "column_break_1",
+  "difficulty",
+  "duration_days",
+  "sort_order",
+  "section_break_look",
+  "icon",
+  "accent_color",
+  "description"
+ ],
+ "fields": [
+  {
+   "fieldname": "title",
+   "fieldtype": "Data",
+   "label": "Title",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "age_group",
+   "fieldtype": "Select",
+   "label": "Age Group",
+   "options": "Kids\nTeens\nYoung Adults\nAdults\nSeniors\nAll Ages",
+   "reqd": 1,
+   "in_list_view": 1,
+   "description": "Who this plan is written for — the app's Reading Plans hub filters/groups by this."
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Draft\nPublished",
+   "default": "Draft",
+   "in_list_view": 1,
+   "description": "Only Published plans are ever returned to the app."
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "difficulty",
+   "fieldtype": "Select",
+   "label": "Difficulty",
+   "options": "Easy\nModerate\nDeep",
+   "default": "Easy"
+  },
+  {
+   "fieldname": "duration_days",
+   "fieldtype": "Int",
+   "label": "Duration (days)",
+   "default": "7",
+   "description": "Shown on the plan card before its days are loaded. Should match the number of TOB Reading Plan Day rows for this plan, but isn't enforced automatically — update it if you add/remove days."
+  },
+  {
+   "fieldname": "sort_order",
+   "fieldtype": "Int",
+   "label": "Sort Order",
+   "default": "0",
+   "description": "Lower shows first within the plan's age group on the hub screen."
+  },
+  {
+   "fieldname": "section_break_look",
+   "fieldtype": "Section Break",
+   "label": "Card appearance"
+  },
+  {
+   "fieldname": "icon",
+   "fieldtype": "Select",
+   "label": "Icon",
+   "options": "auto_stories\nchild_care\nschool\nfavorite\nnights_stay\nself_improvement\nmenu_book\nvolunteer_activism",
+   "default": "auto_stories",
+   "description": "A fixed icon key the Flutter app maps to a real icon — keeps every plan card visually consistent instead of allowing arbitrary icon input."
+  },
+  {
+   "fieldname": "accent_color",
+   "fieldtype": "Select",
+   "label": "Accent Color",
+   "options": "Amber\nBlue\nGreen\nPurple\nRose\nTeal",
+   "default": "Amber",
+   "description": "A fixed palette key the Flutter app maps to its own theme-aware colors — same reasoning as Icon."
+  },
+  {
+   "fieldname": "description",
+   "fieldtype": "Small Text",
+   "label": "Description"
+  }
+ ],
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "report": 1,
+   "export": 1
+  }
+ ],
+ "links": []
+}

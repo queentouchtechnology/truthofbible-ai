@@ -87,6 +87,7 @@ after_install = [
 	"truth_of_bible.install.backfill_notification_template_metadata",
 	"truth_of_bible.install.seed_encouragement_messages",
 	"truth_of_bible.install.seed_whatsapp_quick_replies",
+	"truth_of_bible.install.seed_reading_plans",
 	"truth_of_bible.install.ensure_social_worker_role",
 	"truth_of_bible.install.seed_social_content",
 ]
@@ -99,6 +100,7 @@ after_migrate = [
 	"truth_of_bible.install.backfill_notification_template_metadata",
 	"truth_of_bible.install.seed_encouragement_messages",
 	"truth_of_bible.install.seed_whatsapp_quick_replies",
+	"truth_of_bible.install.seed_reading_plans",
 	"truth_of_bible.install.ensure_social_worker_role",
 	"truth_of_bible.install.seed_social_content",
 ]

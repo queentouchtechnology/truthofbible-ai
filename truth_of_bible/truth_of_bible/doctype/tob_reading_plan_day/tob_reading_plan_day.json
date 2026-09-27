@@ -1,0 +1,102 @@
+{
+ "doctype": "DocType",
+ "name": "TOB Reading Plan Day",
+ "module": "Truth Of Bible",
+ "custom": 0,
+ "istable": 0,
+ "issingle": 0,
+ "quick_entry": 0,
+ "track_changes": 0,
+ "autoname": "hash",
+ "naming_rule": "Random",
+ "sort_field": "day_number",
+ "sort_order": "ASC",
+ "engine": "InnoDB",
+ "description": "One day's reading within a TOB Reading Plan. A top-level doctype (not a child table) so an admin can add/edit/reorder days independently via generic REST, same pattern as TOB Notification Template/TOB Encouragement Message. book_id follows the app's own fixed 1-66 canonical book numbering (Genesis=1 ... Revelation=66, see bible_books_screen.dart) so the Flutter client can deep-link straight into ReadChapterPage.",
+ "field_order": [
+  "plan",
+  "day_number",
+  "title",
+  "column_break_1",
+  "book_id",
+  "chapter_start",
+  "chapter_end",
+  "reference_label",
+  "note"
+ ],
+ "fields": [
+  {
+   "fieldname": "plan",
+   "fieldtype": "Link",
+   "options": "TOB Reading Plan",
+   "label": "Plan",
+   "reqd": 1,
+   "in_list_view": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "day_number",
+   "fieldtype": "Int",
+   "label": "Day",
+   "reqd": 1,
+   "in_list_view": 1,
+   "description": "1-indexed position within the plan."
+  },
+  {
+   "fieldname": "title",
+   "fieldtype": "Data",
+   "label": "Title",
+   "in_list_view": 1,
+   "description": "e.g. \"Creation Begins\" — a short, inviting label for the day, not just the reference."
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "book_id",
+   "fieldtype": "Int",
+   "label": "Book ID",
+   "reqd": 1,
+   "description": "1-66, matching the app's fixed canonical book order (Genesis=1 ... Revelation=66)."
+  },
+  {
+   "fieldname": "chapter_start",
+   "fieldtype": "Int",
+   "label": "Chapter (start)",
+   "reqd": 1,
+   "default": "1"
+  },
+  {
+   "fieldname": "chapter_end",
+   "fieldtype": "Int",
+   "label": "Chapter (end)",
+   "description": "Leave blank for a single-chapter reading. When set, the day spans chapter_start through chapter_end (the app still deep-links to chapter_start; the range is shown as text)."
+  },
+  {
+   "fieldname": "reference_label",
+   "fieldtype": "Data",
+   "label": "Reference Label",
+   "reqd": 1,
+   "description": "The human-readable reference shown on the card, e.g. \"Genesis 1-2\" or \"Psalm 23\"."
+  },
+  {
+   "fieldname": "note",
+   "fieldtype": "Small Text",
+   "label": "Note",
+   "description": "A short, age-appropriate reflection or context line shown under the reading."
+  }
+ ],
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "report": 1,
+   "export": 1
+  }
+ ],
+ "links": []
+}
