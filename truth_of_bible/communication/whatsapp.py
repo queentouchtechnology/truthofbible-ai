@@ -7,6 +7,7 @@ of a two-way conversation Chatwoot itself is the system of record for.
 """
 
 import frappe
+import requests
 from frappe import _
 from frappe.utils import now_datetime
 
@@ -183,6 +184,14 @@ def send_message(conversation_id, message=""):
 	if not ok:
 		frappe.throw(err or _("Could not send this message."), frappe.ValidationError)
 
+	return _record_outbound_message(convo, chatwoot_message_id, message_type, message, attachment_url, reopened)
+
+
+def _record_outbound_message(convo, chatwoot_message_id, message_type, message, attachment_url, reopened) -> dict:
+	"""Shared by `send_message` and `forward_message` — inserts the local
+	mirror row for a message Chatwoot has already accepted, and bumps the
+	conversation's preview/last-message-at (and re-opens it locally if the
+	send itself triggered a reopen on Chatwoot's side)."""
 	doc = frappe.get_doc(
 		{
 			"doctype": "TOB WhatsApp Message",
@@ -213,6 +222,56 @@ def send_message(conversation_id, message=""):
 		"status": doc.status,
 		"created_at": doc.creation,
 	}
+
+
+@frappe.whitelist(methods=["POST"])
+def forward_message(message_id, target_conversation_id):
+	"""Forwards an existing message (text and/or attachment) into a
+	different WhatsApp conversation. Chatwoot has no "forward by reference"
+	API, so a message with an attachment is forwarded by downloading the
+	original file from its own hosted `attachment_url` and re-uploading it
+	as a fresh send on the target conversation — same as a real WhatsApp
+	forward looks to the recipient, just done manually here."""
+	require_admin()
+	source = frappe.get_doc("TOB WhatsApp Message", message_id)
+	target = frappe.get_doc("TOB WhatsApp Conversation", target_conversation_id)
+	if target.name == source.conversation:
+		frappe.throw(_("Choose a different conversation to forward to."), frappe.ValidationError)
+
+	reopened = False
+	if target.status == "RESOLVED":
+		if chatwoot.toggle_status(target.chatwoot_conversation_id, "open"):
+			reopened = True
+
+	attachment_bytes = None
+	attachment_filename = None
+	attachment_content_type = None
+	if source.attachment_url:
+		try:
+			response = requests.get(source.attachment_url, timeout=30)
+			response.raise_for_status()
+			attachment_bytes = response.content
+			attachment_content_type = response.headers.get("Content-Type")
+			attachment_filename = source.attachment_url.rsplit("/", 1)[-1] or "attachment"
+		except Exception:
+			frappe.log_error(
+				title="Communication Center: forward download failed", message=frappe.get_traceback()
+			)
+			frappe.throw(_("Could not fetch the original file to forward."), frappe.ValidationError)
+
+	ok, chatwoot_message_id, attachment_url, err = chatwoot.send_message(
+		target.chatwoot_conversation_id,
+		source.message or "",
+		attachment_bytes=attachment_bytes,
+		attachment_filename=attachment_filename,
+		attachment_content_type=attachment_content_type,
+	)
+	if not ok:
+		frappe.throw(err or _("Could not forward this message."), frappe.ValidationError)
+
+	return _record_outbound_message(
+		target, chatwoot_message_id, source.message_type, source.message or "", attachment_url, reopened
+	)
 
 
 @frappe.whitelist(methods=["GET"])

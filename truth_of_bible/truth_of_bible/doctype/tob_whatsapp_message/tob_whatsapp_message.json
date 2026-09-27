@@ -75,9 +75,9 @@
   },
   {
    "fieldname": "attachment_url",
-   "fieldtype": "Data",
+   "fieldtype": "Long Text",
    "label": "Attachment URL",
-   "description": "Chatwoot's own hosted URL for this message's attachment (its `data_url`), set for a non-TEXT message_type both directions. Points at Chatwoot, not this site — never uploaded/proxied here."
+   "description": "Chatwoot's own hosted URL for this message's attachment (its `data_url`), set for a non-TEXT message_type both directions. Points at Chatwoot, not this site — never uploaded/proxied here. Long Text, not Data: Chatwoot's signed Active Storage URLs routinely exceed Data's 140-char limit, which was silently truncating/rejecting every media message before this fix."
   }
  ],
  "permissions": [
