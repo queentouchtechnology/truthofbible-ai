@@ -239,11 +239,19 @@ def get_notification_summary(period="7d"):
 
 
 def _suggestions(ctx, audience, segments, reasons, sent_total, recipients):
+	"""Each actionable suggestion carries a `kind` that's a valid
+	`get_insight_users`/campaign-audience kind — the admin app uses it to
+	both list the exact people behind the suggestion and to open the
+	Communication Center's Campaign Composer pre-loaded with them as a
+	Selected Users audience. A suggestion with no real list behind it
+	(volume warnings, "nothing sent") omits `kind` entirely rather than
+	pointing at a made-up one."""
 	out = []
 	reg = segments["regular"]
 	if reg["total"] and reg["with_token"] < reg["total"]:
 		gap = reg["total"] - reg["with_token"]
 		out.append({
+			"kind": "regular_no_push",
 			"title": f"{gap} regular user{'s' if gap != 1 else ''} can't receive push",
 			"detail": "They open the app every week but never allowed notifications. This is the "
 			"highest-value gap: ask for permission right after a satisfying moment (finishing a "
@@ -253,6 +261,7 @@ def _suggestions(ctx, audience, segments, reasons, sent_total, recipients):
 	inactive = segments["inactive"]
 	if inactive["with_token"]:
 		out.append({
+			"kind": "inactive_with_push",
 			"title": f"{inactive['with_token']} inactive user{'s' if inactive['with_token'] != 1 else ''} still have push",
 			"detail": "Send one gentle win-back message, not a stream: a single verse or a "
 			"'we've saved your place' note. Cap it at one every 7–10 days and stop after two "
@@ -261,6 +270,7 @@ def _suggestions(ctx, audience, segments, reasons, sent_total, recipients):
 	no_token_inactive = inactive["total"] - inactive["with_token"]
 	if no_token_inactive > 0:
 		out.append({
+			"kind": "inactive_no_push",
 			"title": f"{no_token_inactive} inactive user{'s' if no_token_inactive != 1 else ''} can't be reached by push",
 			"detail": "Push isn't an option for them. Use an email or WhatsApp campaign from the "
 			"Communication Center for a one-time re-introduction.",
@@ -268,6 +278,7 @@ def _suggestions(ctx, audience, segments, reasons, sent_total, recipients):
 	never = segments["never"]
 	if never["total"]:
 		out.append({
+			"kind": "never",
 			"title": f"{never['total']} user{'s' if never['total'] != 1 else ''} have no recorded activity",
 			"detail": "Signed up but never used the app (or use it only offline). A short welcome "
 			"series that points to one first action — read today's verse — works better than a "
@@ -275,12 +286,14 @@ def _suggestions(ctx, audience, segments, reasons, sent_total, recipients):
 		})
 	if reasons.get("pref_off"):
 		out.append({
+			"kind": "pref_off",
 			"title": f"{reasons['pref_off']} user{'s' if reasons['pref_off'] != 1 else ''} turned reading notifications off",
 			"detail": "Respect it — don't override their setting. If it's a large number, review "
 			"whether reminders arrive at a bad hour; offer a quieter schedule instead of a mute.",
 		})
 	if audience["never_received_ever"]:
 		out.append({
+			"kind": "never_received",
 			"title": f"{audience['never_received_ever']} user{'s' if audience['never_received_ever'] != 1 else ''} with push have never received anything",
 			"detail": "Registered and able to receive, but no notification has ever matched them. "
 			"A one-time welcome or 'today's verse' broadcast is a safe way to start.",
@@ -303,7 +316,13 @@ def _suggestions(ctx, audience, segments, reasons, sent_total, recipients):
 @frappe.whitelist(methods=["GET"])
 def get_insight_users(kind, period="7d", limit=100, offset=0, search=None):
 	"""kind: received | not_received | no_token | never_received |
-	regular | occasional | inactive | never."""
+	regular | occasional | inactive | never | regular_no_push |
+	inactive_with_push | inactive_no_push | pref_off.
+
+	The last four exist specifically so a suggestion card in the Insights
+	tab can both list and message (via the Communication Center's Selected
+	Users audience) the exact cohort it's describing — see `_suggestions`'s
+	own `kind` field."""
 	require_admin()
 	ctx = _Context(period)
 
@@ -315,6 +334,23 @@ def get_insight_users(kind, period="7d", limit=100, offset=0, search=None):
 		users = [u for u in ctx.users if u not in ctx.token_users]
 	elif kind == "never_received":
 		users = [u for u in ctx.token_users if u in ctx.users and u not in ctx.ever_received]
+	elif kind == "regular_no_push":
+		users = [
+			u for u in ctx.users
+			if _segment(ctx.users[u].last_active, ctx.now) == "regular" and u not in ctx.token_users
+		]
+	elif kind == "inactive_with_push":
+		users = [
+			u for u in ctx.users
+			if _segment(ctx.users[u].last_active, ctx.now) == "inactive" and u in ctx.token_users
+		]
+	elif kind == "inactive_no_push":
+		users = [
+			u for u in ctx.users
+			if _segment(ctx.users[u].last_active, ctx.now) == "inactive" and u not in ctx.token_users
+		]
+	elif kind == "pref_off":
+		users = [u for u in ctx.users if ctx.reason(u)[0] == "pref_off"]
 	elif kind in _SEGMENT_LABELS:
 		users = [u for u in ctx.users if _segment(ctx.users[u].last_active, ctx.now) == kind]
 	else:

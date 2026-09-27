@@ -55,7 +55,19 @@ def _point_label(category: str) -> str:
 	return _POINT_LABELS.get(category, category.replace("_", " ").title())
 
 
-def points_history(user: str, page=1, page_size=20, q=None, category=None, sort="newest") -> dict:
+def points_history(
+	user: str,
+	page=1,
+	page_size=20,
+	q=None,
+	category=None,
+	sort="newest",
+	date_from=None,
+	date_to=None,
+	min_points=None,
+	max_points=None,
+	direction=None,
+) -> dict:
 	start, size = _window(page, page_size)
 	sort = _sort(sort)
 	where, args = ["user=%s"], [user]
@@ -71,6 +83,22 @@ def points_history(user: str, page=1, page_size=20, q=None, category=None, sort=
 		else:
 			where.append("reason=%s")
 			args.append(category)
+	if date_from:
+		where.append("date(creation) >= %s")
+		args.append(date_from)
+	if date_to:
+		where.append("date(creation) <= %s")
+		args.append(date_to)
+	if min_points not in (None, ""):
+		where.append("points >= %s")
+		args.append(cint(min_points))
+	if max_points not in (None, ""):
+		where.append("points <= %s")
+		args.append(cint(max_points))
+	if direction == "earned":
+		where.append("points > 0")
+	elif direction == "spent":
+		where.append("points < 0")
 	order = {
 		"newest": "creation desc",
 		"oldest": "creation asc",
@@ -159,7 +187,19 @@ def _legacy_wallet_rows(user: str, limit: int) -> list:
 	return out
 
 
-def wallet_history(user: str, page=1, page_size=20, q=None, category=None, sort="newest") -> dict:
+def wallet_history(
+	user: str,
+	page=1,
+	page_size=20,
+	q=None,
+	category=None,
+	sort="newest",
+	date_from=None,
+	date_to=None,
+	min_amount=None,
+	max_amount=None,
+	direction=None,
+) -> dict:
 	start, size = _window(page, page_size)
 	sort = _sort(sort)
 	new = frappe.get_all(
@@ -192,6 +232,18 @@ def wallet_history(user: str, page=1, page_size=20, q=None, category=None, sort=
 		items = [i for i in items if needle in f"{i['title']} {i['note']} {i['category_label']}".lower()]
 	if category:
 		items = [i for i in items if i["category"] == category]
+	if date_from:
+		items = [i for i in items if i["when"][:10] >= date_from]
+	if date_to:
+		items = [i for i in items if i["when"][:10] <= date_to]
+	if min_amount not in (None, ""):
+		items = [i for i in items if abs(i["amount"]) >= float(min_amount)]
+	if max_amount not in (None, ""):
+		items = [i for i in items if abs(i["amount"]) <= float(max_amount)]
+	if direction == "credit":
+		items = [i for i in items if i["amount"] >= 0]
+	elif direction == "debit":
+		items = [i for i in items if i["amount"] < 0]
 	if sort == "oldest":
 		items.sort(key=lambda i: i["when"])
 	elif sort == "high":

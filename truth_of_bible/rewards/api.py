@@ -89,13 +89,25 @@ def verify_topup(order_id, payment_id, signature, country=None):
 
 
 @frappe.whitelist(methods=["GET"])
-def get_points_history(page=1, page_size=20, q=None, category=None, sort="newest"):
-	return history.points_history(_user(), page, page_size, q, category, sort)
+def get_points_history(
+	page=1, page_size=20, q=None, category=None, sort="newest",
+	date_from=None, date_to=None, min_points=None, max_points=None, direction=None,
+):
+	return history.points_history(
+		_user(), page, page_size, q, category, sort,
+		date_from, date_to, min_points, max_points, direction,
+	)
 
 
 @frappe.whitelist(methods=["GET"])
-def get_wallet_history(page=1, page_size=20, q=None, category=None, sort="newest"):
-	return history.wallet_history(_user(), page, page_size, q, category, sort)
+def get_wallet_history(
+	page=1, page_size=20, q=None, category=None, sort="newest",
+	date_from=None, date_to=None, min_amount=None, max_amount=None, direction=None,
+):
+	return history.wallet_history(
+		_user(), page, page_size, q, category, sort,
+		date_from, date_to, min_amount, max_amount, direction,
+	)
 
 
 @frappe.whitelist(methods=["GET"])
