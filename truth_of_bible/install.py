@@ -1954,6 +1954,23 @@ def ensure_social_worker_role():
 	frappe.db.commit()
 
 
+def ensure_sunday_school_role():
+	"""A plain end-user role (no desk access, same shape as "LMS Student")
+	an admin toggles on/off per user from the existing Manage User ->
+	Profile -> Roles/Permissions checklist (generic Frappe Role/Has Role
+	REST — see users_repository_impl.dart's assignRoles/getAllRoles).
+	Having this role is what unlocks the "Student Dashboard" drawer entry
+	client-side (main_drawer.dart's hasStudentAccess check) — no other
+	backend permission is granted by this role; it's purely a client-side
+	feature flag, not a data-access gate."""
+	if frappe.db.exists("Role", "Sunday School Student"):
+		return
+	frappe.get_doc({"doctype": "Role", "role_name": "Sunday School Student", "desk_access": 0}).insert(
+		ignore_permissions=True
+	)
+	frappe.db.commit()
+
+
 def seed_social_content():
 	"""Starter drafts for TOB Social Content (app features from the app's own
 	navigation map, salvation prayers with exact KJV references), from
