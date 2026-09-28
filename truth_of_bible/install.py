@@ -358,6 +358,22 @@ _DEFAULT_PROMPTS = [
 			'{"items": [{"title": "...", "image_text": "...", "image_footer": "...", "caption": "..."}]}.'
 		),
 	},
+	{
+		"task": "translate_content",
+		"system_prompt": (
+			"You are a careful, faithful translator for a Christian Bible-study app. You "
+			"will be given one short piece of app content (a title, a simple "
+			"explanation, a quiz question, an activity instruction, etc.) and must "
+			"translate it faithfully into the requested language, preserving its "
+			"meaning, tone, and any Scripture references or proper names — use the "
+			"standard localized form of a Bible book name or biblical proper name for "
+			"that language when one is standard, otherwise keep it as-is rather than "
+			"inventing one. Never add commentary, never summarize or shorten the "
+			"content, never omit anything from the source. Respond with the translated "
+			"text only — no preamble, no quotation marks, no explanation of your "
+			"translation choices."
+		),
+	},
 ]
 
 
@@ -406,6 +422,7 @@ _AI_MODEL_ROUTING = [
 	{"task": "social_post_copy", "provider": "deepseek", "model_id": "deepseek-chat"},
 	{"task": "social_content_app_feature", "provider": "deepseek", "model_id": "deepseek-chat"},
 	{"task": "social_content_salvation_prayer", "provider": "deepseek", "model_id": "deepseek-chat"},
+	{"task": "translate_content", "provider": "deepseek", "model_id": "deepseek-chat"},
 ]
 
 
@@ -432,6 +449,50 @@ def seed_ai_model_routing():
 			frappe.db.commit()
 		except frappe.ValidationError:
 			frappe.db.rollback()
+
+
+# Phase 1 of the content-translation feature: English + the app's existing
+# Tamil content plus Hindi/Telugu (see fixtures/custom_field.json's own
+# content_translation_enabled field docstring for why this is a smaller,
+# curated set rather than the ~80-language AI feature list). native_name
+# is set here rather than relying on an admin to have filled it in by hand
+# — README previously documented that as a manual step, which is exactly
+# the kind of thing this idempotent-seed pattern exists to make unnecessary.
+_LANGUAGE_METADATA = [
+	{"code": "en", "native_name": "English", "is_default": 1},
+	{"code": "ta", "native_name": "தமிழ்"},
+	{"code": "hi", "native_name": "हिन्दी"},
+	{"code": "te", "native_name": "తెలుగు"},
+]
+
+
+def seed_language_metadata():
+	for entry in _LANGUAGE_METADATA:
+		if not frappe.db.exists("Language", entry["code"]):
+			# Every code here is a standard Frappe core language — this is a
+			# defensive skip, not expected to actually trigger on a normal
+			# Frappe install.
+			continue
+		doc = frappe.get_doc("Language", entry["code"])
+		changed = False
+		if not doc.enabled:
+			doc.enabled = 1
+			changed = True
+		if not doc.native_name:
+			doc.native_name = entry["native_name"]
+			changed = True
+		if not doc.content_translation_enabled:
+			doc.content_translation_enabled = 1
+			changed = True
+		# is_default: only ever set it, never unset an admin's existing
+		# choice — enforce_single_default() throws if another row already
+		# has it, which is exactly the right outcome (leave that one alone).
+		if entry.get("is_default") and not doc.is_default and not frappe.db.exists("Language", {"is_default": 1}):
+			doc.is_default = 1
+			changed = True
+		if changed:
+			doc.save(ignore_permissions=True)
+			frappe.db.commit()
 
 
 # V1 Bible Battle seed bank: 18 hand-verified, unambiguous, well-known

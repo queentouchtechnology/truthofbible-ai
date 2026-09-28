@@ -70,6 +70,9 @@ _ALLOWED_EVENTS = {
 	"seller_product_submitted",
 	"seller_product_updated",
 	"seller_product_deleted",
+	# Content translation module — see api/translation.py.
+	"app_language_switched",
+	"translated_content_viewed",
 }
 
 _MAX_BATCH_SIZE = 100

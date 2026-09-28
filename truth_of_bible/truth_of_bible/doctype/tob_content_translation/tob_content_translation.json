@@ -1,0 +1,139 @@
+{
+ "doctype": "DocType",
+ "name": "TOB Content Translation",
+ "module": "Truth Of Bible",
+ "custom": 0,
+ "istable": 0,
+ "issingle": 0,
+ "quick_entry": 0,
+ "track_changes": 1,
+ "autoname": "hash",
+ "naming_rule": "Random",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "engine": "InnoDB",
+ "description": "One translated field value for one document, one row per (source_doctype, source_name, field, language) — the generic 'translate any content into any supported language' store, so a new content type (memory verses today, lessons/community/notifications later) never needs its own translation doctype. Mirrors TOB Bible Topic Translation's translation_status workflow (Draft/Machine Translated/.../Published) but generalized: source_doctype/source_name/field stand in for that doctype's single hardcoded `topic` Link, since this table has to span many source doctypes, including ones (like Frappe LMS's own `LMS Quiz Question`) this app doesn't own and must never write back to directly.",
+ "field_order": [
+  "source_doctype",
+  "source_name",
+  "field",
+  "language",
+  "column_break_source",
+  "translation_status",
+  "source_hash",
+  "section_break_text",
+  "translated_text",
+  "column_break_meta",
+  "provider",
+  "model",
+  "translated_by",
+  "reviewed_by"
+ ],
+ "fields": [
+  {
+   "fieldname": "source_doctype",
+   "fieldtype": "Data",
+   "label": "Source Doctype",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "description": "Plain doctype name, not a Link — spans doctypes this app doesn't own (e.g. Frappe LMS's own LMS Quiz Question), so a Link/options constraint would be wrong here."
+  },
+  {
+   "fieldname": "source_name",
+   "fieldtype": "Data",
+   "label": "Source Document",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "field",
+   "fieldtype": "Data",
+   "label": "Field",
+   "reqd": 1,
+   "in_list_view": 1,
+   "description": "The source document's own fieldname being translated, e.g. 'title' or 'simple_meaning'."
+  },
+  {
+   "fieldname": "language",
+   "fieldtype": "Link",
+   "label": "Language",
+   "options": "Language",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "column_break_source",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "translation_status",
+   "fieldtype": "Select",
+   "label": "Translation Status",
+   "options": "Draft\nMachine Translated\nHuman Reviewed\nApproved\nPublished\nNeeds Revision",
+   "default": "Draft",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "description": "Only Published rows are ever served to students — everything earlier is a review-in-progress state, same discipline as TOB Bible Topic Translation."
+  },
+  {
+   "fieldname": "source_hash",
+   "fieldtype": "Data",
+   "label": "Source Text Hash",
+   "description": "Hash of the source field's text at translation time. If the source is edited afterward, this no longer matches — the admin bulk-translate screen uses that mismatch to flag a translation as stale without needing a separate 'last synced' timestamp."
+  },
+  {
+   "fieldname": "section_break_text",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "translated_text",
+   "fieldtype": "Long Text",
+   "label": "Translated Text"
+  },
+  {
+   "fieldname": "column_break_meta",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "provider",
+   "fieldtype": "Data",
+   "label": "AI Provider",
+   "read_only": 1
+  },
+  {
+   "fieldname": "model",
+   "fieldtype": "Data",
+   "label": "AI Model",
+   "read_only": 1
+  },
+  {
+   "fieldname": "translated_by",
+   "fieldtype": "Data",
+   "label": "Translated By",
+   "read_only": 1,
+   "description": "'AI' for a machine translation, or the admin's user id for a manual edit."
+  },
+  {
+   "fieldname": "reviewed_by",
+   "fieldtype": "Link",
+   "options": "User",
+   "label": "Reviewed By",
+   "read_only": 1
+  }
+ ],
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "report": 1,
+   "export": 1
+  }
+ ],
+ "links": []
+}
