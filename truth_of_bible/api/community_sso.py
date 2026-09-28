@@ -248,8 +248,30 @@ def _admin_request(cfg: dict, method: str, path: str, **kwargs):
 	r = requests.request(method, f"{cfg['url']}{path}", headers=_admin_headers(cfg), timeout=_TIMEOUT, **kwargs)
 	if r.status_code != 200:
 		frappe.log_error(title="Community edit", message=f"{method} {path} -> {r.status_code}: {r.text[:500]}")
-		frappe.throw(_("Could not save your changes. Please try again."))
+		# 422 carries a user-facing reason from Discourse (e.g. a tag not allowed
+		# in this category) — show it instead of a generic retry message.
+		errors = []
+		if r.status_code == 422:
+			try:
+				errors = r.json().get("errors") or []
+			except ValueError:
+				pass
+		frappe.throw(" ".join(errors) if errors else _("Could not save your changes. Please try again."))
 	return r.json()
+
+
+def _tag_names(tags) -> list[str]:
+	"""Discourse may return tags as plain names or as {id, name, slug} objects;
+	it only accepts names back."""
+	if isinstance(tags, str):
+		tags = frappe.parse_json(tags)
+	names = []
+	for t in tags or []:
+		name = t.get("name") if isinstance(t, dict) else t
+		name = (name or "").strip()
+		if name and name not in names:
+			names.append(name)
+	return names
 
 
 @frappe.whitelist(methods=["POST"])
@@ -274,5 +296,11 @@ def edit_topic(topic_id: int, title: str | None = None, tags=None) -> dict:
 	if title is not None:
 		body["title"] = title
 	if tags is not None:
-		body["tags"] = frappe.parse_json(tags) if isinstance(tags, str) else tags
+		new_tags = _tag_names(tags)
+		# Re-sending unchanged tags makes Discourse re-validate them, so a tag that
+		# was later restricted to other categories would block a title-only edit.
+		if sorted(new_tags) != sorted(_tag_names(topic.get("tags"))):
+			body["tags"] = new_tags
+	if not body:
+		return {"basic_topic": {"id": int(topic_id), "title": topic.get("title")}}
 	return _admin_request(cfg, "PUT", f"/t/-/{int(topic_id)}.json", json=body)
