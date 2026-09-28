@@ -312,6 +312,89 @@ def mark_memory_verse_complete(memory_verse):
 
 
 @frappe.whitelist(methods=["GET"])
+def get_memory_verse_courses():
+	"""Every course that has at least one Published memory verse, with this
+	student's progress — powers the course-picker step ahead of
+	get_course_verses(). `course` resolves the linked LMS Course's title
+	when set (mirrors analytics/sunday_school_reports.py's own
+	coalesce(c.title, mv.course) pattern), falling back to the raw
+	Course value for any verse seeded before that link existed."""
+	user = _require_login()
+	rows = frappe.db.sql(
+		"""select mv.course as course_id, coalesce(c.title, mv.course) as course_title, count(*) as total
+		from `tabTOB Sunday School Memory Verse` mv
+		left join `tabLMS Course` c on c.name = mv.course
+		where mv.status = 'Published' and mv.course is not null and mv.course != ''
+		group by mv.course, coalesce(c.title, mv.course)
+		order by course_title asc""",
+		as_dict=True,
+	)
+	if not rows:
+		return {"courses": []}
+
+	studied = frappe.db.sql(
+		"""select mv.course as course_id, count(*) as studied
+		from `tabTOB Sunday School Verse Completion` vc
+		inner join `tabTOB Sunday School Memory Verse` mv on mv.name = vc.memory_verse
+		where vc.user = %s and vc.status = 'Verified'
+		group by mv.course""",
+		(user,), as_dict=True,
+	)
+	studied_by_course = {r.course_id: r.studied for r in studied}
+
+	return {
+		"courses": [
+			{
+				"course": r.course_id,
+				"title": r.course_title,
+				"total_verses": r.total,
+				"studied_count": studied_by_course.get(r.course_id, 0),
+			}
+			for r in rows
+		]
+	}
+
+
+@frappe.whitelist(methods=["GET"])
+def get_course_verses(course):
+	"""Every Published verse in one course, in assigned order (oldest
+	week_start first, i.e. "Verse 1 of 33"), with this student's own
+	completion status/rank per verse — the data behind the course's
+	verse-list and verse-slider screens."""
+	user = _require_login()
+	course_title = frappe.db.get_value("LMS Course", course, "title") or course
+
+	verses = frappe.get_all(
+		"TOB Sunday School Memory Verse", filters={"course": course, "status": "Published"},
+		fields=["name", "title", "reference", "week_start", "simple_meaning"],
+		order_by="week_start asc, creation asc",
+	)
+	if not verses:
+		return {"course": course, "title": course_title, "verses": []}
+
+	completions = frappe.get_all(
+		"TOB Sunday School Verse Completion", filters={"user": user, "memory_verse": ["in", [v.name for v in verses]]},
+		fields=["memory_verse", "status", "rank"],
+	)
+	completion_by_verse = {c.memory_verse: c for c in completions}
+
+	out = []
+	for i, v in enumerate(verses):
+		completion = completion_by_verse.get(v.name)
+		out.append({
+			"memory_verse": v.name,
+			"verse_number": i + 1,
+			"title": v.title,
+			"reference": v.reference,
+			"week_start": str(v.week_start),
+			"simple_meaning": v.simple_meaning or "",
+			"status": completion.status if completion else "Not Started",
+			"rank": completion.rank if completion else None,
+		})
+	return {"course": course, "title": course_title, "verses": out}
+
+
+@frappe.whitelist(methods=["GET"])
 def get_points_history(date_from=None, date_to=None, source=None, limit=50, offset=0):
 	user = _require_login()
 	filters = {"user": user}

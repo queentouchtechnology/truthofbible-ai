@@ -18,7 +18,8 @@
   "reference",
   "week_start",
   "course",
-  "status"
+  "status",
+  "simple_meaning"
  ],
  "fields": [
   {
@@ -61,6 +62,12 @@
    "default": "Draft",
    "in_list_view": 1,
    "description": "Only Published verses are ever returned to the app."
+  },
+  {
+   "fieldname": "simple_meaning",
+   "fieldtype": "Small Text",
+   "label": "Simple Meaning",
+   "description": "A short, plain-language explanation shown under the verse in the student's Memory Verse study screen (e.g. \"Nothing is too hard for God. He can do what seems impossible for us.\"). Optional — the box is hidden on the student side when empty."
   }
  ],
  "permissions": [
