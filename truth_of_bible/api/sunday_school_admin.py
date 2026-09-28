@@ -139,7 +139,11 @@ def list_role_students(search=None):
 	dashboard load) so a role-holder who's never opened the app yet still
 	shows up, just with no group/location/referral data yet — mirrors
 	notifications/triggers.py::_sunday_school_students()'s own reasoning
-	for querying the role directly rather than the Profile doctype."""
+	for querying the role directly rather than the Profile doctype.
+
+	Also left-joins a lifetime Points Ledger total so admin list/picker
+	screens can show a student's faith points alongside their name,
+	instead of a bare name-and-email row."""
 	require_admin()
 	conditions = "hr.role = 'Sunday School Student' and hr.parenttype = 'User' and u.enabled = 1"
 	params = {}
@@ -148,10 +152,16 @@ def list_role_students(search=None):
 		params["search"] = f"%{search}%"
 	return frappe.db.sql(
 		f"""select u.name as user, u.full_name, u.user_image,
-			p.name as profile, p.group as `group`, p.location, p.referred_by, p.status
+			p.name as profile, p.group as `group`, p.location, p.referred_by, p.status,
+			coalesce(pl.total_points, 0) as total_points
 		from `tabHas Role` hr
 		inner join `tabUser` u on u.name = hr.parent
 		left join `tabTOB Sunday School Profile` p on p.user = u.name
+		left join (
+			select user, sum(points) as total_points
+			from `tabTOB Sunday School Points Ledger`
+			group by user
+		) pl on pl.user = u.name
 		where {conditions}
 		order by u.full_name asc
 		limit 300""",
