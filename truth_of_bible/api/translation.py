@@ -46,9 +46,18 @@ def requires_approval() -> bool:
 	return bool(frappe.db.get_single_value("TOB AI Settings", "translation_requires_approval"))
 
 
+def feature_enabled() -> bool:
+	"""TOB AI Settings.translation_feature_enabled — the master switch the
+	Translation admin screen exposes to hide/show the Translate button
+	across every content screen at once. Read fresh, same reasoning as
+	requires_approval() above."""
+	value = frappe.db.get_single_value("TOB AI Settings", "translation_feature_enabled")
+	return True if value is None else bool(value)
+
+
 @frappe.whitelist(methods=["GET"])
 def get_translation_settings():
-	return {"requires_approval": requires_approval()}
+	return {"requires_approval": requires_approval(), "feature_enabled": feature_enabled()}
 
 
 @frappe.whitelist(methods=["POST"])
@@ -57,6 +66,14 @@ def set_translation_requires_approval(value):
 	enabled = str(value).lower() in ("1", "true", "yes")
 	frappe.db.set_single_value("TOB AI Settings", "translation_requires_approval", 1 if enabled else 0)
 	return {"requires_approval": enabled}
+
+
+@frappe.whitelist(methods=["POST"])
+def set_translation_feature_enabled(value):
+	require_admin()
+	enabled = str(value).lower() in ("1", "true", "yes")
+	frappe.db.set_single_value("TOB AI Settings", "translation_feature_enabled", 1 if enabled else 0)
+	return {"feature_enabled": enabled}
 
 
 def _hash(text: str) -> str:
@@ -343,6 +360,47 @@ def translate_now(source_doctype, source_name, fields, language):
 	if gated and generated_any and not out:
 		out["_pending"] = True
 	return out
+
+
+@frappe.whitelist(methods=["POST"])
+def translate_local_text(source_doctype, source_name, text, language):
+	"""On-demand translation for content this app doesn't hold as a Frappe
+	document at all — Bible Dictionary entries and Matthew Henry
+	Commentary both come from the on-device SQLite bundle, and a
+	Devotional's text is AI-generated client-side, so none of them has a
+	`(doctype, name)` frappe.db.get_value can look up like translate_now's
+	other content types do. The source text travels in the request body
+	instead (POST, not GET, since commentary text can be long); everything
+	else — caching in TOB Content Translation, the source_hash staleness
+	check, and the requires_approval() gate — is identical to translate_now,
+	just against one field always named "text"."""
+	if not language or language == "en":
+		return {}
+	if not text:
+		return {}
+	field = "text"
+	gated = requires_approval()
+	source_hash = _hash(text)
+	existing = frappe.db.get_value(
+		"TOB Content Translation",
+		{"source_doctype": source_doctype, "source_name": source_name, "field": field, "language": language},
+		["translated_text", "translation_status", "source_hash"],
+		as_dict=True,
+	)
+	already_servable = existing and existing.source_hash == source_hash and (
+		existing.translation_status == _PUBLISHED if gated else existing.translation_status != "Needs Revision"
+	)
+	if already_servable:
+		return {"text": existing.translated_text}
+	if existing and existing.source_hash == source_hash and gated:
+		return {"_pending": True}
+	try:
+		doc = _upsert_translation(source_doctype, source_name, field, language, text)
+	except AiProviderException:
+		return {}
+	if gated:
+		return {"_pending": True}
+	return {"text": doc.translated_text}
 
 
 @frappe.whitelist(methods=["GET"])
