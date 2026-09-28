@@ -123,3 +123,33 @@ def add_manual_points(user, points, title=None, week_start=None):
 	dedupe_key = f"manual:{frappe.generate_hash(length=12)}"
 	awarded = engine.award(user, "Manual Adjustment", title, points, week_start=week, dedupe_key=dedupe_key)
 	return {"awarded": awarded, "user": user, "points": points, "title": title}
+
+
+@frappe.whitelist(methods=["GET"])
+def list_role_students(search=None):
+	"""Every user actually holding the "Sunday School Student" role (see
+	install.py::ensure_sunday_school_role) — the one picker source for
+	both the Attendance roster and Group Members screens, so an admin can
+	only ever add a real activated student, never an arbitrary typed
+	email. Left-joins TOB Sunday School Profile (created lazily on first
+	dashboard load) so a role-holder who's never opened the app yet still
+	shows up, just with no group/location/referral data yet — mirrors
+	notifications/triggers.py::_sunday_school_students()'s own reasoning
+	for querying the role directly rather than the Profile doctype."""
+	require_admin()
+	conditions = "hr.role = 'Sunday School Student' and hr.parenttype = 'User' and u.enabled = 1"
+	params = {}
+	if search:
+		conditions += " and (u.name like %(search)s or u.full_name like %(search)s)"
+		params["search"] = f"%{search}%"
+	return frappe.db.sql(
+		f"""select u.name as user, u.full_name, u.user_image,
+			p.name as profile, p.group as `group`, p.location, p.referred_by, p.status
+		from `tabHas Role` hr
+		inner join `tabUser` u on u.name = hr.parent
+		left join `tabTOB Sunday School Profile` p on p.user = u.name
+		where {conditions}
+		order by u.full_name asc
+		limit 300""",
+		params, as_dict=True,
+	)
