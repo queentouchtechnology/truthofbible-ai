@@ -73,6 +73,14 @@ doc_events = {
 	"LMS Batch": {
 		"on_update": "truth_of_bible.notifications.triggers.on_batch_updated",
 	},
+	# Sunday School weekly rewards — notifies every "Sunday School Student"
+	# the moment an admin publishes a new quiz or memory verse.
+	"TOB Sunday School Weekly Quiz": {
+		"on_update": "truth_of_bible.notifications.triggers.on_sunday_school_quiz_updated",
+	},
+	"TOB Sunday School Memory Verse": {
+		"on_update": "truth_of_bible.notifications.triggers.on_sunday_school_verse_updated",
+	},
 }
 
 # Idempotent — safe to run on every migrate, matching qmp_lms_bridge's own
@@ -129,6 +137,10 @@ scheduler_events = {
 		# rather than the HTTP request that creates a campaign ever blocking
 		# on its own size — see communication/campaign.py's own docstring.
 		"*/2 * * * *": ["truth_of_bible.communication.campaign.process_queue"],
+		# Sunday School weekly rewards reset (Monday 00:00) — finalizes any
+		# still-open quiz for the week that just ended, computes the Winner
+		# Group Bonus, and sends every scored student their weekly result.
+		"0 0 * * 1": ["truth_of_bible.notifications.sunday_school.weekly_reset_scan"],
 	},
 	"hourly": [
 		"truth_of_bible.notifications.reading.daily_scan",
@@ -145,5 +157,10 @@ scheduler_events = {
 		# module's own docstring for why).
 		"truth_of_bible.notifications.stock.daily_check",
 		"truth_of_bible.notifications.selfcheck.daily_check",
+		# Sunday School points expiry clock — warns, then expires, a
+		# student's unredeemed weekly-rewards balance (see
+		# sunday_school/engine.py's Redemption & Expiry section). Only this
+		# reward system expires; the app-wide one never does.
+		"truth_of_bible.notifications.sunday_school.daily_scan",
 	],
 }

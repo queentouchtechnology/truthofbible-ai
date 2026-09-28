@@ -1,0 +1,332 @@
+"""Sunday School weekly rewards — student-facing API. Session-cookie auth,
+same closed-doctype discipline as `api/reading_plan.py`: every
+`TOB Sunday School *` doctype grants no REST access to any role but System
+Manager, so this module (plus `api/sunday_school_admin.py` for teacher
+actions) is the only door. Ownership/state checks happen here first, then
+reads/writes use `ignore_permissions=True`.
+
+Fully separate from the app-wide rewards system (`truth_of_bible.rewards`)
+by design — nothing here reads or writes a `TOB Reward *` doctype, and
+nothing there reads or writes a `TOB Sunday School *` doctype.
+"""
+
+import json
+
+import frappe
+from frappe import _
+from frappe.utils import now_datetime
+
+from truth_of_bible.sunday_school import engine
+
+
+def _require_login():
+	if frappe.session.user == "Guest":
+		frappe.throw(_("Please log in."), frappe.PermissionError)
+	return frappe.session.user
+
+
+def _user_brief(users):
+	if not users:
+		return {}
+	rows = frappe.get_all("User", filters={"name": ["in", list(users)]}, fields=["name", "full_name", "user_image"])
+	return {r.name: r for r in rows}
+
+
+def _rank_rows(week_start, source=None):
+	conditions = "week_start=%s"
+	params = [week_start]
+	if source:
+		conditions += " and source=%s"
+		params.append(source)
+	return frappe.db.sql(
+		f"""select user, sum(points) as total from `tabTOB Sunday School Points Ledger`
+		where {conditions} group by user order by total desc""",
+		params, as_dict=True,
+	)
+
+
+def _group_rank_rows(week_start):
+	return frappe.db.sql(
+		"""select `group`, sum(points) as total from `tabTOB Sunday School Points Ledger`
+		where week_start=%s and `group` is not null and `group` != ''
+		group by `group` order by total desc""",
+		(week_start,), as_dict=True,
+	)
+
+
+_KIND_TO_SOURCE = {
+	"quiz": "Weekly Quiz",
+	"exam": "Faith Leader Exam",
+	"verse": "Complete Verse",
+	"overall": None,
+}
+
+
+@frappe.whitelist(methods=["GET"])
+def get_leaderboard(kind="overall", week_start=None):
+	week = engine.week_start_of(week_start) if week_start else engine.week_start_of()
+
+	if kind == "group":
+		rows = _group_rank_rows(week)
+		names = {r.name: r.group_name for r in frappe.get_all(
+			"TOB Sunday School Group", filters={"name": ["in", [r["group"] for r in rows]]}, fields=["name", "group_name"]
+		)} if rows else {}
+		entries = [
+			{"rank": i + 1, "id": r["group"], "name": names.get(r["group"], r["group"]), "image": None, "points": int(r.total)}
+			for i, r in enumerate(rows)
+		]
+	else:
+		if kind not in _KIND_TO_SOURCE:
+			frappe.throw(_("Unknown leaderboard kind."), frappe.ValidationError)
+		rows = _rank_rows(week, _KIND_TO_SOURCE[kind])
+		brief = _user_brief([r.user for r in rows])
+		entries = [
+			{
+				"rank": i + 1,
+				"id": r.user,
+				"name": (brief.get(r.user) or {}).get("full_name") or r.user,
+				"image": (brief.get(r.user) or {}).get("user_image"),
+				"points": int(r.total),
+			}
+			for i, r in enumerate(rows)
+		]
+
+	my_id = frappe.session.user if frappe.session.user != "Guest" else None
+	my_entry = next((e for e in entries if e["id"] == my_id), None)
+
+	return {
+		"kind": kind,
+		"week_start": str(week),
+		"podium": entries[:3],
+		"leaderboard": entries,
+		"my_rank": my_entry["rank"] if my_entry else None,
+		"my_points": my_entry["points"] if my_entry else 0,
+	}
+
+
+@frappe.whitelist(methods=["GET"])
+def get_dashboard():
+	user = _require_login()
+	profile = engine.get_or_create_profile(user)
+	week = engine.week_start_of()
+
+	points_week = frappe.db.sql(
+		"select sum(points) from `tabTOB Sunday School Points Ledger` where user=%s and week_start=%s", (user, week)
+	)[0][0] or 0
+	# Lifetime EARNED (positive rows only) — distinct from the current
+	# unredeemed balance (engine.balance()), which drops to 0 on every
+	# redemption/expiry. This stat should only ever go up.
+	points_all_time = frappe.db.sql(
+		"select sum(points) from `tabTOB Sunday School Points Ledger` where user=%s and points > 0", (user,)
+	)[0][0] or 0
+
+	overall = get_leaderboard("overall", str(week))
+	my_rank = overall["my_rank"]
+	next_up = None
+	if my_rank and my_rank > 1:
+		ahead = overall["leaderboard"][my_rank - 2]
+		next_up = {"points_needed": max(0, ahead["points"] - points_week + 1), "target_name": ahead["name"]}
+
+	group_info = None
+	if profile.group:
+		group_doc = frappe.get_doc("TOB Sunday School Group", profile.group)
+		group_board = get_leaderboard("group", str(week))
+		my_group_entry = next((e for e in group_board["leaderboard"] if e["id"] == profile.group), None)
+		members = frappe.get_all(
+			"TOB Sunday School Profile", filters={"group": profile.group, "status": "Active"}, fields=["user"]
+		)
+		member_brief = _user_brief([m.user for m in members])
+		group_info = {
+			"group": group_doc.name,
+			"group_name": group_doc.group_name,
+			"accent_color": group_doc.accent_color,
+			"rank": my_group_entry["rank"] if my_group_entry else None,
+			"points": my_group_entry["points"] if my_group_entry else 0,
+			"members": [
+				{"name": (member_brief.get(m.user) or {}).get("full_name") or m.user, "image": (member_brief.get(m.user) or {}).get("user_image")}
+				for m in members
+			],
+		}
+
+	quizzes = []
+	for quiz_type in ("Weekly Bible Quiz", "Faith Leader Exam"):
+		q = frappe.db.get_value(
+			"TOB Sunday School Weekly Quiz",
+			{"week_start": week, "quiz_type": quiz_type, "status": ["in", ["Published", "Closed"]]},
+			["name", "title", "status", "total_marks"], as_dict=True,
+		)
+		if not q:
+			continue
+		attempt = frappe.db.get_value(
+			"TOB Sunday School Quiz Attempt", {"quiz": q.name, "user": user}, ["score", "rank"], as_dict=True
+		)
+		quizzes.append({
+			"quiz": q.name, "quiz_type": quiz_type, "title": q.title, "status": q.status,
+			"total_marks": q.total_marks, "attempted": bool(attempt),
+			"score": attempt.score if attempt else None, "rank": attempt.rank if attempt else None,
+		})
+
+	verse_row = frappe.db.get_value(
+		"TOB Sunday School Memory Verse", {"week_start": week, "status": "Published"},
+		["name", "title", "reference"], as_dict=True,
+	)
+	verse_info = None
+	if verse_row:
+		completion = frappe.db.get_value(
+			"TOB Sunday School Verse Completion", {"memory_verse": verse_row.name, "user": user},
+			["status", "rank"], as_dict=True,
+		)
+		verse_info = {
+			"memory_verse": verse_row.name, "title": verse_row.title, "reference": verse_row.reference,
+			"status": completion.status if completion else "Not Started",
+			"rank": completion.rank if completion else None,
+		}
+
+	attendance = frappe.db.get_value(
+		"TOB Sunday School Attendance", {"user": user, "week_start": week},
+		["attended_class", "attended_quiz", "completed_memory_verse", "goal_bonus_awarded"], as_dict=True,
+	) or {"attended_class": 0, "attended_quiz": 0, "completed_memory_verse": 0, "goal_bonus_awarded": 0}
+
+	recent = frappe.get_all(
+		"TOB Sunday School Points Ledger", filters={"user": user},
+		fields=["title", "points", "source", "creation"], order_by="creation desc", limit_page_length=10,
+	)
+
+	expiry_info = None
+	if profile.points_clock_started_at:
+		from frappe.utils import getdate, nowdate
+
+		cfg = engine.settings()
+		expiry_days = cfg.points_expiry_days or 14
+		started = getdate(profile.points_clock_started_at)
+		days_left = expiry_days - (getdate(nowdate()) - started).days
+		expiry_info = {"days_left": max(0, days_left), "points": engine.balance(user)}
+
+	return {
+		"week_start": str(week),
+		"points_this_week": int(points_week),
+		"points_all_time": int(points_all_time),
+		"rank_this_week": my_rank,
+		"next_up": next_up,
+		"group": group_info,
+		"quizzes": quizzes,
+		"memory_verse": verse_info,
+		"sunday_goal": attendance,
+		"recent_history": recent,
+		"expiry": expiry_info,
+	}
+
+
+@frappe.whitelist(methods=["POST"])
+def redeem_points():
+	"""Cashes out the student's whole unredeemed balance into their app
+	wallet — see sunday_school/engine.py::redeem_to_wallet for why this is
+	the one deliberate bridge between the two otherwise-separate reward
+	systems."""
+	user = _require_login()
+	return engine.redeem_to_wallet(user)
+
+
+@frappe.whitelist(methods=["GET"])
+def get_current_quiz(quiz_type="Weekly Bible Quiz"):
+	user = _require_login()
+	week = engine.week_start_of()
+	quiz = frappe.db.get_value(
+		"TOB Sunday School Weekly Quiz",
+		{"week_start": week, "quiz_type": quiz_type, "status": ["in", ["Published", "Closed"]]},
+		["name", "title", "status", "total_marks"], as_dict=True,
+	)
+	if not quiz:
+		return {"quiz": None}
+
+	attempt = frappe.db.get_value(
+		"TOB Sunday School Quiz Attempt", {"quiz": quiz.name, "user": user},
+		["score", "total_marks", "rank"], as_dict=True,
+	)
+	result = {
+		"quiz": quiz.name, "title": quiz.title, "status": quiz.status,
+		"total_marks": quiz.total_marks, "attempted": bool(attempt),
+	}
+	if attempt:
+		result["my_result"] = attempt
+	elif quiz.status == "Published":
+		result["questions"] = frappe.get_all(
+			"TOB Sunday School Weekly Quiz Question", filters={"quiz": quiz.name},
+			fields=["name", "question_number", "question", "option_a", "option_b", "option_c", "option_d", "marks"],
+			order_by="question_number asc",
+		)
+	return result
+
+
+@frappe.whitelist(methods=["POST"])
+def submit_quiz_answers(quiz, answers):
+	user = _require_login()
+	quiz_doc = frappe.get_doc("TOB Sunday School Weekly Quiz", quiz)
+	if quiz_doc.status != "Published":
+		frappe.throw(_("This quiz isn't open for submissions."), frappe.ValidationError)
+	if frappe.db.exists("TOB Sunday School Quiz Attempt", {"quiz": quiz, "user": user}):
+		frappe.throw(_("You've already submitted this quiz."), frappe.ValidationError)
+
+	if isinstance(answers, str):
+		answers = json.loads(answers)
+
+	frappe.get_doc({
+		"doctype": "TOB Sunday School Quiz Attempt",
+		"quiz": quiz, "user": user,
+		"answers": json.dumps(answers),
+		"submitted_at": now_datetime(),
+	}).insert(ignore_permissions=True)
+	frappe.db.commit()
+
+	attendance = engine.ensure_attendance(user, quiz_doc.week_start)
+	if not attendance.attended_quiz:
+		attendance.attended_quiz = 1
+		attendance.save(ignore_permissions=True)
+		frappe.db.commit()
+		engine.check_sunday_goal(user, quiz_doc.week_start)
+
+	return {"submitted": True}
+
+
+@frappe.whitelist(methods=["POST"])
+def mark_memory_verse_complete(memory_verse):
+	user = _require_login()
+	verse = frappe.get_doc("TOB Sunday School Memory Verse", memory_verse)
+	if verse.status != "Published":
+		frappe.throw(_("This verse isn't available."), frappe.ValidationError)
+
+	existing = frappe.db.get_value(
+		"TOB Sunday School Verse Completion", {"memory_verse": memory_verse, "user": user}, ["name", "status"], as_dict=True
+	)
+	if existing:
+		return {"completion": existing.name, "status": existing.status}
+
+	doc = frappe.get_doc({
+		"doctype": "TOB Sunday School Verse Completion",
+		"memory_verse": memory_verse, "user": user,
+		"status": "Pending", "completed_at": now_datetime(),
+	})
+	doc.insert(ignore_permissions=True)
+	frappe.db.commit()
+	return {"completion": doc.name, "status": "Pending"}
+
+
+@frappe.whitelist(methods=["GET"])
+def get_points_history(date_from=None, date_to=None, source=None, limit=50, offset=0):
+	user = _require_login()
+	filters = {"user": user}
+	if source:
+		filters["source"] = source
+	if date_from and date_to:
+		filters["week_start"] = ["between", [date_from, date_to]]
+
+	limit = max(1, min(int(limit), 100))
+	offset = max(0, int(offset))
+
+	rows = frappe.get_all(
+		"TOB Sunday School Points Ledger", filters=filters,
+		fields=["title", "points", "source", "week_start", "creation"],
+		order_by="creation desc", limit_page_length=limit, limit_start=offset,
+	)
+	total = frappe.db.count("TOB Sunday School Points Ledger", filters)
+	return {"rows": rows, "total": total}

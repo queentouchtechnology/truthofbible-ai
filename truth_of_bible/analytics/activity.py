@@ -59,6 +59,13 @@ _ALLOWED_EVENTS = {
 	"bible_journey_started",
 	"bible_journey_completed",
 	"church_finder_searched",
+	# Sunday School weekly rewards module — see api/sunday_school.py,
+	# sunday_school/engine.py. Fully separate from the app-wide rewards
+	# system's own event set above.
+	"sunday_school_quiz_submitted",
+	"sunday_school_verse_submitted",
+	"sunday_school_goal_completed",
+	"sunday_school_points_redeemed",
 }
 
 _MAX_BATCH_SIZE = 100

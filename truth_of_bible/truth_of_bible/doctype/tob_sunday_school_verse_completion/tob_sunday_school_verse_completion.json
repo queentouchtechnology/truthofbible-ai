@@ -1,0 +1,79 @@
+{
+ "doctype": "DocType",
+ "name": "TOB Sunday School Verse Completion",
+ "module": "Truth Of Bible",
+ "custom": 0,
+ "istable": 0,
+ "issingle": 0,
+ "quick_entry": 0,
+ "track_changes": 1,
+ "autoname": "hash",
+ "naming_rule": "Random",
+ "sort_field": "completed_at",
+ "sort_order": "ASC",
+ "engine": "InnoDB",
+ "description": "A student's claim to have recited/memorized a TOB Sunday School Memory Verse. Created as Pending when the student taps \"I recited it\" (api/sunday_school.py::mark_memory_verse_complete) — a student can NEVER set status to Verified themselves; only a teacher/admin can, via api/sunday_school_admin.py::verify_verse_completion, which also assigns rank and awards points through the engine. This is what keeps the whole memorization system honest for a kids' context.",
+ "field_order": [
+  "memory_verse",
+  "user",
+  "column_break_1",
+  "status",
+  "rank",
+  "completed_at"
+ ],
+ "fields": [
+  {
+   "fieldname": "memory_verse",
+   "fieldtype": "Link",
+   "options": "TOB Sunday School Memory Verse",
+   "label": "Memory Verse",
+   "reqd": 1,
+   "in_list_view": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "user",
+   "fieldtype": "Link",
+   "options": "User",
+   "label": "User",
+   "reqd": 1,
+   "in_list_view": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Pending\nVerified\nRejected",
+   "default": "Pending",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "rank",
+   "fieldtype": "Int",
+   "label": "Rank",
+   "description": "1st/2nd/3rd place among this verse's Verified completions — set by the teacher on verification, drives the 15/10/5 point award (TOB Sunday School Settings)."
+  },
+  {
+   "fieldname": "completed_at",
+   "fieldtype": "Datetime",
+   "label": "Completed At"
+  }
+ ],
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "report": 1,
+   "export": 1
+  }
+ ],
+ "links": []
+}

@@ -48,6 +48,12 @@ from truth_of_bible.notifications.engine import handle_event
 # to complicate this trigger's contract today.
 _MAX_QUIZ_FANOUT = 200
 
+# Same reasoning, for the Sunday School role-wide fan-out below — this
+# Sunday School's real enrollment is nowhere near this size, but the cap
+# costs nothing and keeps the contract consistent with every other trigger
+# here.
+_MAX_SUNDAY_SCHOOL_FANOUT = 500
+
 
 def on_quiz_created(doc, method=None):
 	try:
@@ -289,3 +295,42 @@ def _on_batch_updated(doc):
 			member,
 			{"batch_title": doc.get("title") or doc.name, "batch": doc.name},
 		)
+
+
+def _sunday_school_students():
+	"""Every user holding the "Sunday School Student" role — matches
+	admin_audience.py's own role-fan-out pattern, not TOB Sunday School
+	Profile (which is only created lazily on first dashboard load, so a
+	student who's never opened it yet would otherwise be missed)."""
+	return frappe.get_all(
+		"Has Role", filters={"role": "Sunday School Student", "parenttype": "User"},
+		pluck="parent", limit_page_length=_MAX_SUNDAY_SCHOOL_FANOUT,
+	)
+
+
+def on_sunday_school_quiz_updated(doc, method=None):
+	try:
+		_on_sunday_school_quiz_updated(doc)
+	except Exception:
+		frappe.log_error(title="Notification trigger: on_sunday_school_quiz_updated", message=frappe.get_traceback())
+
+
+def _on_sunday_school_quiz_updated(doc):
+	if not doc.has_value_changed("status") or doc.status != "Published":
+		return
+	for user in _sunday_school_students():
+		handle_event("SS_NEW_QUIZ_AVAILABLE", user, {"quiz_type": doc.quiz_type, "quiz": doc.name})
+
+
+def on_sunday_school_verse_updated(doc, method=None):
+	try:
+		_on_sunday_school_verse_updated(doc)
+	except Exception:
+		frappe.log_error(title="Notification trigger: on_sunday_school_verse_updated", message=frappe.get_traceback())
+
+
+def _on_sunday_school_verse_updated(doc):
+	if not doc.has_value_changed("status") or doc.status != "Published":
+		return
+	for user in _sunday_school_students():
+		handle_event("SS_NEW_MEMORY_VERSE", user, {"reference": doc.reference, "memory_verse": doc.name})

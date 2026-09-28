@@ -1,0 +1,100 @@
+{
+ "doctype": "DocType",
+ "name": "TOB Sunday School Points Ledger",
+ "module": "Truth Of Bible",
+ "custom": 0,
+ "istable": 0,
+ "issingle": 0,
+ "quick_entry": 0,
+ "track_changes": 0,
+ "autoname": "hash",
+ "naming_rule": "Random",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "engine": "InnoDB",
+ "description": "One row per points movement in the Sunday School weekly rewards system — mirrors TOB Reward Ledger's idempotent shape exactly, but is a fully separate table/system per the app's own explicit requirement that the two reward systems never mix. Balance = sum(points) for a user; weekly totals = sum(points) where week_start = X. Every insert goes through truth_of_bible.sunday_school.engine.award(), which enforces dedupe_key uniqueness.",
+ "field_order": [
+  "user",
+  "week_start",
+  "source",
+  "column_break_1",
+  "points",
+  "group",
+  "title",
+  "dedupe_key"
+ ],
+ "fields": [
+  {
+   "fieldname": "user",
+   "fieldtype": "Link",
+   "options": "User",
+   "label": "User",
+   "reqd": 1,
+   "in_list_view": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "week_start",
+   "fieldtype": "Date",
+   "label": "Week Start",
+   "reqd": 1,
+   "in_list_view": 1,
+   "search_index": 1,
+   "description": "Monday of the ISO week this was earned in — see engine._week_start(). Weeks are implicit, not a doctype."
+  },
+  {
+   "fieldname": "source",
+   "fieldtype": "Select",
+   "label": "Source",
+   "options": "Weekly Quiz\nSunday Goal\nComplete Verse\nGroup Bonus\nFaith Leader Exam\nRedemption\nExpired\nManual Adjustment",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "points",
+   "fieldtype": "Int",
+   "label": "Points",
+   "reqd": 1,
+   "in_list_view": 1,
+   "description": "Signed — can be negative for a manual correction."
+  },
+  {
+   "fieldname": "group",
+   "fieldtype": "Link",
+   "options": "TOB Sunday School Group",
+   "label": "Group",
+   "search_index": 1,
+   "description": "Denormalized from the user's profile at award time, so a later group re-assignment never rewrites historical weekly totals."
+  },
+  {
+   "fieldname": "title",
+   "fieldtype": "Data",
+   "label": "Title",
+   "reqd": 1,
+   "description": "Human label shown in the student's points history, e.g. \"Weekly Bible Quiz — 92/100\"."
+  },
+  {
+   "fieldname": "dedupe_key",
+   "fieldtype": "Data",
+   "label": "Dedupe Key",
+   "unique": 1,
+   "description": "Prevents the same award being inserted twice (e.g. a retried request)."
+  }
+ ],
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "report": 1,
+   "export": 1
+  }
+ ],
+ "links": []
+}

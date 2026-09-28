@@ -1,0 +1,69 @@
+{
+ "doctype": "DocType",
+ "name": "TOB Sunday School Memory Verse",
+ "module": "Truth Of Bible",
+ "custom": 0,
+ "istable": 0,
+ "issingle": 0,
+ "quick_entry": 0,
+ "track_changes": 1,
+ "autoname": "hash",
+ "naming_rule": "Random",
+ "sort_field": "week_start",
+ "sort_order": "DESC",
+ "engine": "InnoDB",
+ "description": "This week's assigned memory verse. reference is a plain \"Book Chapter:Verse\" string (e.g. \"Psalm 23:1\") — the Flutter app renders it with the already-built VerseRefTapText/openVersePopup so a student can read the actual verse in place instead of just seeing a citation. verse_text is deliberately NOT stored/cached here; it's always resolved live from the app's own Bible database.",
+ "field_order": [
+  "title",
+  "reference",
+  "week_start",
+  "status"
+ ],
+ "fields": [
+  {
+   "fieldname": "title",
+   "fieldtype": "Data",
+   "label": "Title",
+   "reqd": 1,
+   "in_list_view": 1,
+   "description": "e.g. \"Week of Jan 5 — Psalm 23:1\"."
+  },
+  {
+   "fieldname": "reference",
+   "fieldtype": "Data",
+   "label": "Verse Reference",
+   "reqd": 1,
+   "in_list_view": 1,
+   "description": "e.g. \"Psalm 23:1\" — must parse as \"Book Chapter:Verse\" (see verse_ref_popup.dart's parseVerseReference on the Flutter side)."
+  },
+  {
+   "fieldname": "week_start",
+   "fieldtype": "Date",
+   "label": "Week Start",
+   "reqd": 1,
+   "in_list_view": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Draft\nPublished",
+   "default": "Draft",
+   "in_list_view": 1,
+   "description": "Only Published verses are ever returned to the app."
+  }
+ ],
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "report": 1,
+   "export": 1
+  }
+ ],
+ "links": []
+}

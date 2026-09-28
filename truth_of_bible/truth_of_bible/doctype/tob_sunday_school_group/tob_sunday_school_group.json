@@ -1,0 +1,59 @@
+{
+ "doctype": "DocType",
+ "name": "TOB Sunday School Group",
+ "module": "Truth Of Bible",
+ "custom": 0,
+ "istable": 0,
+ "issingle": 0,
+ "quick_entry": 0,
+ "track_changes": 1,
+ "autoname": "hash",
+ "naming_rule": "Random",
+ "sort_field": "group_name",
+ "sort_order": "ASC",
+ "engine": "InnoDB",
+ "description": "A Sunday School team/group for the weekly rewards system's Group Points and Winner Group Bonus — fully separate from the app-wide rewards system. Membership lives on TOB Sunday School Profile.group, not a child table here. Admin/teacher-assigned only (see truth_of_bible.api.sunday_school_admin), never self-service.",
+ "field_order": [
+  "group_name",
+  "status",
+  "accent_color"
+ ],
+ "fields": [
+  {
+   "fieldname": "group_name",
+   "fieldtype": "Data",
+   "label": "Group Name",
+   "reqd": 1,
+   "in_list_view": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Active\nArchived",
+   "default": "Active",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "accent_color",
+   "fieldtype": "Select",
+   "label": "Accent Color",
+   "options": "Amber\nBlue\nGreen\nPurple\nRose\nTeal",
+   "default": "Blue",
+   "description": "A fixed palette key the Flutter app maps to its own theme-aware colors."
+  }
+ ],
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "report": 1,
+   "export": 1
+  }
+ ],
+ "links": []
+}

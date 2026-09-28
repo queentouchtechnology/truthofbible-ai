@@ -1,0 +1,82 @@
+{
+ "doctype": "DocType",
+ "name": "TOB Sunday School Weekly Quiz",
+ "module": "Truth Of Bible",
+ "custom": 0,
+ "istable": 0,
+ "issingle": 0,
+ "quick_entry": 0,
+ "track_changes": 1,
+ "autoname": "hash",
+ "naming_rule": "Random",
+ "sort_field": "week_start",
+ "sort_order": "DESC",
+ "engine": "InnoDB",
+ "description": "A lightweight, standalone weekly quiz for Sunday School students — deliberately NOT an LMS Quiz (that doctype requires a course and a qtt_platform tenant, the wrong shape for an informal weekly quiz). quiz_type distinguishes the mockup's \"Weekly Bible Quiz\" from \"Faith Leader Exam\" — same mechanic (marks convert to points, top-3 shown on a podium), so one doctype instead of two duplicates. Questions live in TOB Sunday School Weekly Quiz Question, a separate top-level doctype.",
+ "field_order": [
+  "title",
+  "quiz_type",
+  "status",
+  "column_break_1",
+  "week_start",
+  "total_marks"
+ ],
+ "fields": [
+  {
+   "fieldname": "title",
+   "fieldtype": "Data",
+   "label": "Title",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "quiz_type",
+   "fieldtype": "Select",
+   "label": "Quiz Type",
+   "options": "Weekly Bible Quiz\nFaith Leader Exam",
+   "default": "Weekly Bible Quiz",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Draft\nPublished\nClosed",
+   "default": "Draft",
+   "in_list_view": 1,
+   "description": "Draft = admin still building it. Published = students can take it. Closed = finalize_quiz() has graded/ranked every attempt and awarded points; no more submissions accepted."
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "week_start",
+   "fieldtype": "Date",
+   "label": "Week Start",
+   "reqd": 1,
+   "search_index": 1,
+   "description": "Monday of the week this quiz is for."
+  },
+  {
+   "fieldname": "total_marks",
+   "fieldtype": "Int",
+   "label": "Total Marks",
+   "default": "0",
+   "description": "Sum of every question's marks — kept in sync manually by the admin editor, same convention as TOB Reading Plan.duration_days."
+  }
+ ],
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "report": 1,
+   "export": 1
+  }
+ ],
+ "links": []
+}
