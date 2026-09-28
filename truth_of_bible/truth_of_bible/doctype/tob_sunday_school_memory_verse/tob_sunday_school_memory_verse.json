@@ -17,6 +17,7 @@
   "title",
   "reference",
   "week_start",
+  "course",
   "status"
  ],
  "fields": [
@@ -27,6 +28,13 @@
    "reqd": 1,
    "in_list_view": 1,
    "description": "e.g. \"Week of Jan 5 — Psalm 23:1\"."
+  },
+  {
+   "fieldname": "course",
+   "fieldtype": "Data",
+   "label": "Course",
+   "in_list_view": 1,
+   "description": "Which memorization curriculum/course this verse belongs to (e.g. \"New Believer Course\", \"Psalms Course\") — free text, drives the per-student, per-course verse mastery report."
   },
   {
    "fieldname": "reference",

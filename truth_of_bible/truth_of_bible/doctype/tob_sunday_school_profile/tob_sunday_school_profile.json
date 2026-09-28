@@ -14,7 +14,10 @@
  "field_order": [
   "user",
   "group",
+  "location",
   "status",
+  "column_break_1",
+  "referred_by",
   "points_clock_started_at"
  ],
  "fields": [
@@ -36,12 +39,30 @@
    "description": "Admin/teacher-assigned. Null until a teacher places this student on a team."
   },
   {
+   "fieldname": "location",
+   "fieldtype": "Data",
+   "label": "Location",
+   "in_list_view": 1,
+   "description": "Which Sunday School site/campus this student attends — free text, used for location-wise reports (attendance, referrals, scoreboard) alongside the global (all-location) view."
+  },
+  {
    "fieldname": "status",
    "fieldtype": "Select",
    "label": "Status",
    "options": "Active\nInactive",
    "default": "Active",
    "in_list_view": 1
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "referred_by",
+   "fieldtype": "Link",
+   "options": "User",
+   "label": "Referred By",
+   "description": "Which existing student invited this one to Sunday School — admin-set, drives the referral report. Not a points-earning mechanic (unlike the app-wide referral program) — purely a \"who brought who\" record for now."
   },
   {
    "fieldname": "points_clock_started_at",

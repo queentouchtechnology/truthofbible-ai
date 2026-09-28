@@ -15,6 +15,7 @@
  "description": "A Sunday School team/group for the weekly rewards system's Group Points and Winner Group Bonus — fully separate from the app-wide rewards system. Membership lives on TOB Sunday School Profile.group, not a child table here. Admin/teacher-assigned only (see truth_of_bible.api.sunday_school_admin), never self-service.",
  "field_order": [
   "group_name",
+  "location",
   "status",
   "accent_color"
  ],
@@ -26,6 +27,13 @@
    "reqd": 1,
    "in_list_view": 1,
    "unique": 1
+  },
+  {
+   "fieldname": "location",
+   "fieldtype": "Data",
+   "label": "Location",
+   "in_list_view": 1,
+   "description": "Which Sunday School site/campus this team belongs to — free text so admins can name sites however they already do, used to group reports (Groups tab, Reports) by location."
   },
   {
    "fieldname": "status",
