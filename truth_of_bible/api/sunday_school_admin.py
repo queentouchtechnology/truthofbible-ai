@@ -90,3 +90,36 @@ def run_weekly_reset(week_start=None):
 
 	week = getdate(week_start) if week_start else engine.week_start_of()
 	return run_reset_for_week(week)
+
+
+@frappe.whitelist(methods=["POST"])
+def mark_group_winner(week_start=None):
+	"""Computes and awards just this week's (or a given week's) Group
+	Bonus — the top-scoring group's members each get their own best quiz
+	score ÷ group_bonus_divisor (see sunday_school/engine.py::
+	compute_weekly_group_bonus). Deliberately lighter than run_weekly_reset:
+	no quiz finalization, no SS_WEEKLY_RESULTS notification blast — lets an
+	admin award/re-check the winner mid-week without triggering the full
+	reset. Safe to call more than once for the same week (award() is
+	idempotent via its own dedupe_key)."""
+	require_admin()
+	week = getdate(week_start) if week_start else engine.week_start_of()
+	return engine.compute_weekly_group_bonus(week)
+
+
+@frappe.whitelist(methods=["POST"])
+def add_manual_points(user, points, title=None, week_start=None):
+	"""A deliberate one-off admin entry (bonus, correction, penalty —
+	`points` may be negative) — always creates its own ledger row (a
+	fresh, random dedupe_key) rather than the "same trigger, same key"
+	idempotency every other award() caller relies on, since a human
+	choosing to award points twice means two real awards, not a retry."""
+	require_admin()
+	points = int(points)
+	if points == 0:
+		frappe.throw(_("Points must not be zero."), frappe.ValidationError)
+	week = getdate(week_start) if week_start else engine.week_start_of()
+	title = title or ("Manual point adjustment" if points > 0 else "Manual point deduction")
+	dedupe_key = f"manual:{frappe.generate_hash(length=12)}"
+	awarded = engine.award(user, "Manual Adjustment", title, points, week_start=week, dedupe_key=dedupe_key)
+	return {"awarded": awarded, "user": user, "points": points, "title": title}
