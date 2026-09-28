@@ -451,18 +451,105 @@ def seed_ai_model_routing():
 			frappe.db.rollback()
 
 
-# Phase 1 of the content-translation feature: English + the app's existing
-# Tamil content plus Hindi/Telugu (see fixtures/custom_field.json's own
-# content_translation_enabled field docstring for why this is a smaller,
-# curated set rather than the ~80-language AI feature list). native_name
-# is set here rather than relying on an admin to have filled it in by hand
-# — README previously documented that as a manual step, which is exactly
-# the kind of thing this idempotent-seed pattern exists to make unnecessary.
+# Mirrors the Flutter app's own `aiLanguageOptions`
+# (lib/src/users/Bible/ai/models/ai_language_option.dart) — the content-
+# translation feature now supports every language the AI features
+# already do, not just a small curated set (see fixtures/custom_field.
+# json's content_translation_enabled docstring, updated alongside this).
+# native_name is set here rather than relying on an admin to have filled
+# it in by hand — README previously documented that as a manual step,
+# which is exactly the kind of thing this idempotent-seed pattern exists
+# to make unnecessary. Any code below with no matching Frappe core
+# Language row is silently skipped by seed_language_metadata() itself —
+# safe to list more than a given Frappe install actually ships.
 _LANGUAGE_METADATA = [
 	{"code": "en", "native_name": "English", "is_default": 1},
-	{"code": "ta", "native_name": "தமிழ்"},
+	# Major world languages
+	{"code": "es", "native_name": "Español"},
+	{"code": "fr", "native_name": "Français"},
+	{"code": "pt", "native_name": "Português"},
+	{"code": "de", "native_name": "Deutsch"},
+	{"code": "it", "native_name": "Italiano"},
+	{"code": "nl", "native_name": "Nederlands"},
+	{"code": "ru", "native_name": "русский"},
+	{"code": "uk", "native_name": "українська"},
+	{"code": "pl", "native_name": "Polski"},
+	{"code": "ro", "native_name": "Român"},
+	{"code": "el", "native_name": "ελληνικά"},
+	{"code": "cs", "native_name": "česky"},
+	{"code": "sk", "native_name": "Slovenčina"},
+	{"code": "sl", "native_name": "Slovenščina"},
+	{"code": "hr", "native_name": "Hrvatski"},
+	{"code": "bs", "native_name": "Bosanski"},
+	{"code": "sr", "native_name": "српски"},
+	{"code": "bg", "native_name": "Bǎlgarski"},
+	{"code": "mk", "native_name": "македонски"},
+	{"code": "sq", "native_name": "Shqiptar"},
+	{"code": "hu", "native_name": "Magyar"},
+	{"code": "fi", "native_name": "Suomi"},
+	{"code": "sv", "native_name": "Svenska"},
+	{"code": "no", "native_name": "Norsk"},
+	{"code": "da", "native_name": "Dansk"},
+	{"code": "is", "native_name": "íslenska"},
+	{"code": "et", "native_name": "Eesti"},
+	{"code": "lv", "native_name": "Latviešu valoda"},
+	{"code": "lt", "native_name": "Lietuvių kalba"},
+	{"code": "tr", "native_name": "Türkçe"},
+	{"code": "he", "native_name": "עברית", "direction": "RTL"},
+	{"code": "ar", "native_name": "العربية", "direction": "RTL"},
+	{"code": "fa", "native_name": "پارسی", "direction": "RTL"},
+	{"code": "ur", "native_name": "اردو", "direction": "RTL"},
+	{"code": "ps", "native_name": "پښتو", "direction": "RTL"},
+	{"code": "ku", "native_name": "کوردی", "direction": "RTL"},
 	{"code": "hi", "native_name": "हिन्दी"},
+	{"code": "bn", "native_name": "বাঙালি"},
+	{"code": "gu", "native_name": "ગુજરાતી"},
+	{"code": "mr", "native_name": "मराठी"},
+	{"code": "ta", "native_name": "தமிழ்"},
 	{"code": "te", "native_name": "తెలుగు"},
+	{"code": "kn", "native_name": "ಕನ್ನಡ"},
+	{"code": "ml", "native_name": "മലയാളം"},
+	{"code": "pa", "native_name": "ਪੰਜਾਬੀ"},
+	{"code": "ne", "native_name": "नेपाली"},
+	{"code": "si", "native_name": "සිංහල"},
+	{"code": "th", "native_name": "ไทย"},
+	{"code": "vi", "native_name": "Việt"},
+	{"code": "id", "native_name": "Indonesia"},
+	{"code": "ms", "native_name": "Melayu"},
+	{"code": "fil", "native_name": "Filipino"},
+	{"code": "my", "native_name": "မြန်မာ"},
+	{"code": "km", "native_name": "ភាសាខ្មែរ"},
+	{"code": "lo", "native_name": "ລາວ"},
+	{"code": "mn", "native_name": "Монгол"},
+	{"code": "bo", "native_name": "ལྷ་སའི་སྐད་"},
+	{"code": "zh", "native_name": "简体中文"},
+	{"code": "ja", "native_name": "日本語"},
+	{"code": "ko", "native_name": "한국의"},
+	{"code": "uz", "native_name": "Ўзбек"},
+	{"code": "ca", "native_name": "Català"},
+	# Africa & surrounding region
+	{"code": "am", "native_name": "አማርኛ"},
+	{"code": "om", "native_name": "Oromoo"},
+	{"code": "ti", "native_name": "ትግርኛ"},
+	{"code": "so", "native_name": "Soomaali"},
+	{"code": "sw", "native_name": "Swahili"},
+	{"code": "rw", "native_name": "Kinyarwanda"},
+	{"code": "ny", "native_name": "Chichewa"},
+	{"code": "sn", "native_name": "chiShona"},
+	{"code": "st", "native_name": "Sesotho"},
+	{"code": "tn", "native_name": "Setswana"},
+	{"code": "zu", "native_name": "isiZulu"},
+	{"code": "xh", "native_name": "isiXhosa"},
+	{"code": "af", "native_name": "Afrikaans"},
+	{"code": "mg", "native_name": "Malagasy"},
+	{"code": "ha", "native_name": "Hausa"},
+	{"code": "yo", "native_name": "Yorùbá"},
+	{"code": "ig", "native_name": "Igbo"},
+	{"code": "ak", "native_name": "Akan"},
+	{"code": "wo", "native_name": "Wolof"},
+	{"code": "ff", "native_name": "Fulfulde"},
+	{"code": "bm", "native_name": "Bamanankan"},
+	{"code": "ln", "native_name": "Lingála"},
 ]
 
 
@@ -480,6 +567,9 @@ def seed_language_metadata():
 			changed = True
 		if not doc.native_name:
 			doc.native_name = entry["native_name"]
+			changed = True
+		if entry.get("direction") and doc.direction != entry["direction"]:
+			doc.direction = entry["direction"]
 			changed = True
 		if not doc.content_translation_enabled:
 			doc.content_translation_enabled = 1

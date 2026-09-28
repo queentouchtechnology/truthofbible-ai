@@ -62,6 +62,6 @@
   "in_list_view": 1,
   "in_standard_filter": 1,
   "translatable": 0,
-  "description": "Deliberately separate from the app's much larger ~80-language AI-feature language list (Bible Q&A/explanations can generate in any of those on demand) — this flags the smaller, curated set of languages the app-wide language switcher and admin bulk-translate tooling actually offer, since bulk-translating real content needs a reviewed, intentional set rather than every language the AI happens to support."
+  "description": "Which languages the app-wide Content Language switcher and the Translate button/admin tooling offer — seeded to match every language the AI features already support (install.py::seed_language_metadata, mirroring the Flutter app's own aiLanguageOptions list) rather than a small curated subset, since content translation is now on-demand/AI-disclaimed the same way the rest of this app's AI content already is, not gated behind a reviewed allowlist."
  }
 ]
