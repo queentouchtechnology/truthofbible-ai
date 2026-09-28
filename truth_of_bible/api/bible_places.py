@@ -133,7 +133,7 @@ def get_journey(journey):
 		place_docs = frappe.get_all(
 			"TOB Bible Place",
 			filters={"name": ["in", place_names]},
-			fields=["name", "title", "category", "region", "latitude", "longitude", "photo_url"],
+			fields=["name", "title", "category", "region", "latitude", "longitude", "photo_url", "primary_verse_ref"],
 			ignore_permissions=True,
 		)
 		places_by_name = {p.name: p for p in place_docs}
@@ -154,6 +154,7 @@ def get_journey(journey):
 				"latitude": place.latitude,
 				"longitude": place.longitude,
 				"photo_url": place.photo_url or "",
+				"primary_verse_ref": place.primary_verse_ref or "",
 			}
 		)
 
