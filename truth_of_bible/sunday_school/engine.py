@@ -22,7 +22,6 @@ points are zeroed out `points_expiry_days` after the clock started, with
 warning notifications fired at the two configured thresholds beforehand.
 """
 
-import json
 from datetime import timedelta
 
 import frappe
@@ -107,70 +106,75 @@ def award(user: str, source: str, title: str, points: int, week_start=None, grou
 	return True
 
 
-# --- quizzes -------------------------------------------------------------
+# --- quizzes (existing LMS Quiz, assigned to Sunday School) --------------
+#
+# Quizzes are no longer authored here — an admin assigns an existing
+# `LMS Quiz` (the same quiz doctype/take-flow/grading every app user
+# already uses) to a Sunday School slot via `TOB Sunday School Quiz
+# Assignment`. Taking the quiz, grading it, and showing the score all stay
+# on the app's existing LMS Quiz machinery, completely untouched — this
+# module only reacts to the resulting `LMS Quiz Submission` (see
+# `on_lms_quiz_submission` below, called from a doc_event in hooks.py) to
+# award Sunday School points, mark quiz attendance, and check the Sunday
+# Goal. An assigned quiz is hidden from the app-wide quiz list forever
+# (see api/quiz_visibility.py) — even once its assignment is archived, it
+# stays a Sunday-School-only quiz rather than "graduating" back to public.
+
+_QUIZ_TYPE_TO_SOURCE = {"Weekly Bible Quiz": "Weekly Quiz", "Faith Leader Exam": "Faith Leader Exam"}
 
 
-def finalize_quiz(quiz_name: str) -> dict:
-	"""Grades every TOB Sunday School Quiz Attempt for this quiz against
-	TOB Sunday School Weekly Quiz Question.correct_option server-side
-	(never trusts a client-supplied score), ranks attempts by score desc
-	(ties broken by earliest submission), awards quiz_points_per_mark ×
-	score to every attempt, and closes the quiz."""
-	quiz = frappe.get_doc("TOB Sunday School Weekly Quiz", quiz_name)
-	questions = frappe.get_all(
-		"TOB Sunday School Weekly Quiz Question",
-		filters={"quiz": quiz_name},
-		fields=["name", "question_number", "correct_option", "marks"],
-		order_by="question_number asc",
+def get_active_quiz_assignment(quiz_type: str, week_start=None):
+	week_start = week_start or week_start_of()
+	name = frappe.db.get_value(
+		"TOB Sunday School Quiz Assignment",
+		{"quiz_type": quiz_type, "week_start": week_start, "status": "Active"},
+		"name",
 	)
-	total_marks = sum(q.marks or 0 for q in questions)
-	answer_key = [q.correct_option for q in questions]
-	marks_seq = [q.marks or 0 for q in questions]
+	return frappe.get_doc("TOB Sunday School Quiz Assignment", name) if name else None
 
-	attempts = frappe.get_all(
-		"TOB Sunday School Quiz Attempt",
-		filters={"quiz": quiz_name},
-		fields=["name", "user", "answers", "submitted_at"],
-		order_by="submitted_at asc",
+
+def assigned_lms_quiz_ids() -> set:
+	"""Every LMS Quiz ever assigned to a Sunday School slot, Active or
+	Archived — the exclusion set for the app-wide public quiz list."""
+	return set(frappe.get_all("TOB Sunday School Quiz Assignment", pluck="lms_quiz"))
+
+
+def on_lms_quiz_submission(user: str, lms_quiz: str, score) -> bool:
+	"""Reacts to a new LMS Quiz Submission: if `lms_quiz` is this week's
+	Active assignment for a Sunday School slot, awards
+	quiz_points_per_mark × score as this student's first (and only)
+	counted attempt for it — a resubmission of the same quiz (if the LMS
+	Quiz itself allows more than one attempt) is a no-op here, matching
+	the old single-attempt system's behavior; Sunday School only ever
+	scores one attempt per assigned quiz per student."""
+	assignment = frappe.db.get_value(
+		"TOB Sunday School Quiz Assignment", {"lms_quiz": lms_quiz, "status": "Active"},
+		["name", "quiz_type", "week_start"], as_dict=True,
 	)
+	if not assignment:
+		return False
 
 	cfg = settings()
-	scored = []
-	for a in attempts:
-		try:
-			given = json.loads(a.answers or "[]")
-		except Exception:
-			given = []
-		score = 0
-		for i, correct in enumerate(answer_key):
-			if i < len(given) and given[i] == correct:
-				score += marks_seq[i]
-		scored.append({"name": a.name, "user": a.user, "score": score, "submitted_at": a.submitted_at})
+	points = round((score or 0) * (cfg.quiz_points_per_mark or 1))
+	if points <= 0:
+		return False
 
-	scored.sort(key=lambda r: (-r["score"], r["submitted_at"] or now_datetime()))
+	source = _QUIZ_TYPE_TO_SOURCE.get(assignment.quiz_type, "Weekly Quiz")
+	quiz_title = frappe.db.get_value("LMS Quiz", lms_quiz, "title") or lms_quiz
+	awarded = award(
+		user, source, f"{quiz_title} — {score} pts", points,
+		week_start=assignment.week_start, dedupe_key=f"lmsquiz:{lms_quiz}:{user}:{assignment.week_start}",
+	)
+	if not awarded:
+		return False
 
-	rank = 0
-	last_score = None
-	for i, row in enumerate(scored):
-		if row["score"] != last_score:
-			rank = i + 1
-			last_score = row["score"]
-		frappe.db.set_value(
-			"TOB Sunday School Quiz Attempt", row["name"],
-			{"score": row["score"], "total_marks": total_marks, "rank": rank},
-		)
-		points = round(row["score"] * (cfg.quiz_points_per_mark or 1))
-		source = "Faith Leader Exam" if quiz.quiz_type == "Faith Leader Exam" else "Weekly Quiz"
-		award(
-			row["user"], source, f"{quiz.title} — {row['score']}/{total_marks}", points,
-			week_start=quiz.week_start, dedupe_key=f"quiz:{quiz.name}:{row['user']}",
-		)
-
-	quiz.status = "Closed"
-	quiz.total_marks = total_marks
-	quiz.save(ignore_permissions=True)
-	frappe.db.commit()
-	return {"quiz": quiz.name, "attempts_graded": len(scored)}
+	attendance = ensure_attendance(user, assignment.week_start)
+	if not attendance.attended_quiz:
+		attendance.attended_quiz = 1
+		attendance.save(ignore_permissions=True)
+		frappe.db.commit()
+	check_sunday_goal(user, assignment.week_start)
+	return True
 
 
 # --- attendance / sunday goal ---------------------------------------------
@@ -244,9 +248,13 @@ def verify_verse_completion(completion_name: str, verified: bool, rank=None) -> 
 
 def compute_weekly_group_bonus(week_start) -> dict:
 	"""Finds the week's top-scoring group and gives each of its members a
-	bonus of their own best quiz score that week ÷ group_bonus_divisor.
-	Called from the weekly reset job, after finalize_quiz has already run
-	for the week's quizzes."""
+	bonus of their own best quiz POINTS that week (Weekly Quiz or Faith
+	Leader Exam — whichever scored higher) ÷ group_bonus_divisor. Points,
+	not raw marks, since quiz scoring now lives entirely in the Points
+	Ledger (see on_lms_quiz_submission) rather than a quiz-attempt table
+	this module owns — proportionally the same ranking, just one join
+	fewer. Called from the weekly reset job, or standalone via
+	api/sunday_school_admin.py::mark_group_winner."""
 	totals = frappe.db.sql(
 		"""select `group`, sum(points) as total
 		from `tabTOB Sunday School Points Ledger`
@@ -267,15 +275,14 @@ def compute_weekly_group_bonus(week_start) -> dict:
 	awarded_to = []
 	for user in members:
 		best = frappe.db.sql(
-			"""select qa.score from `tabTOB Sunday School Quiz Attempt` qa
-			join `tabTOB Sunday School Weekly Quiz` q on q.name = qa.quiz
-			where qa.user=%s and q.week_start=%s and qa.score is not null
-			order by qa.score desc limit 1""",
+			"""select max(points) from `tabTOB Sunday School Points Ledger`
+			where user=%s and week_start=%s and source in ('Weekly Quiz', 'Faith Leader Exam')""",
 			(user, week_start),
 		)
-		if not best:
+		best_points = best[0][0] if best else None
+		if not best_points:
 			continue
-		bonus = round(best[0][0] / divisor)
+		bonus = round(best_points / divisor)
 		if bonus <= 0:
 			continue
 		if award(user, "Group Bonus", "Champion Group bonus", bonus, week_start=week_start, group=top_group,

@@ -56,7 +56,7 @@ def get_overview_stats():
 		"points_awarded_all_time": int(
 			frappe.db.sql("select sum(points) from `tabTOB Sunday School Points Ledger`")[0][0] or 0
 		),
-		"open_quizzes": frappe.db.count("TOB Sunday School Weekly Quiz", {"status": "Published"}),
+		"open_quizzes": frappe.db.count("TOB Sunday School Quiz Assignment", {"status": "Active"}),
 		"pending_verse_verifications": frappe.db.count("TOB Sunday School Verse Completion", {"status": "Pending"}),
 	}
 
@@ -221,51 +221,59 @@ def get_verse_mastery_report():
 
 @frappe.whitelist(methods=["GET"])
 def get_quiz_performance_report():
-	"""Per-quiz attempt counts and score stats, for both Weekly Bible Quiz and
-	Faith Leader Exam types."""
+	"""Per-assigned-quiz submission counts and score stats, for both Weekly
+	Bible Quiz and Faith Leader Exam slots — reads LMS Quiz Submission
+	directly (the same rows the app's existing quiz result screens use),
+	scoped to whichever LMS Quiz each TOB Sunday School Quiz Assignment
+	points at."""
 	require_admin()
-	quizzes = frappe.get_all(
-		"TOB Sunday School Weekly Quiz",
-		fields=["name", "title", "quiz_type", "week_start", "status", "total_marks"],
+	assignments = frappe.get_all(
+		"TOB Sunday School Quiz Assignment",
+		fields=["name", "lms_quiz", "quiz_type", "week_start", "status"],
 		order_by="week_start desc",
 		limit_page_length=100,
 	)
-	if not quizzes:
+	if not assignments:
 		return {"quizzes": []}
 
-	attempts = frappe.get_all(
-		"TOB Sunday School Quiz Attempt", filters={"quiz": ["in", [q.name for q in quizzes]]},
-		fields=["quiz", "user", "score", "total_marks", "rank"],
+	quiz_ids = list({a.lms_quiz for a in assignments})
+	quiz_info = {
+		q.name: q for q in frappe.get_all("LMS Quiz", filters={"name": ["in", quiz_ids]}, fields=["name", "title", "total_marks"])
+	}
+	submissions = frappe.get_all(
+		"LMS Quiz Submission", filters={"quiz": ["in", quiz_ids]},
+		fields=["quiz", "member", "score"],
 	)
 	by_quiz = {}
-	for a in attempts:
-		by_quiz.setdefault(a.quiz, []).append(a)
+	for s in submissions:
+		by_quiz.setdefault(s.quiz, []).append(s)
 
-	brief = _user_brief([a.user for a in attempts])
+	brief = _user_brief([s.member for s in submissions])
 	out = []
-	for q in quizzes:
-		rows = by_quiz.get(q.name, [])
-		scores = [a.score for a in rows]
-		top = sorted(rows, key=lambda a: a.score, reverse=True)[:3]
+	for a in assignments:
+		q = quiz_info.get(a.lms_quiz)
+		rows = by_quiz.get(a.lms_quiz, [])
+		scores = [s.score for s in rows]
+		top = sorted(rows, key=lambda s: s.score, reverse=True)[:3]
 		out.append({
-			"quiz": q.name,
-			"title": q.title,
-			"quiz_type": q.quiz_type,
-			"week_start": str(q.week_start),
-			"status": q.status,
-			"total_marks": q.total_marks,
+			"quiz": a.lms_quiz,
+			"title": q.title if q else a.lms_quiz,
+			"quiz_type": a.quiz_type,
+			"week_start": str(a.week_start),
+			"status": a.status,
+			"total_marks": q.total_marks if q else 0,
 			"attempts_count": len(rows),
 			"average_score": round(sum(scores) / len(scores), 1) if scores else 0,
 			"highest_score": max(scores) if scores else 0,
 			"top_scorers": [
 				{
-					"user": a.user,
-					"full_name": brief.get(a.user).full_name if brief.get(a.user) else a.user,
-					"user_image": brief.get(a.user).user_image if brief.get(a.user) else None,
-					"score": a.score,
-					"rank": a.rank,
+					"user": s.member,
+					"full_name": brief.get(s.member).full_name if brief.get(s.member) else s.member,
+					"user_image": brief.get(s.member).user_image if brief.get(s.member) else None,
+					"score": s.score,
+					"rank": None,
 				}
-				for a in top
+				for s in top
 			],
 		})
 	return {"quizzes": out}
@@ -396,9 +404,12 @@ def get_student_history(user):
 		"TOB Sunday School Points Ledger", filters={"user": user},
 		fields=["title", "points", "source", "week_start", "creation"], order_by="creation desc", limit_page_length=100,
 	)
-	quiz_attempts = frappe.get_all(
-		"TOB Sunday School Quiz Attempt", filters={"user": user},
-		fields=["quiz", "score", "total_marks", "rank", "submitted_at"], order_by="submitted_at desc",
+	quiz_attempts = frappe.db.sql(
+		"""select s.quiz as quiz, s.score as score, s.score_out_of as total_marks, s.creation as submitted_at
+		from `tabLMS Quiz Submission` s
+		inner join `tabTOB Sunday School Quiz Assignment` a on a.lms_quiz = s.quiz
+		where s.member = %s order by s.creation desc""",
+		(user,), as_dict=True,
 	)
 	verse_completions = frappe.get_all(
 		"TOB Sunday School Verse Completion", filters={"user": user},

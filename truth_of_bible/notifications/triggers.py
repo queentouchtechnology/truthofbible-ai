@@ -308,18 +308,23 @@ def _sunday_school_students():
 	)
 
 
-def on_sunday_school_quiz_updated(doc, method=None):
+def on_sunday_school_quiz_assigned(doc, method=None):
 	try:
-		_on_sunday_school_quiz_updated(doc)
+		_on_sunday_school_quiz_assigned(doc)
 	except Exception:
-		frappe.log_error(title="Notification trigger: on_sunday_school_quiz_updated", message=frappe.get_traceback())
+		frappe.log_error(title="Notification trigger: on_sunday_school_quiz_assigned", message=frappe.get_traceback())
 
 
-def _on_sunday_school_quiz_updated(doc):
-	if not doc.has_value_changed("status") or doc.status != "Published":
+def _on_sunday_school_quiz_assigned(doc):
+	"""Fires once, on creation — an admin assigning an existing LMS Quiz to
+	a Sunday School slot always starts it Active (see this doctype's own
+	`default`), so there's no separate "publish" transition to watch for
+	the way the old TOB Sunday School Weekly Quiz had."""
+	if doc.status != "Active":
 		return
+	quiz_title = frappe.db.get_value("LMS Quiz", doc.lms_quiz, "title") or doc.lms_quiz
 	for user in _sunday_school_students():
-		handle_event("SS_NEW_QUIZ_AVAILABLE", user, {"quiz_type": doc.quiz_type, "quiz": doc.name})
+		handle_event("SS_NEW_QUIZ_AVAILABLE", user, {"quiz_type": doc.quiz_type, "quiz": doc.lms_quiz, "quiz_title": quiz_title})
 
 
 def on_sunday_school_verse_updated(doc, method=None):

@@ -48,17 +48,12 @@ def weekly_reset_scan():
 
 def run_reset_for_week(week_start) -> dict:
 	"""Also callable directly from `api/sunday_school_admin.py::run_weekly_reset`
-	for a manual/testing trigger — same computation either way."""
+	for a manual/testing trigger — same computation either way. Quizzes
+	need no finalize step here anymore: an LMS Quiz Submission scores
+	itself the moment it's created (see sunday_school/engine.py::
+	on_lms_quiz_submission), so by the time this runs every quiz score
+	for the week is already in the Points Ledger."""
 	from truth_of_bible.api import sunday_school as student_api
-
-	open_quizzes = frappe.get_all(
-		"TOB Sunday School Weekly Quiz", filters={"week_start": week_start, "status": "Published"}, pluck="name"
-	)
-	for quiz in open_quizzes:
-		try:
-			engine.finalize_quiz(quiz)
-		except Exception:
-			frappe.log_error(title="Sunday School weekly reset: finalize_quiz failed", message=frappe.get_traceback())
 
 	bonus_result = engine.compute_weekly_group_bonus(week_start)
 
@@ -74,7 +69,6 @@ def run_reset_for_week(week_start) -> dict:
 
 	return {
 		"week_start": str(week_start),
-		"quizzes_finalized": open_quizzes,
 		"group_bonus": bonus_result,
 		"notified": notified,
 	}

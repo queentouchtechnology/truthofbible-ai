@@ -10,8 +10,6 @@ by design — nothing here reads or writes a `TOB Reward *` doctype, and
 nothing there reads or writes a `TOB Sunday School *` doctype.
 """
 
-import json
-
 import frappe
 from frappe import _
 from frappe.utils import now_datetime
@@ -150,20 +148,21 @@ def get_dashboard():
 
 	quizzes = []
 	for quiz_type in ("Weekly Bible Quiz", "Faith Leader Exam"):
-		q = frappe.db.get_value(
-			"TOB Sunday School Weekly Quiz",
-			{"week_start": week, "quiz_type": quiz_type, "status": ["in", ["Published", "Closed"]]},
-			["name", "title", "status", "total_marks"], as_dict=True,
-		)
-		if not q:
+		assignment = engine.get_active_quiz_assignment(quiz_type, week)
+		if not assignment:
 			continue
-		attempt = frappe.db.get_value(
-			"TOB Sunday School Quiz Attempt", {"quiz": q.name, "user": user}, ["score", "rank"], as_dict=True
+		quiz_info = frappe.db.get_value("LMS Quiz", assignment.lms_quiz, ["title", "total_marks"], as_dict=True)
+		if not quiz_info:
+			continue
+		submission = frappe.db.get_value(
+			"LMS Quiz Submission", {"quiz": assignment.lms_quiz, "member": user},
+			["score", "score_out_of"], as_dict=True, order_by="creation asc",
 		)
 		quizzes.append({
-			"quiz": q.name, "quiz_type": quiz_type, "title": q.title, "status": q.status,
-			"total_marks": q.total_marks, "attempted": bool(attempt),
-			"score": attempt.score if attempt else None, "rank": attempt.rank if attempt else None,
+			"quiz": assignment.lms_quiz, "quiz_type": quiz_type, "title": quiz_info.title, "status": "Active",
+			"total_marks": quiz_info.total_marks or (submission.score_out_of if submission else 0),
+			"attempted": bool(submission),
+			"score": submission.score if submission else None,
 		})
 
 	verse_row = frappe.db.get_value(
@@ -228,64 +227,34 @@ def redeem_points():
 
 
 @frappe.whitelist(methods=["GET"])
-def get_current_quiz(quiz_type="Weekly Bible Quiz"):
+def get_assigned_quizzes():
+	"""This week's Active quiz assignments, one per slot — the student then
+	takes the quiz through the app's existing generic quiz screens
+	(fetched by `quiz` id, same as any other LMS Quiz); this module never
+	serves questions or accepts answers itself. Scoring/points happen
+	automatically once the resulting LMS Quiz Submission lands (see
+	sunday_school/engine.py::on_lms_quiz_submission)."""
 	user = _require_login()
 	week = engine.week_start_of()
-	quiz = frappe.db.get_value(
-		"TOB Sunday School Weekly Quiz",
-		{"week_start": week, "quiz_type": quiz_type, "status": ["in", ["Published", "Closed"]]},
-		["name", "title", "status", "total_marks"], as_dict=True,
-	)
-	if not quiz:
-		return {"quiz": None}
-
-	attempt = frappe.db.get_value(
-		"TOB Sunday School Quiz Attempt", {"quiz": quiz.name, "user": user},
-		["score", "total_marks", "rank"], as_dict=True,
-	)
-	result = {
-		"quiz": quiz.name, "title": quiz.title, "status": quiz.status,
-		"total_marks": quiz.total_marks, "attempted": bool(attempt),
-	}
-	if attempt:
-		result["my_result"] = attempt
-	elif quiz.status == "Published":
-		result["questions"] = frappe.get_all(
-			"TOB Sunday School Weekly Quiz Question", filters={"quiz": quiz.name},
-			fields=["name", "question_number", "question", "option_a", "option_b", "option_c", "option_d", "marks"],
-			order_by="question_number asc",
+	quizzes = []
+	for quiz_type in ("Weekly Bible Quiz", "Faith Leader Exam"):
+		assignment = engine.get_active_quiz_assignment(quiz_type, week)
+		if not assignment:
+			continue
+		quiz_info = frappe.db.get_value("LMS Quiz", assignment.lms_quiz, ["title", "total_marks"], as_dict=True)
+		if not quiz_info:
+			continue
+		submission = frappe.db.get_value(
+			"LMS Quiz Submission", {"quiz": assignment.lms_quiz, "member": user},
+			["score", "score_out_of"], as_dict=True, order_by="creation asc",
 		)
-	return result
-
-
-@frappe.whitelist(methods=["POST"])
-def submit_quiz_answers(quiz, answers):
-	user = _require_login()
-	quiz_doc = frappe.get_doc("TOB Sunday School Weekly Quiz", quiz)
-	if quiz_doc.status != "Published":
-		frappe.throw(_("This quiz isn't open for submissions."), frappe.ValidationError)
-	if frappe.db.exists("TOB Sunday School Quiz Attempt", {"quiz": quiz, "user": user}):
-		frappe.throw(_("You've already submitted this quiz."), frappe.ValidationError)
-
-	if isinstance(answers, str):
-		answers = json.loads(answers)
-
-	frappe.get_doc({
-		"doctype": "TOB Sunday School Quiz Attempt",
-		"quiz": quiz, "user": user,
-		"answers": json.dumps(answers),
-		"submitted_at": now_datetime(),
-	}).insert(ignore_permissions=True)
-	frappe.db.commit()
-
-	attendance = engine.ensure_attendance(user, quiz_doc.week_start)
-	if not attendance.attended_quiz:
-		attendance.attended_quiz = 1
-		attendance.save(ignore_permissions=True)
-		frappe.db.commit()
-		engine.check_sunday_goal(user, quiz_doc.week_start)
-
-	return {"submitted": True}
+		quizzes.append({
+			"quiz": assignment.lms_quiz, "quiz_type": quiz_type, "title": quiz_info.title,
+			"total_marks": quiz_info.total_marks or (submission.score_out_of if submission else 0),
+			"attempted": bool(submission),
+			"score": submission.score if submission else None,
+		})
+	return {"week_start": str(week), "quizzes": quizzes}
 
 
 @frappe.whitelist(methods=["POST"])

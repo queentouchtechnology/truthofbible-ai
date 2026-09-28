@@ -74,12 +74,21 @@ doc_events = {
 		"on_update": "truth_of_bible.notifications.triggers.on_batch_updated",
 	},
 	# Sunday School weekly rewards — notifies every "Sunday School Student"
-	# the moment an admin publishes a new quiz or memory verse.
-	"TOB Sunday School Weekly Quiz": {
-		"on_update": "truth_of_bible.notifications.triggers.on_sunday_school_quiz_updated",
+	# the moment an admin assigns a new quiz or publishes a new memory verse.
+	"TOB Sunday School Quiz Assignment": {
+		"after_insert": "truth_of_bible.notifications.triggers.on_sunday_school_quiz_assigned",
 	},
 	"TOB Sunday School Memory Verse": {
 		"on_update": "truth_of_bible.notifications.triggers.on_sunday_school_verse_updated",
+	},
+	# Awards Sunday School points the moment a submission lands for a quiz
+	# that's this week's Active assignment — see sunday_school/engine.py::
+	# on_lms_quiz_submission's own docstring for why this reacts to the
+	# submission rather than the student ever calling a Sunday-School-owned
+	# submit endpoint (there isn't one; quizzes are taken entirely through
+	# the app's existing LMS Quiz flow).
+	"LMS Quiz Submission": {
+		"after_insert": "truth_of_bible.api.lms_quiz_hooks.on_submission_created",
 	},
 }
 

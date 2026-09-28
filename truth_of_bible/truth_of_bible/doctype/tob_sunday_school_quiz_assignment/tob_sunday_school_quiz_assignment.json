@@ -1,0 +1,79 @@
+{
+ "doctype": "DocType",
+ "name": "TOB Sunday School Quiz Assignment",
+ "module": "Truth Of Bible",
+ "custom": 0,
+ "istable": 0,
+ "issingle": 0,
+ "quick_entry": 0,
+ "track_changes": 1,
+ "autoname": "hash",
+ "naming_rule": "Random",
+ "sort_field": "week_start",
+ "sort_order": "DESC",
+ "engine": "InnoDB",
+ "description": "Assigns an existing `LMS Quiz` (the same quiz doctype and take/grade flow every app user already uses) to a Sunday School weekly-rewards slot. Taking the quiz and seeing the score stay on the app's regular quiz screens — this row only marks it as Sunday-School-scoped: it disappears from the app-wide public quiz list forever (see api/quiz_visibility.py's permission_query_conditions hook), and its LMS Quiz Submission rows earn Sunday School points via sunday_school/engine.py::on_lms_quiz_submission (a doc_event, see hooks.py). No question-authoring happens here — the quiz content is managed entirely through the existing LMS Quiz admin screens.",
+ "field_order": [
+  "lms_quiz",
+  "quiz_type",
+  "week_start",
+  "status",
+  "assigned_at"
+ ],
+ "fields": [
+  {
+   "fieldname": "lms_quiz",
+   "fieldtype": "Link",
+   "options": "LMS Quiz",
+   "label": "LMS Quiz",
+   "reqd": 1,
+   "in_list_view": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "quiz_type",
+   "fieldtype": "Select",
+   "label": "Quiz Type",
+   "options": "Weekly Bible Quiz\nFaith Leader Exam",
+   "reqd": 1,
+   "in_list_view": 1,
+   "description": "Both are the same mechanic (marks convert to points) — this only decides which Student Dashboard slot and which Points Ledger source (\"Weekly Quiz\" or \"Faith Leader Exam\") the submission counts under."
+  },
+  {
+   "fieldname": "week_start",
+   "fieldtype": "Date",
+   "label": "Week Start",
+   "reqd": 1,
+   "in_list_view": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Active\nArchived",
+   "default": "Active",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "description": "Only an Active assignment is shown on the Student Dashboard and counts new submissions toward points. Archiving never un-hides the quiz from the public list — see this doctype's own description."
+  },
+  {
+   "fieldname": "assigned_at",
+   "fieldtype": "Datetime",
+   "label": "Assigned At",
+   "read_only": 1
+  }
+ ],
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "report": 1,
+   "export": 1
+  }
+ ],
+ "links": []
+}

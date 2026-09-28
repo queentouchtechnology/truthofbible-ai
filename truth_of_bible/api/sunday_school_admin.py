@@ -72,15 +72,6 @@ def verify_verse_completion(completion, verified, rank=None):
 
 
 @frappe.whitelist(methods=["POST"])
-def finalize_quiz(quiz):
-	require_admin()
-	quiz_doc = frappe.get_doc("TOB Sunday School Weekly Quiz", quiz)
-	if quiz_doc.status == "Closed":
-		frappe.throw(_("This quiz is already closed."), frappe.ValidationError)
-	return engine.finalize_quiz(quiz)
-
-
-@frappe.whitelist(methods=["POST"])
 def run_weekly_reset(week_start=None):
 	"""Manual trigger for the same computation the Monday cron runs
 	(notifications/sunday_school.py::weekly_reset_scan) — lets an admin
