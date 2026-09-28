@@ -147,6 +147,11 @@ scheduler_events = {
 		"truth_of_bible.notifications.prayer.daily_scan",
 		"truth_of_bible.notifications.bible_study.daily_scan",
 		"truth_of_bible.notifications.encouragement.daily_scan",
+		# Seller marketplace order safety net — catches any order the
+		# WooCommerce webhook missed (or before that webhook is even
+		# registered on edenza.org) and notifies the owning student. See
+		# marketplace/engine.py's module docstring.
+		"truth_of_bible.marketplace.engine.poll_recent_orders",
 	],
 	# Meta token health: verify, renew where Meta allows it, warn ahead of
 	# expiry (see social/meta_connection.py).
@@ -162,5 +167,9 @@ scheduler_events = {
 		# sunday_school/engine.py's Redemption & Expiry section). Only this
 		# reward system expires; the app-wide one never does.
 		"truth_of_bible.notifications.sunday_school.daily_scan",
+		# Per-seller low stock — distinct from stock.daily_check's global
+		# admin summary above, which doesn't know which product belongs to
+		# which student (see marketplace/engine.py::check_low_stock).
+		"truth_of_bible.marketplace.engine.check_low_stock",
 	],
 }

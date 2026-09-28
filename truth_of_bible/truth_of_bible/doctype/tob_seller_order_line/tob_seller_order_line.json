@@ -1,0 +1,112 @@
+{
+ "doctype": "DocType",
+ "name": "TOB Seller Order Line",
+ "module": "Truth Of Bible",
+ "custom": 0,
+ "istable": 0,
+ "issingle": 0,
+ "quick_entry": 0,
+ "track_changes": 1,
+ "autoname": "hash",
+ "naming_rule": "Random",
+ "sort_field": "order_date",
+ "sort_order": "DESC",
+ "engine": "InnoDB",
+ "description": "One row per (order, product) line item that belongs to a student seller's product — populated by marketplace/engine.py::sync_order_line_items(), called from both api/shop_webhook.py's order.updated receiver (real-time, once that webhook is registered on edenza.org) and the hourly poll_recent_orders() scheduled job (the safety net that makes 'notified if they order' work today even before that webhook is registered). Deliberately stores only this seller's own line items, never the full order/customer object — a seller's Orders screen must never see another customer's full order or other sellers' items.",
+ "field_order": [
+  "seller",
+  "order_id",
+  "order_number",
+  "product_id",
+  "product_title",
+  "column_break_1",
+  "quantity",
+  "line_total",
+  "order_status",
+  "order_date",
+  "dedupe_key"
+ ],
+ "fields": [
+  {
+   "fieldname": "seller",
+   "fieldtype": "Link",
+   "options": "User",
+   "label": "Seller",
+   "reqd": 1,
+   "in_list_view": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "order_id",
+   "fieldtype": "Int",
+   "label": "WooCommerce Order ID",
+   "reqd": 1,
+   "in_list_view": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "order_number",
+   "fieldtype": "Data",
+   "label": "Order Number"
+  },
+  {
+   "fieldname": "product_id",
+   "fieldtype": "Int",
+   "label": "WooCommerce Product ID",
+   "reqd": 1
+  },
+  {
+   "fieldname": "product_title",
+   "fieldtype": "Data",
+   "label": "Product Title",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "quantity",
+   "fieldtype": "Int",
+   "label": "Quantity",
+   "default": "1"
+  },
+  {
+   "fieldname": "line_total",
+   "fieldtype": "Float",
+   "label": "Line Total"
+  },
+  {
+   "fieldname": "order_status",
+   "fieldtype": "Data",
+   "label": "Order Status",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "order_date",
+   "fieldtype": "Datetime",
+   "label": "Order Date",
+   "search_index": 1
+  },
+  {
+   "fieldname": "dedupe_key",
+   "fieldtype": "Data",
+   "label": "Dedupe Key",
+   "unique": 1,
+   "reqd": 1,
+   "description": "\"{order_id}:{product_id}\" — the hourly poll and the webhook can both see the same order; this is what keeps a student from being notified twice for the same line item."
+  }
+ ],
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "report": 1,
+   "export": 1
+  }
+ ],
+ "links": []
+}

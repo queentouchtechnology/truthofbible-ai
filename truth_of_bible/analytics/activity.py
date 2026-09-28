@@ -66,6 +66,11 @@ _ALLOWED_EVENTS = {
 	"sunday_school_verse_submitted",
 	"sunday_school_goal_completed",
 	"sunday_school_points_redeemed",
+	# Student-seller marketplace — see api/seller.py, marketplace/engine.py.
+	"seller_apply_submitted",
+	"seller_product_submitted",
+	"seller_product_updated",
+	"seller_product_deleted",
 }
 
 _MAX_BATCH_SIZE = 100

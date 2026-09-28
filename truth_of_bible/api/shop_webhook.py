@@ -48,6 +48,7 @@ import json
 
 import frappe
 
+from truth_of_bible.marketplace.engine import sync_order_line_items
 from truth_of_bible.notifications.engine import handle_event
 
 # WooCommerce order status -> (User-audience event, Admin-audience event).
@@ -99,6 +100,17 @@ def _handle_order_updated(payload: dict) -> None:
 
 	if admin_event:
 		handle_event(admin_event, None, variables)
+
+	# Seller marketplace — matches this order's line items against
+	# TOB Seller Product and notifies the owning student. Independent of
+	# the notification events above (a seller's product can sell without
+	# a Frappe User existing for the buyer at all), so it must never be
+	# skipped by the billing-email lookup above, and a failure here must
+	# never break the buyer-facing notifications already sent.
+	try:
+		sync_order_line_items(payload)
+	except Exception:
+		frappe.log_error(title="Marketplace: sync_order_line_items failed", message=frappe.get_traceback())
 
 
 def _verify_signature() -> bool:

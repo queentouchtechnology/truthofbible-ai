@@ -61,7 +61,7 @@
    "fieldname": "category",
    "fieldtype": "Select",
    "label": "Category",
-   "options": "Bible Reading\nSpiritual Growth\nBible Study\nPrayer\nEncouragement\nQuiz\nCourses\nCommunity\nShopping\nAccount\nAnnouncements\nUsers\nSupport\nOrders\nLMS\nModeration\nPayments\nSystem\nSunday School",
+   "options": "Bible Reading\nSpiritual Growth\nBible Study\nPrayer\nEncouragement\nQuiz\nCourses\nCommunity\nShopping\nAccount\nAnnouncements\nUsers\nSupport\nOrders\nLMS\nModeration\nPayments\nSystem\nSunday School\nMarketplace",
    "reqd": 1,
    "in_list_view": 1,
    "description": "Matches one toggle on TOB Notification Preference (User audience) or an admin role bucket (Admin audience)."

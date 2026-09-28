@@ -1,0 +1,114 @@
+{
+ "doctype": "DocType",
+ "name": "TOB Seller Product",
+ "module": "Truth Of Bible",
+ "custom": 0,
+ "istable": 0,
+ "issingle": 0,
+ "quick_entry": 0,
+ "track_changes": 1,
+ "autoname": "hash",
+ "naming_rule": "Random",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "engine": "InnoDB",
+ "description": "The local ledger of which edenza.org (WooCommerce) product id belongs to which student seller — the source of truth `marketplace/engine.py` uses for ownership checks, \"my products\" listing/pagination, and the low-stock scan, rather than depending on WCFM's own vendor-scoping (which WooCommerce's plain REST API does not expose). Cached display fields are refreshed on create/update/admin-approve and by the low-stock scan; they are a display convenience, not the source of truth for the live product itself (that's always edenza.org).",
+ "field_order": [
+  "seller",
+  "product_id",
+  "title_cache",
+  "sku_cache",
+  "status_cache",
+  "column_break_1",
+  "price_cache",
+  "stock_cache",
+  "low_stock_notified_at",
+  "review_note",
+  "created_at"
+ ],
+ "fields": [
+  {
+   "fieldname": "seller",
+   "fieldtype": "Link",
+   "options": "User",
+   "label": "Seller",
+   "reqd": 1,
+   "in_list_view": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "product_id",
+   "fieldtype": "Int",
+   "label": "WooCommerce Product ID",
+   "reqd": 1,
+   "in_list_view": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "title_cache",
+   "fieldtype": "Data",
+   "label": "Title",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "sku_cache",
+   "fieldtype": "Data",
+   "label": "SKU"
+  },
+  {
+   "fieldname": "status_cache",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Pending\nPublish\nDraft\nRejected\nTrash",
+   "default": "Pending",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "description": "Mirrors the WooCommerce product's real status — Pending means awaiting admin approval; Rejected is this app's own concept (WooCommerce has no such status; a rejected product is actually left in Draft on edenza.org)."
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "price_cache",
+   "fieldtype": "Data",
+   "label": "Price"
+  },
+  {
+   "fieldname": "stock_cache",
+   "fieldtype": "Int",
+   "label": "Stock Quantity"
+  },
+  {
+   "fieldname": "low_stock_notified_at",
+   "fieldtype": "Datetime",
+   "label": "Low Stock Notified At",
+   "read_only": 1,
+   "description": "Idempotency/cooldown guard for the low-stock scan — cleared once stock recovers above threshold so a future dip notifies again."
+  },
+  {
+   "fieldname": "review_note",
+   "fieldtype": "Small Text",
+   "label": "Review Note",
+   "description": "Admin's reason when approving or rejecting this product — shown back to the student."
+  },
+  {
+   "fieldname": "created_at",
+   "fieldtype": "Datetime",
+   "label": "Created At",
+   "read_only": 1
+  }
+ ],
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "report": 1,
+   "export": 1
+  }
+ ],
+ "links": []
+}
