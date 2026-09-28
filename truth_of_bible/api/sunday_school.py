@@ -226,37 +226,6 @@ def redeem_points():
 	return engine.redeem_to_wallet(user)
 
 
-@frappe.whitelist(methods=["GET"])
-def get_assigned_quizzes():
-	"""This week's Active quiz assignments, one per slot — the student then
-	takes the quiz through the app's existing generic quiz screens
-	(fetched by `quiz` id, same as any other LMS Quiz); this module never
-	serves questions or accepts answers itself. Scoring/points happen
-	automatically once the resulting LMS Quiz Submission lands (see
-	sunday_school/engine.py::on_lms_quiz_submission)."""
-	user = _require_login()
-	week = engine.week_start_of()
-	quizzes = []
-	for quiz_type in ("Weekly Bible Quiz", "Faith Leader Exam"):
-		assignment = engine.get_active_quiz_assignment(quiz_type, week)
-		if not assignment:
-			continue
-		quiz_info = frappe.db.get_value("LMS Quiz", assignment.lms_quiz, ["title", "total_marks"], as_dict=True)
-		if not quiz_info:
-			continue
-		submission = frappe.db.get_value(
-			"LMS Quiz Submission", {"quiz": assignment.lms_quiz, "member": user},
-			["score", "score_out_of"], as_dict=True, order_by="creation asc",
-		)
-		quizzes.append({
-			"quiz": assignment.lms_quiz, "quiz_type": quiz_type, "title": quiz_info.title,
-			"total_marks": quiz_info.total_marks or (submission.score_out_of if submission else 0),
-			"attempted": bool(submission),
-			"score": submission.score if submission else None,
-		})
-	return {"week_start": str(week), "quizzes": quizzes}
-
-
 @frappe.whitelist(methods=["POST"])
 def mark_memory_verse_complete(memory_verse):
 	user = _require_login()
