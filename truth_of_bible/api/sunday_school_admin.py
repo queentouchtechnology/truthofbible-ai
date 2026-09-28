@@ -44,22 +44,35 @@ def mark_attendance(week_start, entries):
 
 
 @frappe.whitelist(methods=["GET"])
-def get_pending_verse_completions(memory_verse=None):
+def get_pending_verse_completions(memory_verse=None, course=None):
+	"""The verification queue's own row shape — joins in what verse was
+	recited (title/reference), which course it belongs to, and the
+	student's avatar, so the admin isn't approving a bare name + timestamp
+	blind. `course` filters client-side-derived tabs the same way
+	`memory_verse` already did."""
 	require_admin()
-	filters = {"status": "Pending"}
+	conditions = ["vc.status = 'Pending'"]
+	values = {}
 	if memory_verse:
-		filters["memory_verse"] = memory_verse
-	rows = frappe.get_all(
-		"TOB Sunday School Verse Completion", filters=filters,
-		fields=["name", "memory_verse", "user", "completed_at"], order_by="completed_at asc",
+		conditions.append("vc.memory_verse = %(memory_verse)s")
+		values["memory_verse"] = memory_verse
+	if course:
+		conditions.append("mv.course = %(course)s")
+		values["course"] = course
+	where = " and ".join(conditions)
+	rows = frappe.db.sql(
+		f"""select vc.name, vc.memory_verse, vc.user, vc.completed_at,
+			mv.title as verse_title, mv.reference as verse_reference,
+			mv.course as course_id, coalesce(c.title, mv.course) as course_title,
+			u.full_name, u.user_image
+		from `tabTOB Sunday School Verse Completion` vc
+		inner join `tabTOB Sunday School Memory Verse` mv on mv.name = vc.memory_verse
+		left join `tabLMS Course` c on c.name = mv.course
+		left join `tabUser` u on u.name = vc.user
+		where {where}
+		order by vc.completed_at asc""",
+		values, as_dict=True,
 	)
-	if rows:
-		brief = {
-			u.name: u.full_name
-			for u in frappe.get_all("User", filters={"name": ["in", [r.user for r in rows]]}, fields=["name", "full_name"])
-		}
-		for r in rows:
-			r["full_name"] = brief.get(r.user, r.user)
 	return {"rows": rows}
 
 
