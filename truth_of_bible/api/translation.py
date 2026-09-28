@@ -240,10 +240,16 @@ def reject_translation(name):
 
 @frappe.whitelist(methods=["GET"])
 def get_translated_fields(source_doctype, source_names, fields, language):
-	"""Student-facing — returns only Published translations, keyed by
-	source_name then field, silently omitting anything not yet published
-	so the client can fall back to the original text without needing to
-	tell "not translated yet" apart from "translated but not reviewed"."""
+	"""Student-facing — returns every translation except one an admin has
+	explicitly flagged Needs Revision, keyed by source_name then field.
+	Not gated on Published: this app's own existing AI content (verse
+	explanations, devotionals) is already shown directly with an
+	AI-generated disclaimer rather than held behind admin approval, and
+	translation now follows the same policy — the admin review queue
+	(list_pending_translations/publish_translation/reject_translation) is
+	optional curation, not a requirement for a translation to be servable.
+	Missing/never-generated fields are silently omitted either way, so the
+	client always has a clean fall-back-to-original path."""
 	if not language or language == "en":
 		return {}
 	source_names = _as_list(source_names)
@@ -257,13 +263,51 @@ def get_translated_fields(source_doctype, source_names, fields, language):
 			"source_name": ["in", source_names],
 			"field": ["in", fields],
 			"language": language,
-			"translation_status": _PUBLISHED,
+			"translation_status": ["!=", "Needs Revision"],
 		},
 		fields=["source_name", "field", "translated_text"],
 	)
 	out: dict = {}
 	for r in rows:
 		out.setdefault(r.source_name, {})[r.field] = r.translated_text
+	return out
+
+
+@frappe.whitelist(methods=["GET"])
+def translate_now(source_doctype, source_name, fields, language):
+	"""On-demand, student-triggered translation — the "Translate" button
+	on a content screen calls this directly (no admin involved) rather
+	than waiting for a bulk job or approval. Generates synchronously since
+	this is always a small number of fields for one document, unlike
+	bulk_translate's hundreds of calls. Reuses the same cache-then-
+	generate path as everything else here, so a verse translated this way
+	is exactly as reusable (and as subject to an admin later flagging it
+	Needs Revision) as one produced by a bulk job."""
+	if not language or language == "en":
+		return {}
+	fields = _as_list(fields)
+	if not fields:
+		return {}
+	out: dict = {}
+	for field in fields:
+		source_text = frappe.db.get_value(source_doctype, source_name, field)
+		if not source_text:
+			continue
+		source_hash = _hash(source_text)
+		existing = frappe.db.get_value(
+			"TOB Content Translation",
+			{"source_doctype": source_doctype, "source_name": source_name, "field": field, "language": language},
+			["translated_text", "translation_status", "source_hash"],
+			as_dict=True,
+		)
+		if existing and existing.translation_status != "Needs Revision" and existing.source_hash == source_hash:
+			out[field] = existing.translated_text
+			continue
+		try:
+			doc = _upsert_translation(source_doctype, source_name, field, language, source_text)
+			out[field] = doc.translated_text
+		except AiProviderException:
+			continue  # this field just falls back to the original text client-side
 	return out
 
 
