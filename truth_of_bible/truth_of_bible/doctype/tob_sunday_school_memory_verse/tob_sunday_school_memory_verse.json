@@ -31,10 +31,11 @@
   },
   {
    "fieldname": "course",
-   "fieldtype": "Data",
+   "fieldtype": "Link",
+   "options": "LMS Course",
    "label": "Course",
    "in_list_view": 1,
-   "description": "Which memorization curriculum/course this verse belongs to (e.g. \"New Believer Course\", \"Psalms Course\") — free text, drives the per-student, per-course verse mastery report."
+   "description": "Which LMS course this verse belongs to — drives the per-student, per-course verse mastery report."
   },
   {
    "fieldname": "reference",

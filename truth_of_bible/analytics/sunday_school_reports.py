@@ -184,9 +184,10 @@ def get_verse_mastery_report():
 	down by course, plus a per-course totals summary."""
 	require_admin()
 	rows = frappe.db.sql(
-		"""select vc.user as user, mv.course as course
+		"""select vc.user as user, coalesce(c.title, mv.course) as course
 		from `tabTOB Sunday School Verse Completion` vc
 		inner join `tabTOB Sunday School Memory Verse` mv on mv.name = vc.memory_verse
+		left join `tabLMS Course` c on c.name = mv.course
 		where vc.status = 'Verified'""",
 		as_dict=True,
 	)
