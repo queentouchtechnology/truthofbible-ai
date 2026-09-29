@@ -1,0 +1,97 @@
+{
+ "doctype": "DocType",
+ "name": "TOB TTS Audio Cache",
+ "module": "Truth Of Bible",
+ "custom": 0,
+ "istable": 0,
+ "issingle": 0,
+ "quick_entry": 0,
+ "track_changes": 0,
+ "autoname": "hash",
+ "naming_rule": "Random",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "engine": "InnoDB",
+ "description": "One synthesized audio clip, cached by a hash of (text, locale, voice_type, audio_encoding) — mirrors TOB Content Translation's own 'hash arbitrary source text, never write back to the source' pattern. Replaying the same verse/article/blog paragraph in the same language and voice tier never re-pays the TTS vendor; api/tts.py checks this table before calling out.",
+ "field_order": [
+  "cache_key",
+  "locale",
+  "voice_type",
+  "character_count",
+  "audio_file",
+  "column_break_usage",
+  "hit_count",
+  "last_used",
+  "source_text"
+ ],
+ "fields": [
+  {
+   "fieldname": "cache_key",
+   "fieldtype": "Data",
+   "label": "Cache Key",
+   "reqd": 1,
+   "unique": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "description": "sha256 of text+locale+voice_type+audio_encoding — a voice-tier or encoding change never silently serves a stale-sounding clip."
+  },
+  {
+   "fieldname": "locale",
+   "fieldtype": "Data",
+   "label": "Locale",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "description": "The BCP-47 locale sent to the vendor, e.g. 'ta-IN'."
+  },
+  {
+   "fieldname": "voice_type",
+   "fieldtype": "Data",
+   "label": "Voice Type",
+   "description": "The voice tier active at synthesis time (from TOB TTS Provider.voice_type when this row was created)."
+  },
+  {
+   "fieldname": "character_count",
+   "fieldtype": "Int",
+   "label": "Character Count"
+  },
+  {
+   "fieldname": "audio_file",
+   "fieldtype": "Attach",
+   "label": "Audio File"
+  },
+  {
+   "fieldname": "column_break_usage",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "hit_count",
+   "fieldtype": "Int",
+   "label": "Hit Count",
+   "default": "0",
+   "description": "Not read by any logic yet — kept for a future cache-eviction/popularity report."
+  },
+  {
+   "fieldname": "last_used",
+   "fieldtype": "Datetime",
+   "label": "Last Used"
+  },
+  {
+   "fieldname": "source_text",
+   "fieldtype": "Long Text",
+   "label": "Source Text",
+   "description": "Kept for admin debugging/QA only — not read by any runtime logic."
+  }
+ ],
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "report": 1,
+   "export": 1
+  }
+ ],
+ "links": []
+}

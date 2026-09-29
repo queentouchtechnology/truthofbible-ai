@@ -40,7 +40,12 @@ def _user_is_blocked(user: str | None) -> bool:
 	return bool(frappe.db.exists("TOB AI Blocked User", {"parent": "TOB AI Settings", "user": user}))
 
 
-def _enforce_access():
+def check_ai_access():
+	"""The one access check every AI-adjacent feature shares — not just
+	generate() below. truth_of_bible.tts.service (Premium voice synthesis)
+	calls this too, so the global kill switch and per-user block list in
+	TOB AI Settings cover both text generation and speech synthesis with
+	one admin-facing switch, not two."""
 	if not _ai_globally_enabled():
 		raise AiAccessDisabled("AI features are currently turned off.")
 	if _user_is_blocked(frappe.session.user):
@@ -48,6 +53,6 @@ def _enforce_access():
 
 
 def generate(request: AiRequest) -> AiResponse:
-	_enforce_access()
+	check_ai_access()
 	gateway = AiGateway(build_registry(), on_call=record_usage)
 	return gateway.generate(request)
