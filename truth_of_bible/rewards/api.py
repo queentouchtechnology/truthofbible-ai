@@ -68,6 +68,18 @@ def redeem(tier_id, country=None):
 	return {"coupon": coupon, "overview": engine.overview(user, country)}
 
 
+@frappe.whitelist(methods=["GET"])
+def get_coupons():
+	"""All of the member's coupons: Edenza coupons and old cash rewards."""
+	return {"coupons": engine.all_coupons(_user())}
+
+
+@frappe.whitelist(methods=["POST"])
+def redeem_cash_coupon(code):
+	"""Adds a still-available old cash reward to the rewards wallet."""
+	return engine.redeem_cash_coupon(_user(), code)
+
+
 @frappe.whitelist(methods=["POST"])
 def pay_shop_order(order_id):
 	"""Pays an Edenza order the app just created from the rewards wallet;

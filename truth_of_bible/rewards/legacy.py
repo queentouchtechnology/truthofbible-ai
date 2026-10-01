@@ -108,3 +108,89 @@ def carry_over_wallets(dry_run=1, contra_account=None) -> list:
 		print(f"{e['customer']:<30} {str(e['user']):<40} {e['amount']:>10.2f}  {e['result']}")
 	print(f"{len(report)} member(s); total {sum(e['amount'] for e in report):.2f}")
 	return report
+
+
+# --- old rewards (Customer Coupon) -> My Coupons ----------------------------
+
+_STATUS = {"Redeemed": "USED", "Expired": "EXPIRED", "Available": "ACTIVE"}
+
+
+def copy_old_rewards(dry_run=1) -> dict:
+	"""Copies every old-system reward (Customer Coupon — quiz, verse, Sunday
+	goal, group points...) into the member's My Coupons list as a CASH
+	coupon, keeping its code, amount, type, dates and status (Redeemed ->
+	USED, Expired -> EXPIRED, Available -> ACTIVE, or EXPIRED if its expiry
+	has passed). The originals are not touched. Rows already copied are
+	skipped, so this can be re-run.
+
+	Copies are display records — redeemed ones were already paid into the
+	old wallet (and that balance was moved by carry_over_wallets). Only an
+	Available one can still be added to the wallet, from the app, once.
+
+		bench --site <site> execute truth_of_bible.rewards.legacy.copy_old_rewards
+		bench --site <site> execute truth_of_bible.rewards.legacy.copy_old_rewards --kwargs "{'dry_run': 0}"
+	"""
+	from frappe.utils import get_datetime, getdate, now_datetime
+
+	dry_run = str(dry_run) not in ("0", "false", "False")
+	users: dict[str, str | None] = {}
+	summary: dict[str, dict] = {}
+	skipped_no_user = 0
+	today_ = getdate()
+	for c in frappe.get_all(
+		"Customer Coupon",
+		fields=["name", "creation", "customer", "coupon_code", "expiry", "reward_amount", "status", "redeemed_on", "reward_type"],
+		order_by="creation asc",
+		limit_page_length=0,
+	):
+		if c.customer not in users:
+			users[c.customer] = _user_for(c.customer)
+		user = users[c.customer]
+		if not user:
+			skipped_no_user += 1
+			continue
+		row = summary.setdefault(user, {"USED": 0, "EXPIRED": 0, "ACTIVE": 0, "already": 0, "amount": 0.0})
+		if frappe.db.exists("TOB Reward Coupon", {"legacy_coupon": c.name}):
+			row["already"] += 1
+			continue
+		status = _STATUS.get(c.status, "EXPIRED")
+		if status == "ACTIVE" and c.expiry and getdate(c.expiry) < today_:
+			status = "EXPIRED"
+		row[status] += 1
+		row["amount"] += flt(c.reward_amount)
+		if dry_run:
+			continue
+		amount = flt(c.reward_amount)
+		doc = frappe.get_doc(
+			{
+				"doctype": "TOB Reward Coupon",
+				"user": user,
+				"kind": "CASH",
+				"code": c.coupon_code or c.name,
+				"tier": c.reward_type,
+				"title": f"₹{amount:g} cash reward",
+				"discount_label": c.reward_type or "Reward",
+				"amount": amount,
+				"status": status,
+				"expires_on": get_datetime(f"{c.expiry} 23:59:00") if c.expiry else None,
+				"used_on": c.redeemed_on,
+				"legacy_coupon": c.name,
+				"points_spent": 0,
+			}
+		).insert(ignore_permissions=True)
+		# Keep the original date so the list sorts the way it happened.
+		frappe.db.set_value("TOB Reward Coupon", doc.name, "creation", c.creation, update_modified=False)
+
+	if not dry_run:
+		frappe.db.commit()
+	verb = "would copy" if dry_run else "copied"
+	for user, r in sorted(summary.items()):
+		print(
+			f"{user:<40} {verb}: redeemed {r['USED']:>3}, expired {r['EXPIRED']:>3}, available {r['ACTIVE']:>2}"
+			f"  (₹{r['amount']:g})  already copied {r['already']}"
+		)
+	totals = {k: sum(r[k] for r in summary.values()) for k in ("USED", "EXPIRED", "ACTIVE", "already")}
+	print(f"{len(summary)} member(s); {verb} {totals['USED'] + totals['EXPIRED'] + totals['ACTIVE']} "
+		f"(redeemed {totals['USED']}, expired {totals['EXPIRED']}, available {totals['ACTIVE']}); "
+		f"already copied {totals['already']}; no matching user {skipped_no_user}")
+	return {"members": len(summary), **totals, "no_user": skipped_no_user}

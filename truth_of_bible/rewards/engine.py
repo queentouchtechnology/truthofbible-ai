@@ -39,7 +39,7 @@ from datetime import timedelta
 
 import frappe
 import requests
-from frappe.utils import add_days, get_datetime, getdate, now_datetime, nowdate
+from frappe.utils import add_days, flt, get_datetime, getdate, now_datetime, nowdate
 
 _WC_BASE = "https://www.edenza.org/wp-json/wc/v3"
 _TIMEOUT = 20
@@ -445,7 +445,7 @@ def redeem(user: str, tier_id: str, country: str | None = None) -> dict:
 			frappe.ValidationError,
 		)
 	_expire_stale(user)
-	active = frappe.db.count("TOB Reward Coupon", {"user": user, "status": "ACTIVE"})
+	active = frappe.db.count("TOB Reward Coupon", {"user": user, "status": "ACTIVE", "kind": ["!=", "CASH"]})
 	if active >= MAX_ACTIVE_COUPONS:
 		frappe.throw(
 			frappe._("You already have {0} unused coupons — use one before getting another.").format(active),
@@ -528,7 +528,11 @@ def _sync_used(user: str) -> None:
 	auth = _wc_auth()
 	if not auth:
 		return
-	for c in frappe.get_all("TOB Reward Coupon", filters={"user": user, "status": "ACTIVE"}, fields=["name", "code"]):
+	for c in frappe.get_all(
+		"TOB Reward Coupon",
+		filters={"user": user, "status": "ACTIVE", "kind": ["!=", "CASH"]},
+		fields=["name", "code"],
+	):
 		key = f"tob_reward_coupon_checked_{c.code}"
 		if frappe.cache().get_value(key):
 			continue
@@ -543,6 +547,9 @@ def _sync_used(user: str) -> None:
 			continue
 
 
+_COUPON_FIELDS = ["code", "title", "discount_label", "status", "expires_on", "kind", "amount", "used_on", "creation"]
+
+
 def _coupon_row(c) -> dict:
 	expires = get_datetime(c.get("expires_on")) if c.get("expires_on") else None
 	days_left = max(0, (expires - now_datetime()).days) if expires else 0
@@ -553,7 +560,65 @@ def _coupon_row(c) -> dict:
 		"status": c.get("status"),
 		"expires_on": str(expires) if expires else None,
 		"days_left": days_left,
+		# SHOP = Edenza discount coupon; CASH = old-system cash reward.
+		"kind": c.get("kind") or "SHOP",
+		"amount": flt(c.get("amount")),
+		"used_on": str(c.get("used_on")) if c.get("used_on") else None,
+		"created_on": str(c.get("creation")) if c.get("creation") else None,
 	}
+
+
+def all_coupons(user: str) -> list:
+	"""Every coupon the member has — Edenza coupons and copied old cash
+	rewards — for the My Coupons screen (the overview only carries the
+	latest Edenza ones)."""
+	_expire_stale(user)
+	_sync_used(user)
+	rows = frappe.get_all(
+		"TOB Reward Coupon", filters={"user": user}, fields=_COUPON_FIELDS, order_by="creation desc", limit_page_length=0
+	)
+	return [_coupon_row(c) for c in rows]
+
+
+def redeem_cash_coupon(user: str, code: str) -> dict:
+	"""Adds a still-available old cash reward to the rewards wallet, once.
+	Also marks the original Customer Coupon redeemed so the old flow can't
+	pay it out a second time."""
+	_lock_user(user)
+	c = frappe.db.get_value(
+		"TOB Reward Coupon",
+		{"user": user, "code": code, "kind": "CASH"},
+		["name", "status", "amount", "expires_on", "legacy_coupon", "title"],
+		as_dict=True,
+		for_update=True,
+	)
+	if not c:
+		frappe.throw(frappe._("That reward isn't yours."), frappe.ValidationError)
+	if c.status != "ACTIVE":
+		frappe.throw(frappe._("That reward has already been used or has expired."), frappe.ValidationError)
+	if c.expires_on and get_datetime(c.expires_on) < now_datetime():
+		frappe.db.set_value("TOB Reward Coupon", c.name, "status", "EXPIRED")
+		frappe.throw(frappe._("That reward has expired."), frappe.ValidationError)
+	if c.legacy_coupon and frappe.db.get_value("Customer Coupon", c.legacy_coupon, "status") != "Available":
+		frappe.db.set_value("TOB Reward Coupon", c.name, "status", "USED")
+		frappe.throw(frappe._("That reward has already been redeemed."), frappe.ValidationError)
+
+	amount = flt(c.amount)
+	_insert_once(
+		{
+			"doctype": "TOB Reward Wallet Ledger",
+			"user": user,
+			"kind": "ADJUST",
+			"title": f"Cash reward {code}",
+			"amount": amount,
+			"dedupe_key": f"cash:{code}",
+		}
+	)
+	now = now_datetime()
+	frappe.db.set_value("TOB Reward Coupon", c.name, {"status": "USED", "used_on": now})
+	if c.legacy_coupon:
+		frappe.db.set_value("Customer Coupon", c.legacy_coupon, {"status": "Redeemed", "redeemed_on": now})
+	return {"amount": amount, "balance": wallet_balance(user)}
 
 
 # --- referrals ----------------------------------------------------------
@@ -764,8 +829,8 @@ def overview(user: str, country: str | None = None) -> dict:
 
 	coupons = frappe.get_all(
 		"TOB Reward Coupon",
-		filters={"user": user},
-		fields=["code", "title", "discount_label", "status", "expires_on"],
+		filters={"user": user, "kind": ["!=", "CASH"]},
+		fields=_COUPON_FIELDS,
 		order_by="creation desc",
 		limit_page_length=10,
 	)
