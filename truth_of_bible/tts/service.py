@@ -34,7 +34,16 @@ class TtsSettings:
 	def __init__(self, doc):
 		self.enabled = bool(doc.enabled)
 		self.base_url = (doc.base_url or _DEFAULT_BASE_URL).rstrip("/")
-		self.api_key = get_decrypted_password("TOB TTS Provider", doc.name, "api_key", raise_exception=False)
+		# `site_config.json`'s `google_tts_api_key` is the primary source now
+		# (same pattern as `google_maps_api_key`/`firebase_service_account`/
+		# `buffer_api_token` elsewhere in this app) — the admin screen no
+		# longer collects this key at all. The doctype's own encrypted
+		# `api_key` field is kept only as a fallback for any site that set
+		# it the old way (via the TTS Settings screen or Desk) before this
+		# changed, so an existing working setup doesn't silently break.
+		self.api_key = frappe.get_site_config().get("google_tts_api_key") or get_decrypted_password(
+			"TOB TTS Provider", doc.name, "api_key", raise_exception=False
+		)
 		self.voice_type = doc.voice_type
 		self.audio_encoding = doc.audio_encoding or "MP3"
 		self.price_per_million_chars_usd = float(doc.price_per_million_chars_usd or 0)
