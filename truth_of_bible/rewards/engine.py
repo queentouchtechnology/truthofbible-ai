@@ -112,12 +112,24 @@ def _ledger_has(doctype: str, user: str, dedupe_key: str) -> bool:
 	)
 
 
+def _insert_once(values: dict) -> bool:
+	"""Inserts a ledger row; False if the unique (user, dedupe_key) index
+	(patches/v1_0/unique_reward_ledger_dedupe) says it already exists — the
+	last line of defence behind _lock_user + _ledger_has."""
+	try:
+		frappe.get_doc(values).insert(ignore_permissions=True)
+	except (frappe.UniqueValidationError, frappe.DuplicateEntryError):
+		frappe.clear_last_message()  # don't send "Duplicate entry" to the app
+		return False
+	return True
+
+
 def _award(user: str, code: str, points: int, title: str, dedupe_key: str) -> bool:
 	"""True if points were actually granted (False = already granted)."""
 	_lock_user(user)
 	if _ledger_has("TOB Reward Ledger", user, dedupe_key):
 		return False
-	frappe.get_doc(
+	return _insert_once(
 		{
 			"doctype": "TOB Reward Ledger",
 			"user": user,
@@ -126,8 +138,7 @@ def _award(user: str, code: str, points: int, title: str, dedupe_key: str) -> bo
 			"points": points,
 			"dedupe_key": dedupe_key,
 		}
-	).insert(ignore_permissions=True)
-	return True
+	)
 
 
 def _award_rule(user: str, code: str, day=None, ref: str | None = None) -> int:
@@ -322,7 +333,8 @@ def wallet_spend(user: str, amount: float, title: str, ref: str) -> bool:
 		return True
 	if wallet_balance(user) < amount:
 		return False
-	frappe.get_doc(
+	# Already-spent (duplicate key) also counts as paid — same as above.
+	_insert_once(
 		{
 			"doctype": "TOB Reward Wallet Ledger",
 			"user": user,
@@ -331,7 +343,7 @@ def wallet_spend(user: str, amount: float, title: str, ref: str) -> bool:
 			"amount": -abs(amount),
 			"dedupe_key": key,
 		}
-	).insert(ignore_permissions=True)
+	)
 	return True
 
 

@@ -108,7 +108,7 @@ def _credit(user: str, amount: float, payment_id: str) -> bool:
 	engine._lock_user(user)
 	if engine._ledger_has("TOB Reward Wallet Ledger", user, key):
 		return False
-	frappe.get_doc(
+	return engine._insert_once(
 		{
 			"doctype": "TOB Reward Wallet Ledger",
 			"user": user,
@@ -117,8 +117,7 @@ def _credit(user: str, amount: float, payment_id: str) -> bool:
 			"amount": amount,
 			"dedupe_key": key,
 		}
-	).insert(ignore_permissions=True)
-	return True
+	)
 
 
 def _settle(order_id: str, payment_id: str, expected_user: str | None, ignore_foreign: bool = False) -> dict:
