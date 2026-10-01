@@ -10,7 +10,7 @@ member uses the wallet."""
 import frappe
 from frappe.rate_limiter import rate_limit
 
-from truth_of_bible.rewards import engine, history, shop, topup
+from truth_of_bible.rewards import engine, history, shop, topup, wallet_actions
 
 
 def _user() -> str:
@@ -78,6 +78,18 @@ def get_coupons():
 def redeem_cash_coupon(code):
 	"""Adds a still-available old cash reward to the rewards wallet."""
 	return engine.redeem_cash_coupon(_user(), code)
+
+
+@frappe.whitelist(methods=["POST"])
+def donate_from_wallet(amount, request_id):
+	"""Donates from the rewards wallet (see rewards/wallet_actions.py)."""
+	return wallet_actions.donate(_user(), amount, request_id)
+
+
+@frappe.whitelist(methods=["POST"])
+def send_money(to_user, amount, request_id):
+	"""Sends rewards-wallet money to another member."""
+	return wallet_actions.send(_user(), to_user, amount, request_id)
 
 
 @frappe.whitelist(methods=["POST"])

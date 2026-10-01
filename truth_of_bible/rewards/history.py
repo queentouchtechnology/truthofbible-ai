@@ -136,12 +136,13 @@ _WALLET_LABELS = {
 	"conversion": "Points conversion",
 	"ai_usage": "AI usage",
 	"shop": "Shop order",
+	"transfer": "Transfer",
 	"donation": "Donation",
 	"withdrawal": "Withdrawal",
 	"reward": "Reward",
 	"adjustment": "Adjustment",
 }
-_KIND_CATEGORY = {"TOPUP": "topup", "CONVERT": "conversion", "SPEND": "ai_usage", "SHOP": "shop", "ADJUST": "adjustment"}
+_KIND_CATEGORY = {"TOPUP": "topup", "CONVERT": "conversion", "SPEND": "ai_usage", "SHOP": "shop", "DONATE": "donation", "TRANSFER": "transfer", "ADJUST": "adjustment"}
 
 
 def _legacy_category(account: str, party: str) -> str:
