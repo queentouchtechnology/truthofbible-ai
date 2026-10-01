@@ -49,15 +49,42 @@ def get_settings() -> TtsSettings | None:
 	return TtsSettings(frappe.get_doc("TOB TTS Provider", _PROVIDER_KEY))
 
 
-def synthesize_speech(text: str, locale: str) -> bytes:
-	"""Returns raw audio bytes (encoding per TOB TTS Provider.audio_encoding,
-	MP3 by default). Raises TtsProviderDisabled / TtsProviderError — never
-	returns a partial/empty result silently."""
+def _configured_settings(require_enabled: bool = True) -> TtsSettings:
 	settings = get_settings()
-	if settings is None or not settings.enabled:
+	if settings is None or (require_enabled and not settings.enabled):
 		raise TtsProviderDisabled("Premium voice is currently unavailable.")
 	if not settings.api_key:
 		raise TtsProviderDisabled("Premium voice is not configured.")
+	return settings
+
+
+def list_voices(language_code: str | None = None) -> list[dict]:
+	"""Google's raw voice list (GET /v1/voices), optionally narrowed to one
+	BCP-47 language. Works while Premium is switched off, so an admin can
+	compare voices before turning it on."""
+	settings = _configured_settings(require_enabled=False)
+	params = {"key": settings.api_key}
+	if language_code:
+		params["languageCode"] = language_code
+	try:
+		response = requests.get(f"{settings.base_url}/v1/voices", params=params, timeout=DEFAULT_TIMEOUT_SECONDS)
+	except requests.Timeout as exc:
+		raise TtsProviderError("Request to the voice provider timed out.") from exc
+	except requests.RequestException as exc:
+		raise TtsProviderError(str(exc)) from exc
+	if response.status_code >= 400:
+		frappe.log_error(title="TTS list voices failed", message=response.text)
+		raise TtsProviderError(f"Voice provider returned {response.status_code}.")
+	return response.json().get("voices") or []
+
+
+def synthesize_speech(text: str, locale: str, voice_name: str | None = None, require_enabled: bool = True) -> bytes:
+	"""Returns raw audio bytes (encoding per TOB TTS Provider.audio_encoding,
+	MP3 by default). [voice_name] picks one exact voice (the admin voice
+	comparison); without it Google picks a default for the language.
+	Raises TtsProviderDisabled / TtsProviderError — never returns a
+	partial/empty result silently."""
+	settings = _configured_settings(require_enabled=require_enabled)
 
 	payload = {
 		"input": {"text": text},
@@ -68,7 +95,7 @@ def synthesize_speech(text: str, locale: str) -> bytes:
 		# this typically returns a Standard-tier voice regardless of
 		# TOB TTS Provider.voice_type; a real per-tier voice picker (via
 		# GET /v1/voices?languageCode=...) is a future enhancement.
-		"voice": {"languageCode": locale},
+		"voice": {"languageCode": locale, **({"name": voice_name} if voice_name else {})},
 		"audioConfig": {"audioEncoding": settings.audio_encoding},
 	}
 
