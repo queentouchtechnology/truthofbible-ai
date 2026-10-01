@@ -423,6 +423,10 @@ def redeem(user: str, tier_id: str, country: str | None = None) -> dict:
 	tier = _tier(tier_id)
 	if not tier:
 		frappe.throw(frappe._("That reward isn't available."), frappe.ValidationError)
+	# A double tap sends two redeems at once; without the lock both pass the
+	# balance and active-coupon checks below and each creates a shop coupon.
+	# The second request now waits, then sees the first one's spend.
+	_lock_user(user)
 	if balance(user) < tier["points"]:
 		frappe.throw(
 			frappe._("You need {0} more points for this.").format(tier["points"] - balance(user)),
