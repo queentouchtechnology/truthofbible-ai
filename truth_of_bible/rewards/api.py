@@ -10,7 +10,7 @@ member uses the wallet."""
 import frappe
 from frappe.rate_limiter import rate_limit
 
-from truth_of_bible.rewards import engine, history, topup
+from truth_of_bible.rewards import engine, history, shop, topup
 
 
 def _user() -> str:
@@ -66,6 +66,13 @@ def redeem(tier_id, country=None):
 	user = _user()
 	coupon = engine.redeem(user, tier_id, country)
 	return {"coupon": coupon, "overview": engine.overview(user, country)}
+
+
+@frappe.whitelist(methods=["POST"])
+def pay_shop_order(order_id):
+	"""Pays an Edenza order the app just created from the rewards wallet;
+	the amount comes from WooCommerce, not the phone (see rewards/shop.py)."""
+	return shop.pay_order(_user(), order_id)
 
 
 @frappe.whitelist(methods=["POST"])
