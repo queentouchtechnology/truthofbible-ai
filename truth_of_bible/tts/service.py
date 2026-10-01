@@ -9,6 +9,7 @@ model has no event loop) — see ai/providers/openai_compatible.py for the
 same pattern applied to chat completions."""
 
 import base64
+import json
 
 import frappe
 import requests
@@ -17,6 +18,7 @@ from frappe.utils.password import get_decrypted_password
 _PROVIDER_KEY = "google"
 _DEFAULT_BASE_URL = "https://texttospeech.googleapis.com"
 DEFAULT_TIMEOUT_SECONDS = 30
+_VOICES_CACHE_TTL_SECONDS = 24 * 60 * 60
 
 
 class TtsProviderDisabled(Exception):
@@ -58,6 +60,49 @@ def get_settings() -> TtsSettings | None:
 	return TtsSettings(frappe.get_doc("TOB TTS Provider", _PROVIDER_KEY))
 
 
+def _list_voices(settings: TtsSettings, locale: str) -> list[dict]:
+	"""Google's available voices for `locale` — cached a day at a time
+	(this almost never changes) so picking a tier doesn't cost an extra
+	external call on every single synthesize request. Returns [] on any
+	failure; callers treat that the same as "no tier match, use Google's
+	own default" rather than failing the whole synthesize call over it."""
+	cache_key = f"tts_voices::{locale}"
+	cached = frappe.cache().get_value(cache_key)
+	if cached is not None:
+		return json.loads(cached)
+	try:
+		response = requests.get(
+			f"{settings.base_url}/v1/voices",
+			params={"languageCode": locale, "key": settings.api_key},
+			timeout=DEFAULT_TIMEOUT_SECONDS,
+		)
+		response.raise_for_status()
+		voices = response.json().get("voices", [])
+	except requests.RequestException:
+		voices = []
+	frappe.cache().set_value(cache_key, json.dumps(voices), expires_in_sec=_VOICES_CACHE_TTL_SECONDS)
+	return voices
+
+
+def _pick_voice_name(settings: TtsSettings, locale: str) -> str | None:
+	"""A real voice matching the configured tier for `locale` — without
+	this, every call omitted voice.name entirely and Google silently
+	resolved it to its most basic Standard-tier voice regardless of
+	TOB TTS Provider.voice_type, which is why Premium sounded identical
+	to the free on-device voice no matter which tier was selected. Not
+	every tier exists for every language (e.g. many non-English languages
+	have no Neural2/Studio voices at all) — falls back to whatever Google
+	does offer for this language rather than failing the request."""
+	voices = _list_voices(settings, locale)
+	if not voices:
+		return None
+	tier = (settings.voice_type or "Standard").lower()
+	for voice in voices:
+		if tier in voice.get("name", "").lower():
+			return voice["name"]
+	return voices[0].get("name")
+
+
 def synthesize_speech(text: str, locale: str) -> bytes:
 	"""Returns raw audio bytes (encoding per TOB TTS Provider.audio_encoding,
 	MP3 by default). Raises TtsProviderDisabled / TtsProviderError — never
@@ -68,16 +113,14 @@ def synthesize_speech(text: str, locale: str) -> bytes:
 	if not settings.api_key:
 		raise TtsProviderDisabled("Premium voice is not configured.")
 
+	voice_name = _pick_voice_name(settings, locale)
+	voice = {"languageCode": locale}
+	if voice_name:
+		voice["name"] = voice_name
+
 	payload = {
 		"input": {"text": text},
-		# Deliberately no voice.name — a bare languageCode always resolves
-		# to at least one voice Google guarantees exists for that
-		# language, so this can never 400 on a typo'd/renamed voice name
-		# and needs no per-language voice-name map to maintain. Trade-off:
-		# this typically returns a Standard-tier voice regardless of
-		# TOB TTS Provider.voice_type; a real per-tier voice picker (via
-		# GET /v1/voices?languageCode=...) is a future enhancement.
-		"voice": {"languageCode": locale},
+		"voice": voice,
 		"audioConfig": {"audioEncoding": settings.audio_encoding},
 	}
 
