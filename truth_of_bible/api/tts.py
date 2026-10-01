@@ -131,7 +131,7 @@ def synthesize(text: str, locale: str, task: str = "general"):
 		return {"audio_url": cache_doc.audio_file, "cached": True}
 
 	try:
-		audio_bytes = tts_service.synthesize_speech(text, locale)
+		audio_bytes, voice_name = tts_service.synthesize_speech(text, locale)
 	except (tts_service.TtsProviderDisabled, tts_service.TtsProviderError) as exc:
 		record_tts_usage(
 			task=task, language=language_code, provider=_PROVIDER_KEY, voice_type=settings.voice_type,
@@ -172,7 +172,9 @@ def synthesize(text: str, locale: str, task: str = "general"):
 		task=task, language=language_code, provider=_PROVIDER_KEY, voice_type=settings.voice_type,
 		was_cache_hit=False, character_count=character_count, estimated_cost_usd=estimated_cost_usd, status="success",
 	)
-	return {"audio_url": file_doc.file_url, "cached": False}
+	# voice_name included temporarily for on-device diagnosis of a report
+	# that Premium and Free sound identical — remove once confirmed.
+	return {"audio_url": file_doc.file_url, "cached": False, "voice_name": voice_name}
 
 
 # --- Admin: voice catalog / comparison -------------------------------------
@@ -283,7 +285,7 @@ def preview_tts_voice(voice_name: str, language_code: str, text: str):
 		return {"audio_url": existing.audio_file, "cached": True}
 
 	try:
-		audio_bytes = tts_service.synthesize_speech(
+		audio_bytes, _ = tts_service.synthesize_speech(
 			text, language_code, voice_name=voice_name, require_enabled=False
 		)
 	except (tts_service.TtsProviderDisabled, tts_service.TtsProviderError) as exc:
