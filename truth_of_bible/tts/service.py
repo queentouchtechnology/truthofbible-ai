@@ -103,10 +103,12 @@ def _pick_voice_name(settings: TtsSettings, locale: str) -> str | None:
 	return voices[0].get("name")
 
 
-def synthesize_speech(text: str, locale: str) -> bytes:
-	"""Returns raw audio bytes (encoding per TOB TTS Provider.audio_encoding,
-	MP3 by default). Raises TtsProviderDisabled / TtsProviderError — never
-	returns a partial/empty result silently."""
+def synthesize_speech(text: str, locale: str) -> tuple[bytes, str | None]:
+	"""Returns (raw audio bytes, the actual voice name Google used — None
+	if no voice list was available and Google picked entirely on its own).
+	Encoding per TOB TTS Provider.audio_encoding, MP3 by default. Raises
+	TtsProviderDisabled / TtsProviderError — never returns a partial/empty
+	result silently."""
 	settings = get_settings()
 	if settings is None or not settings.enabled:
 		raise TtsProviderDisabled("Premium voice is currently unavailable.")
@@ -143,4 +145,4 @@ def synthesize_speech(text: str, locale: str) -> bytes:
 	audio_content = response.json().get("audioContent")
 	if not audio_content:
 		raise TtsProviderError("Voice provider returned no audio.")
-	return base64.b64decode(audio_content)
+	return base64.b64decode(audio_content), voice_name
