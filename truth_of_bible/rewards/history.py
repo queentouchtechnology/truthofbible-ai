@@ -225,7 +225,11 @@ def wallet_history(
 				"category_label": _WALLET_LABELS[cat],
 			}
 		)
-	items += _legacy_wallet_rows(user, _MAX_WINDOW)
+	# Once the old ERPNext wallet has been moved over (rewards/legacy.py), its
+	# whole past is the single "Earlier wallet balance" row above — listing
+	# every old journal entry as well would show the same money twice.
+	if not any(r.kind == "ADJUST" and r.title == "Earlier wallet balance" for r in new):
+		items += _legacy_wallet_rows(user, _MAX_WINDOW)
 
 	present = sorted({i["category"] for i in items})
 	needle = (q or "").strip().lower()
