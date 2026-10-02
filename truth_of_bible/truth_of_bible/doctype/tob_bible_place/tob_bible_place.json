@@ -26,7 +26,8 @@
   "section_break_content",
   "photo_url",
   "description",
-  "facts"
+  "facts",
+  "relevant_passages"
  ],
  "fields": [
   {
@@ -112,6 +113,12 @@
    "fieldtype": "Long Text",
    "label": "Facts",
    "description": "One fact per line — shown as a bulleted list on the place's detail view."
+  },
+  {
+   "fieldname": "relevant_passages",
+   "fieldtype": "Long Text",
+   "label": "Relevant Passages",
+   "description": "One Bible reference per line (e.g. \"Genesis 22:2\"), shown as tappable passages when this place comes up in search. Falls back to Primary Verse Reference alone when left blank."
   }
  ],
  "permissions": [

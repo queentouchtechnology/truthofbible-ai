@@ -27,6 +27,9 @@ def _place_dict(p) -> dict:
 		"description": p.description or "",
 		"facts": [line.strip() for line in (p.facts or "").splitlines() if line.strip()],
 		"photo_url": p.photo_url or "",
+		# Falls back to `primary_verse_ref` alone client-side when this is
+		# empty — most existing rows predate this field.
+		"relevant_passages": [line.strip() for line in (p.relevant_passages or "").splitlines() if line.strip()],
 	}
 
 
@@ -47,7 +50,7 @@ def list_places():
 		filters={"status": "Published"},
 		fields=[
 			"name", "title", "category", "region", "latitude", "longitude",
-			"primary_verse_ref", "description", "facts", "photo_url",
+			"primary_verse_ref", "description", "facts", "photo_url", "relevant_passages",
 		],
 		order_by="region asc, sort_order asc, title asc",
 		ignore_permissions=True,
