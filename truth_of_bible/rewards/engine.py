@@ -547,7 +547,7 @@ def _sync_used(user: str) -> None:
 			continue
 
 
-_COUPON_FIELDS = ["code", "title", "discount_label", "status", "expires_on", "kind", "amount", "used_on", "creation"]
+_COUPON_FIELDS = ["code", "title", "discount_label", "status", "expires_on", "kind", "amount", "used_on", "creation", "points_spent"]
 
 
 def _coupon_row(c) -> dict:
@@ -564,6 +564,7 @@ def _coupon_row(c) -> dict:
 		"kind": c.get("kind") or "SHOP",
 		"amount": flt(c.get("amount")),
 		"used_on": str(c.get("used_on")) if c.get("used_on") else None,
+		"points": int(c.get("points_spent") or 0),
 		"created_on": str(c.get("creation")) if c.get("creation") else None,
 	}
 
@@ -577,7 +578,12 @@ def all_coupons(user: str) -> list:
 	rows = frappe.get_all(
 		"TOB Reward Coupon", filters={"user": user}, fields=_COUPON_FIELDS, order_by="creation desc", limit_page_length=0
 	)
-	return [_coupon_row(c) for c in rows]
+	coupons = [_coupon_row(c) for c in rows]
+	# Unredeemed Sunday School points, as a card the member can redeem.
+	from truth_of_bible.sunday_school import engine as sunday_school
+
+	ss_card = sunday_school.available_points_card(user)
+	return ([ss_card] if ss_card else []) + coupons
 
 
 def redeem_cash_coupon(user: str, code: str) -> dict:

@@ -397,13 +397,114 @@ def expire_stale_points() -> list:
 			continue
 		points = balance(row.user)
 		if points > 0:
-			award(row.user, "Expired", "Points expired", -points, dedupe_key=f"expire:{row.user}:{today}")
+			if award(row.user, "Expired", "Points expired", -points, dedupe_key=f"expire:{row.user}:{today}"):
+				_expired_card(row.user, points, cfg)
 			handle_event("SS_POINTS_EXPIRED", row.user, {"points": points})
 		frappe.db.set_value("TOB Sunday School Profile", row.name, "points_clock_started_at", None)
 		frappe.db.commit()
 		expired.append(row.user)
 
 	return expired
+
+
+def _expired_card(user: str, points: int, cfg) -> None:
+	"""Grey "Expired" card in My Coupons for points that ran out unredeemed,
+	so the member sees what they missed alongside their other rewards."""
+	amount = round(points * (cfg.wallet_conversion_rate or 1), 2)
+	frappe.get_doc(
+		{
+			"doctype": "TOB Reward Coupon",
+			"user": user,
+			"kind": "CASH",
+			"code": f"SS-{frappe.generate_hash(length=8).upper()}",
+			"tier": "Sunday School",
+			"title": f"₹{amount:g} cash reward",
+			"discount_label": f"Sunday School · {points} points expired",
+			"amount": amount,
+			"points_spent": points,
+			"status": "EXPIRED",
+			"expires_on": now_datetime(),
+		}
+	).insert(ignore_permissions=True)
+
+
+# --- what students see in their points history -------------------------
+
+_RESET_SOURCES = ("Redemption", "Expired")
+
+
+def show_full_history() -> bool:
+	value = settings().get("show_full_points_history")
+	return True if value is None else bool(value)
+
+
+def history_filters(user: str) -> dict:
+	"""Points-history filters per the admin setting: everything, or only
+	the rows making up the current (unredeemed, unexpired) balance — i.e.
+	what came after the last redemption/expiry, which always empties the
+	whole balance."""
+	filters = {"user": user}
+	if show_full_history():
+		return filters
+	last_reset = frappe.db.sql(
+		"""select max(creation) from `tabTOB Sunday School Points Ledger`
+		where user=%s and source in %s""",
+		(user, _RESET_SOURCES),
+	)[0][0]
+	filters["source"] = ["not in", list(_RESET_SOURCES)]
+	if last_reset:
+		filters["creation"] = [">", last_reset]
+	return filters
+
+
+def points_summary(user: str) -> dict:
+	"""Totals for the points history header."""
+	rows = frappe.db.sql(
+		"""select
+			coalesce(sum(case when points > 0 and source not in %(reset)s then points end), 0) as earned,
+			coalesce(-sum(case when source = 'Redemption' then points end), 0) as redeemed,
+			coalesce(-sum(case when source = 'Expired' then points end), 0) as expired
+		from `tabTOB Sunday School Points Ledger` where user=%(user)s""",
+		{"user": user, "reset": _RESET_SOURCES},
+		as_dict=True,
+	)[0]
+	return {
+		"earned": int(rows.earned or 0),
+		"redeemed": int(rows.redeemed or 0),
+		"expired": int(rows.expired or 0),
+		"available": balance(user),
+	}
+
+
+def available_points_card(user: str) -> dict | None:
+	"""The member's current Sunday School balance as a live "available"
+	card for My Coupons (not stored — it changes with every award). Tapping
+	it redeems via api/sunday_school.redeem_points."""
+	points = balance(user)
+	if points <= 0:
+		return None
+	cfg = settings()
+	profile = frappe.db.get_value("TOB Sunday School Profile", {"user": user}, "points_clock_started_at")
+	expires = None
+	days_left = 0
+	if profile:
+		expiry_days = cfg.points_expiry_days or 14
+		expires_date = getdate(profile) + timedelta(days=expiry_days)
+		days_left = max(0, (expires_date - getdate(nowdate())).days)
+		expires = f"{expires_date} 23:59:00"
+	return {
+		"code": "SUNDAY-SCHOOL",
+		"title": f"{points} Sunday School points",
+		"discount_label": "Sunday School points",
+		"status": "ACTIVE",
+		"expires_on": expires,
+		"days_left": days_left,
+		"kind": "SS_POINTS",
+		"amount": round(points * (cfg.wallet_conversion_rate or 1), 2),
+		"points": points,
+		"used_on": None,
+		"created_on": None,
+	}
 
 
 def check_expiry_warnings() -> list:

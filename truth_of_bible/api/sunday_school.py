@@ -221,7 +221,7 @@ def get_dashboard():
 		next_up = {"points_needed": max(0, ahead["points"] - weekly["points_this_week"] + 1), "target_name": ahead["name"]}
 
 	recent = frappe.get_all(
-		"TOB Sunday School Points Ledger", filters={"user": user},
+		"TOB Sunday School Points Ledger", filters=engine.history_filters(user),
 		fields=["title", "points", "source", "creation"], order_by="creation desc", limit_page_length=10,
 	)
 
@@ -425,7 +425,8 @@ def get_course_verses(course):
 @frappe.whitelist(methods=["GET"])
 def get_points_history(date_from=None, date_to=None, source=None, limit=50, offset=0):
 	user = _require_login()
-	filters = {"user": user}
+	# Admin setting: every row, or only the points still available.
+	filters = engine.history_filters(user)
 	if source:
 		filters["source"] = source
 	if date_from and date_to:
@@ -440,4 +441,8 @@ def get_points_history(date_from=None, date_to=None, source=None, limit=50, offs
 		order_by="creation desc", limit_page_length=limit, limit_start=offset,
 	)
 	total = frappe.db.count("TOB Sunday School Points Ledger", filters)
-	return {"rows": rows, "total": total}
+	show_all = engine.show_full_history()
+	summary = engine.points_summary(user)
+	if not show_all:
+		summary = {"available": summary["available"]}
+	return {"rows": rows, "total": total, "show_all": show_all, "summary": summary}

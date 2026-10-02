@@ -22,7 +22,8 @@
   "expiry_warning_days_1",
   "column_break_2",
   "expiry_warning_days_2",
-  "wallet_conversion_rate"
+  "wallet_conversion_rate",
+  "show_full_points_history"
  ],
  "fields": [
   {
@@ -102,6 +103,13 @@
    "label": "Wallet Credit per Point",
    "default": "1",
    "description": "Redeeming N points credits the student's app wallet (TOB Reward Wallet Ledger — the same wallet the shop/AI credits use) with N × this amount."
+  },
+  {
+   "fieldname": "show_full_points_history",
+   "fieldtype": "Check",
+   "default": "1",
+   "label": "Show redeemed & expired points in students' points history",
+   "description": "On: students see every points row (earned, redeemed, expired) plus totals. Off: students see only the points still available to redeem."
   }
  ],
  "permissions": [
