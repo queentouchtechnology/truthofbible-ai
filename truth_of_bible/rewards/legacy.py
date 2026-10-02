@@ -194,3 +194,93 @@ def copy_old_rewards(dry_run=1) -> dict:
 		f"(redeemed {totals['USED']}, expired {totals['EXPIRED']}, available {totals['ACTIVE']}); "
 		f"already copied {totals['already']}; no matching user {skipped_no_user}")
 	return {"members": len(summary), **totals, "no_user": skipped_no_user}
+
+
+# --- past Sunday School redemptions / expiries -> My Coupons cards ----------
+
+
+def backfill_sunday_school_cards(dry_run=1) -> dict:
+	"""Adds the My Coupons card that newer code creates on every Sunday
+	School redemption (green, Redeemed) and expiry (grey, Expired) for the
+	ones that happened before that code existed. Skips any that already
+	have a card (same member, same kind, same points, within two minutes),
+	so it can be re-run safely.
+
+	Amount: a redemption uses what actually reached the wallet (the wallet
+	ledger row shares the Sunday School row's dedupe key); an expiry uses
+	the current conversion rate.
+
+		bench --site <site> execute truth_of_bible.rewards.legacy.backfill_sunday_school_cards
+		bench --site <site> execute truth_of_bible.rewards.legacy.backfill_sunday_school_cards --kwargs "{'dry_run': 0}"
+	"""
+	from datetime import timedelta
+
+	from frappe.utils import get_datetime
+
+	from truth_of_bible.sunday_school import engine as sunday_school
+
+	dry_run = str(dry_run) not in ("0", "false", "False")
+	rate = flt(sunday_school.settings().wallet_conversion_rate) or 1
+	report = {"redeemed": 0, "expired": 0, "already": 0, "amount": 0.0}
+	for row in frappe.get_all(
+		"TOB Sunday School Points Ledger",
+		filters={"source": ["in", ["Redemption", "Expired"]], "points": ["<", 0]},
+		fields=["name", "user", "source", "points", "dedupe_key", "creation"],
+		order_by="creation asc",
+		limit_page_length=0,
+	):
+		points = -int(row.points)
+		status = "USED" if row.source == "Redemption" else "EXPIRED"
+		at = get_datetime(row.creation)
+		if frappe.db.exists(
+			"TOB Reward Coupon",
+			{
+				"user": row.user,
+				"tier": "Sunday School",
+				"status": status,
+				"points_spent": points,
+				"creation": ["between", [at - timedelta(minutes=2), at + timedelta(minutes=2)]],
+			},
+		):
+			report["already"] += 1
+			continue
+
+		amount = None
+		if status == "USED" and row.dedupe_key:
+			amount = frappe.db.get_value(
+				"TOB Reward Wallet Ledger", {"user": row.user, "dedupe_key": row.dedupe_key}, "amount"
+			)
+		amount = round(flt(amount) if amount else points * rate, 2)
+		report["redeemed" if status == "USED" else "expired"] += 1
+		report["amount"] += amount
+		print(f"{row.user:<40} {row.creation:%Y-%m-%d %H:%M}  {status:<8} {points:>4} pts  ₹{amount:g}")
+		if dry_run:
+			continue
+		doc = frappe.get_doc(
+			{
+				"doctype": "TOB Reward Coupon",
+				"user": row.user,
+				"kind": "CASH",
+				"code": f"SS-{row.name[:8].upper()}",
+				"tier": "Sunday School",
+				"title": f"₹{amount:g} cash reward",
+				"discount_label": f"Sunday School reward · {points} points"
+				if status == "USED"
+				else f"Sunday School · {points} points expired",
+				"amount": amount,
+				"points_spent": points,
+				"status": status,
+				"used_on": row.creation if status == "USED" else None,
+				"expires_on": row.creation if status == "EXPIRED" else None,
+			}
+		).insert(ignore_permissions=True)
+		frappe.db.set_value("TOB Reward Coupon", doc.name, "creation", row.creation, update_modified=False)
+
+	if not dry_run:
+		frappe.db.commit()
+	verb = "would add" if dry_run else "added"
+	print(
+		f"{verb}: {report['redeemed']} redeemed + {report['expired']} expired card(s), "
+		f"₹{report['amount']:g} in total; already had a card: {report['already']}"
+	)
+	return report
