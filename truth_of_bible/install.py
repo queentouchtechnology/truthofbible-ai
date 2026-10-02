@@ -3057,3 +3057,253 @@ def seed_bible_places():
 				frappe.db.commit()
 			except frappe.ValidationError:
 				frappe.db.rollback()
+
+
+# Initial dataset for the three new "static-data search suggestion"
+# content types (search hub's Characters/Events/Themes categories — see
+# truth_of_bible/api/bible_characters.py, bible_events.py, bible_themes.py).
+# Same create-only-by-title, idempotent shape as `seed_bible_places` above —
+# an admin's own edits here must never be reset by a future migrate. This is
+# a meaningful starting set, not literal full coverage — worth continuing
+# to grow in future passes, same as `_BIBLE_BATTLE_QUESTIONS`.
+_BIBLE_CHARACTERS = [
+	# Old Testament
+	{"title": "Adam", "testament": "Old Testament", "role": "The first man, formed by God from the dust of the ground.",
+	 "relevant_passages": "Genesis 2:7\nGenesis 3:6\nRomans 5:12", "status": "Published", "sort_order": 10},
+	{"title": "Eve", "testament": "Old Testament", "role": "The first woman, mother of all the living.",
+	 "relevant_passages": "Genesis 2:22\nGenesis 3:6\nGenesis 3:20", "status": "Published", "sort_order": 20},
+	{"title": "Noah", "testament": "Old Testament", "role": "A righteous man who built an ark to save his family from the flood.",
+	 "relevant_passages": "Genesis 6:14\nGenesis 7:17\nGenesis 9:13", "status": "Published", "sort_order": 30},
+	{"title": "Abraham", "testament": "Old Testament", "role": "Father of many nations, called the friend of God.",
+	 "relevant_passages": "Genesis 12:1-3\nGenesis 15:6\nGenesis 22:2", "status": "Published", "sort_order": 40},
+	{"title": "Isaac", "testament": "Old Testament", "role": "The promised son of Abraham and Sarah, later father of Jacob and Esau.",
+	 "relevant_passages": "Genesis 21:3\nGenesis 22:9\nGenesis 25:24-26", "status": "Published", "sort_order": 50},
+	{"title": "Jacob", "testament": "Old Testament", "role": "Renamed Israel after wrestling with God, father of the twelve tribes.",
+	 "relevant_passages": "Genesis 28:12\nGenesis 32:28", "status": "Published", "sort_order": 60},
+	{"title": "Joseph", "testament": "Old Testament", "role": "Sold into slavery, he rose to save his family from famine.",
+	 "relevant_passages": "Genesis 37:28\nGenesis 45:5\nGenesis 50:20", "status": "Published", "sort_order": 70},
+	{"title": "Moses", "testament": "Old Testament", "role": "Led Israel out of Egypt and received the Ten Commandments.",
+	 "relevant_passages": "Exodus 3:10\nExodus 14:21\nExodus 20:1", "status": "Published", "sort_order": 80},
+	{"title": "Deborah", "testament": "Old Testament", "role": "A prophetess and the only female judge of Israel.",
+	 "relevant_passages": "Judges 4:4\nJudges 4:14", "status": "Published", "sort_order": 90},
+	{"title": "Gideon", "testament": "Old Testament", "role": "A judge who defeated a Midianite army with just 300 men.",
+	 "relevant_passages": "Judges 6:12\nJudges 7:7", "status": "Published", "sort_order": 100},
+	{"title": "Samson", "testament": "Old Testament", "role": "A judge of Israel whose great strength was tied to his Nazirite vow.",
+	 "relevant_passages": "Judges 13:5\nJudges 16:17\nJudges 16:30", "status": "Published", "sort_order": 110},
+	{"title": "Ruth", "testament": "Old Testament", "role": "A Moabite woman remembered for her loyalty and faith.",
+	 "relevant_passages": "Ruth 1:16\nRuth 4:17", "status": "Published", "sort_order": 120},
+	{"title": "Samuel", "testament": "Old Testament", "role": "A prophet who anointed Israel's first two kings.",
+	 "relevant_passages": "1 Samuel 3:10\n1 Samuel 10:1\n1 Samuel 16:13", "status": "Published", "sort_order": 130},
+	{"title": "David", "testament": "Old Testament", "role": "A shepherd boy who became Israel's greatest king.",
+	 "relevant_passages": "1 Samuel 16:13\n1 Samuel 17:49\nPsalm 23:1", "status": "Published", "sort_order": 140},
+	{"title": "Solomon", "testament": "Old Testament", "role": "King renowned for his wisdom and the temple he built.",
+	 "relevant_passages": "1 Kings 3:12\n1 Kings 6:1\nProverbs 1:1", "status": "Published", "sort_order": 150},
+	{"title": "Elijah", "testament": "Old Testament", "role": "A prophet who confronted false gods with fire from heaven.",
+	 "relevant_passages": "1 Kings 18:38\n2 Kings 2:11", "status": "Published", "sort_order": 160},
+	{"title": "Isaiah", "testament": "Old Testament", "role": "A major prophet who foretold the coming Messiah.",
+	 "relevant_passages": "Isaiah 6:8\nIsaiah 9:6\nIsaiah 53:5", "status": "Published", "sort_order": 170},
+	{"title": "Job", "testament": "Old Testament", "role": "A righteous man tested by great suffering who never cursed God.",
+	 "relevant_passages": "Job 1:21\nJob 42:10", "status": "Published", "sort_order": 180},
+	{"title": "Jonah", "testament": "Old Testament", "role": "A reluctant prophet swallowed by a great fish.",
+	 "relevant_passages": "Jonah 1:17\nJonah 3:4\nJonah 4:11", "status": "Published", "sort_order": 190},
+	{"title": "Daniel", "testament": "Old Testament", "role": "A faithful exile who survived the lions' den.",
+	 "relevant_passages": "Daniel 1:8\nDaniel 6:22", "status": "Published", "sort_order": 200},
+	{"title": "Esther", "testament": "Old Testament", "role": "A queen who risked her life to save her people.",
+	 "relevant_passages": "Esther 4:14\nEsther 7:3", "status": "Published", "sort_order": 210},
+	{"title": "Nehemiah", "testament": "Old Testament", "role": "Rebuilt the walls of Jerusalem after the exile.",
+	 "relevant_passages": "Nehemiah 2:17\nNehemiah 6:15", "status": "Published", "sort_order": 220},
+	# New Testament
+	{"title": "Mary", "testament": "New Testament", "role": "The mother of Jesus, chosen to bear the Messiah.",
+	 "relevant_passages": "Luke 1:38\nLuke 2:7\nJohn 19:26-27", "status": "Published", "sort_order": 230},
+	{"title": "John the Baptist", "testament": "New Testament", "role": "The forerunner who prepared the way for Jesus.",
+	 "relevant_passages": "Matthew 3:3\nMatthew 3:13-14\nJohn 1:29", "status": "Published", "sort_order": 240},
+	{"title": "Peter", "testament": "New Testament", "role": "A fisherman who became a leader of the early church.",
+	 "relevant_passages": "Matthew 16:18\nJohn 21:17\nActs 2:14", "status": "Published", "sort_order": 250},
+	{"title": "John", "testament": "New Testament", "role": "The \"beloved disciple\" who wrote a Gospel, three letters, and Revelation.",
+	 "relevant_passages": "John 13:23\nJohn 21:20\nRevelation 1:9", "status": "Published", "sort_order": 260},
+	{"title": "Thomas", "testament": "New Testament", "role": "A disciple remembered for doubting the resurrection.",
+	 "relevant_passages": "John 11:16\nJohn 20:28", "status": "Published", "sort_order": 270},
+	{"title": "Mary Magdalene", "testament": "New Testament", "role": "The first witness of Jesus' resurrection.",
+	 "relevant_passages": "Luke 8:2\nJohn 20:16\nJohn 20:18", "status": "Published", "sort_order": 280},
+	{"title": "Stephen", "testament": "New Testament", "role": "The first Christian martyr, stoned for his faith.",
+	 "relevant_passages": "Acts 6:5\nActs 7:59-60", "status": "Published", "sort_order": 290},
+	{"title": "Barnabas", "testament": "New Testament", "role": "An encourager who partnered with Paul on his first missionary journey.",
+	 "relevant_passages": "Acts 4:36\nActs 11:24\nActs 13:2", "status": "Published", "sort_order": 300},
+	{"title": "Paul", "testament": "New Testament", "role": "A former persecutor who became the apostle to the Gentiles.",
+	 "relevant_passages": "Acts 9:15\nActs 13:2\nRomans 1:1\nGalatians 1:15-16", "status": "Published", "sort_order": 310},
+	{"title": "Timothy", "testament": "New Testament", "role": "A young pastor mentored by the apostle Paul.",
+	 "relevant_passages": "Acts 16:1-3\n1 Timothy 4:12\n2 Timothy 1:5", "status": "Published", "sort_order": 320},
+]
+
+
+def seed_bible_characters():
+	"""Create-only by `title`, same idempotent shape as `seed_bible_places`."""
+	for entry in _BIBLE_CHARACTERS:
+		if frappe.db.exists("TOB Bible Character", {"title": entry["title"]}):
+			continue
+		try:
+			frappe.get_doc({"doctype": "TOB Bible Character", **entry}).insert(ignore_permissions=True)
+			frappe.db.commit()
+		except frappe.ValidationError:
+			frappe.db.rollback()
+
+
+_BIBLE_EVENTS = [
+	# Creation & Patriarchs
+	{"title": "The Creation", "era": "Creation & Patriarchs", "description": "God created the heavens, the earth, and all living things.",
+	 "relevant_passages": "Genesis 1:1\nGenesis 1:31", "status": "Published", "sort_order": 10},
+	{"title": "The Flood", "era": "Creation & Patriarchs", "description": "God judged the earth's corruption and saved Noah's family.",
+	 "relevant_passages": "Genesis 7:17\nGenesis 9:13", "status": "Published", "sort_order": 20},
+	{"title": "The Tower of Babel", "era": "Creation & Patriarchs", "description": "Humanity's languages were confused after an act of prideful defiance.",
+	 "relevant_passages": "Genesis 11:7-9", "status": "Published", "sort_order": 30},
+	{"title": "The Call of Abraham", "era": "Creation & Patriarchs", "description": "God called Abraham to become the father of a great nation.",
+	 "relevant_passages": "Genesis 12:1-3", "status": "Published", "sort_order": 40},
+	{"title": "Jacob's Ladder", "era": "Creation & Patriarchs", "description": "Jacob dreamed of a stairway to heaven and renewed God's covenant promise.",
+	 "relevant_passages": "Genesis 28:12-15", "status": "Published", "sort_order": 50},
+	{"title": "Joseph Sold into Slavery", "era": "Creation & Patriarchs", "description": "Joseph's jealous brothers sold him into slavery in Egypt.",
+	 "relevant_passages": "Genesis 37:28", "status": "Published", "sort_order": 60},
+	# Exodus & Wilderness
+	{"title": "The Ten Plagues", "era": "Exodus & Wilderness", "description": "God struck Egypt to compel Pharaoh to free Israel.",
+	 "relevant_passages": "Exodus 7:14\nExodus 11:1", "status": "Published", "sort_order": 70},
+	{"title": "Crossing the Red Sea", "era": "Exodus & Wilderness", "description": "God parted the sea so Israel could escape Egypt's army.",
+	 "relevant_passages": "Exodus 14:21-22", "status": "Published", "sort_order": 80},
+	{"title": "The Ten Commandments", "era": "Exodus & Wilderness", "description": "God gave Israel His law at Mount Sinai.",
+	 "relevant_passages": "Exodus 20:1\nExodus 31:18", "status": "Published", "sort_order": 90},
+	{"title": "Manna from Heaven", "era": "Exodus & Wilderness", "description": "God fed Israel with bread from heaven during their wilderness years.",
+	 "relevant_passages": "Exodus 16:4\nExodus 16:35", "status": "Published", "sort_order": 100},
+	{"title": "The Fall of Jericho", "era": "Exodus & Wilderness", "description": "Israel's walls-down victory marked their entrance into the Promised Land.",
+	 "relevant_passages": "Joshua 6:20", "status": "Published", "sort_order": 110},
+	# Kings & Prophets
+	{"title": "David and Goliath", "era": "Kings & Prophets", "description": "A shepherd boy defeated a giant with faith and a sling.",
+	 "relevant_passages": "1 Samuel 17:50", "status": "Published", "sort_order": 120},
+	{"title": "The Dedication of Solomon's Temple", "era": "Kings & Prophets", "description": "Solomon completed and dedicated the first Temple in Jerusalem.",
+	 "relevant_passages": "1 Kings 8:10-11", "status": "Published", "sort_order": 130},
+	{"title": "Elijah on Mount Carmel", "era": "Kings & Prophets", "description": "Elijah proved the Lord is God before the prophets of Baal.",
+	 "relevant_passages": "1 Kings 18:38", "status": "Published", "sort_order": 140},
+	{"title": "Elijah's Ascension", "era": "Kings & Prophets", "description": "Elijah was taken up to heaven in a whirlwind.",
+	 "relevant_passages": "2 Kings 2:11", "status": "Published", "sort_order": 150},
+	{"title": "Esther Saves Her People", "era": "Kings & Prophets", "description": "Esther risked her life to expose a plot to destroy the Jewish people.",
+	 "relevant_passages": "Esther 7:3", "status": "Published", "sort_order": 160},
+	{"title": "Daniel in the Lions' Den", "era": "Kings & Prophets", "description": "Daniel's faith preserved him from the lions overnight.",
+	 "relevant_passages": "Daniel 6:22", "status": "Published", "sort_order": 170},
+	# Life of Jesus
+	{"title": "The Nativity", "era": "Life of Jesus", "description": "Jesus Christ was born in Bethlehem as promised.",
+	 "relevant_passages": "Luke 2:7\nMatthew 1:23", "status": "Published", "sort_order": 180},
+	{"title": "The Baptism of Jesus", "era": "Life of Jesus", "description": "Jesus was baptized by John, and the Spirit descended like a dove.",
+	 "relevant_passages": "Matthew 3:16-17", "status": "Published", "sort_order": 190},
+	{"title": "The Sermon on the Mount", "era": "Life of Jesus", "description": "Jesus taught the Beatitudes and the core ethics of the kingdom of God.",
+	 "relevant_passages": "Matthew 5:1-12", "status": "Published", "sort_order": 200},
+	{"title": "The Transfiguration", "era": "Life of Jesus", "description": "Jesus was transfigured in glory before Peter, James, and John.",
+	 "relevant_passages": "Matthew 17:1-2", "status": "Published", "sort_order": 210},
+	{"title": "The Crucifixion", "era": "Life of Jesus", "description": "Jesus died on the cross for the sins of the world.",
+	 "relevant_passages": "Matthew 27:35\nJohn 19:30", "status": "Published", "sort_order": 220},
+	{"title": "The Resurrection", "era": "Life of Jesus", "description": "Jesus rose from the dead, conquering sin and death.",
+	 "relevant_passages": "Matthew 28:6\n1 Corinthians 15:4", "status": "Published", "sort_order": 230},
+	# Early Church
+	{"title": "Pentecost", "era": "Early Church", "description": "The Holy Spirit came upon the disciples, birthing the church.",
+	 "relevant_passages": "Acts 2:4", "status": "Published", "sort_order": 240},
+	{"title": "The Conversion of Paul", "era": "Early Church", "description": "Saul the persecutor became Paul, the apostle to the Gentiles.",
+	 "relevant_passages": "Acts 9:3-4", "status": "Published", "sort_order": 250},
+	{"title": "The Council of Jerusalem", "era": "Early Church", "description": "Church leaders resolved how Gentile believers should live.",
+	 "relevant_passages": "Acts 15:6", "status": "Published", "sort_order": 260},
+	{"title": "Paul's Missionary Journeys", "era": "Early Church", "description": "Paul spread the gospel across the Roman world on three major journeys.",
+	 "relevant_passages": "Acts 13:2-3\nActs 18:23", "status": "Published", "sort_order": 270},
+]
+
+
+def seed_bible_events():
+	"""Create-only by `title`, same idempotent shape as `seed_bible_places`."""
+	for entry in _BIBLE_EVENTS:
+		if frappe.db.exists("TOB Bible Event", {"title": entry["title"]}):
+			continue
+		try:
+			frappe.get_doc({"doctype": "TOB Bible Event", **entry}).insert(ignore_permissions=True)
+			frappe.db.commit()
+		except frappe.ValidationError:
+			frappe.db.rollback()
+
+
+_BIBLE_THEMES = [
+	{"title": "Faith", "weight": "Large", "description": "Trusting God and His promises, even without seeing the outcome.",
+	 "relevant_passages": "Hebrews 11:1\nRomans 10:17", "status": "Published", "sort_order": 10},
+	{"title": "Grace", "weight": "Large", "description": "God's unearned favor and kindness toward sinners.",
+	 "relevant_passages": "Ephesians 2:8-9\nRomans 5:8", "status": "Published", "sort_order": 20},
+	{"title": "Love", "weight": "Large", "description": "God's self-giving love for humanity, and the love He calls His people to show.",
+	 "relevant_passages": "John 3:16\n1 Corinthians 13:4-7", "status": "Published", "sort_order": 30},
+	{"title": "Hope", "weight": "Medium", "description": "Confident expectation in God's promises for the future.",
+	 "relevant_passages": "Romans 15:13\nJeremiah 29:11", "status": "Published", "sort_order": 40},
+	{"title": "Covenant", "weight": "Medium", "description": "God's binding promises to His people throughout Scripture.",
+	 "relevant_passages": "Genesis 9:13\nJeremiah 31:33", "status": "Published", "sort_order": 50},
+	{"title": "Redemption", "weight": "Large", "description": "Being bought back and set free from sin through Christ.",
+	 "relevant_passages": "Ephesians 1:7\nGalatians 3:13", "status": "Published", "sort_order": 60},
+	{"title": "Sin", "weight": "Small", "description": "Falling short of God's standard, separating humanity from God.",
+	 "relevant_passages": "Romans 3:23\nRomans 6:23", "status": "Published", "sort_order": 70},
+	{"title": "Forgiveness", "weight": "Medium", "description": "Being released from guilt, and extending that same release to others.",
+	 "relevant_passages": "1 John 1:9\nMatthew 6:14", "status": "Published", "sort_order": 80},
+	{"title": "Righteousness", "weight": "Small", "description": "Right standing with God, given through faith in Christ.",
+	 "relevant_passages": "2 Corinthians 5:21\nRomans 1:17", "status": "Published", "sort_order": 90},
+	{"title": "Mercy", "weight": "Medium", "description": "God withholding the judgment sinners deserve.",
+	 "relevant_passages": "Lamentations 3:22-23\nTitus 3:5", "status": "Published", "sort_order": 100},
+	{"title": "Wisdom", "weight": "Medium", "description": "Skillful, godly living that starts with the fear of the Lord.",
+	 "relevant_passages": "Proverbs 9:10\nJames 1:5", "status": "Published", "sort_order": 110},
+	{"title": "Obedience", "weight": "Small", "description": "Faithfully following God's commands out of love and trust.",
+	 "relevant_passages": "John 14:15\n1 Samuel 15:22", "status": "Published", "sort_order": 120},
+	{"title": "Justice", "weight": "Small", "description": "God's righteous standard, and His call for His people to act justly.",
+	 "relevant_passages": "Micah 6:8\nIsaiah 1:17", "status": "Published", "sort_order": 130},
+	{"title": "Holiness", "weight": "Medium", "description": "Being set apart for God, reflecting His purity in character and conduct.",
+	 "relevant_passages": "1 Peter 1:16\nLeviticus 20:26", "status": "Published", "sort_order": 140},
+	{"title": "Peace", "weight": "Medium", "description": "Wholeness and rest with God and others through Christ.",
+	 "relevant_passages": "John 14:27\nPhilippians 4:7", "status": "Published", "sort_order": 150},
+	{"title": "Joy", "weight": "Small", "description": "A deep gladness rooted in God, not circumstances.",
+	 "relevant_passages": "Nehemiah 8:10\nJohn 15:11", "status": "Published", "sort_order": 160},
+	{"title": "Humility", "weight": "Small", "description": "A modest view of self, esteeming others and submitting to God.",
+	 "relevant_passages": "Philippians 2:3-4\nJames 4:6", "status": "Published", "sort_order": 170},
+	{"title": "Perseverance", "weight": "Small", "description": "Enduring trials faithfully without giving up.",
+	 "relevant_passages": "James 1:2-4\nHebrews 12:1", "status": "Published", "sort_order": 180},
+	{"title": "Truth", "weight": "Medium", "description": "God's unchanging reality and Word, in contrast to falsehood.",
+	 "relevant_passages": "John 14:6\nJohn 8:32", "status": "Published", "sort_order": 190},
+	{"title": "Sacrifice", "weight": "Small", "description": "Giving something valuable for God or others, ultimately fulfilled in Christ.",
+	 "relevant_passages": "Hebrews 9:26\nRomans 12:1", "status": "Published", "sort_order": 200},
+	{"title": "Freedom", "weight": "Small", "description": "Liberation from sin's bondage through Christ.",
+	 "relevant_passages": "Galatians 5:1\nJohn 8:36", "status": "Published", "sort_order": 210},
+	{"title": "Trust", "weight": "Small", "description": "Relying fully on God's character and faithfulness.",
+	 "relevant_passages": "Proverbs 3:5-6\nPsalm 56:3", "status": "Published", "sort_order": 220},
+	{"title": "Compassion", "weight": "Small", "description": "Tender concern for the suffering, modeled by Christ.",
+	 "relevant_passages": "Matthew 9:36\nColossians 3:12", "status": "Published", "sort_order": 230},
+	{"title": "Gratitude", "weight": "Small", "description": "A thankful heart toward God for His goodness.",
+	 "relevant_passages": "1 Thessalonians 5:18\nPsalm 100:4", "status": "Published", "sort_order": 240},
+	{"title": "Courage", "weight": "Small", "description": "Bold faithfulness to God in the face of fear.",
+	 "relevant_passages": "Joshua 1:9\n1 Corinthians 16:13", "status": "Published", "sort_order": 250},
+	{"title": "Prayer", "weight": "Large", "description": "Communicating with God — praise, confession, request, and thanksgiving.",
+	 "relevant_passages": "Philippians 4:6\nMatthew 6:9-13\n1 Thessalonians 5:17", "status": "Published", "sort_order": 260},
+	{"title": "Worship", "weight": "Medium", "description": "Honoring and adoring God with heart, voice, and life.",
+	 "relevant_passages": "John 4:24\nPsalm 95:6", "status": "Published", "sort_order": 270},
+	{"title": "Repentance", "weight": "Medium", "description": "Turning away from sin and back toward God.",
+	 "relevant_passages": "Acts 3:19\n2 Corinthians 7:10", "status": "Published", "sort_order": 280},
+	{"title": "Discipleship", "weight": "Medium", "description": "Following Jesus and growing to be more like Him.",
+	 "relevant_passages": "Matthew 28:19-20\nLuke 9:23", "status": "Published", "sort_order": 290},
+	{"title": "Service", "weight": "Small", "description": "Using one's gifts and time to serve God and others.",
+	 "relevant_passages": "Mark 10:45\nGalatians 5:13", "status": "Published", "sort_order": 300},
+	{"title": "Patience", "weight": "Small", "description": "Bearing with difficulty and delay without losing faith.",
+	 "relevant_passages": "Romans 12:12\nJames 5:7-8", "status": "Published", "sort_order": 310},
+	{"title": "Generosity", "weight": "Small", "description": "Freely giving of one's resources, following God's own generosity.",
+	 "relevant_passages": "2 Corinthians 9:7\nProverbs 11:25", "status": "Published", "sort_order": 320},
+	{"title": "Unity", "weight": "Small", "description": "Oneness among believers in Christ despite differences.",
+	 "relevant_passages": "Ephesians 4:3\nPsalm 133:1", "status": "Published", "sort_order": 330},
+	{"title": "Suffering", "weight": "Medium", "description": "Enduring hardship in a fallen world while trusting God's purposes.",
+	 "relevant_passages": "Romans 8:18\n1 Peter 4:12-13", "status": "Published", "sort_order": 340},
+	{"title": "Eternal Life", "weight": "Medium", "description": "Everlasting life with God, promised to those who trust in Christ.",
+	 "relevant_passages": "John 3:16\nJohn 11:25-26", "status": "Published", "sort_order": 350},
+]
+
+
+def seed_bible_themes():
+	"""Create-only by `title`, same idempotent shape as `seed_bible_places`."""
+	for entry in _BIBLE_THEMES:
+		if frappe.db.exists("TOB Bible Theme", {"title": entry["title"]}):
+			continue
+		try:
+			frappe.get_doc({"doctype": "TOB Bible Theme", **entry}).insert(ignore_permissions=True)
+			frappe.db.commit()
+		except frappe.ValidationError:
+			frappe.db.rollback()
