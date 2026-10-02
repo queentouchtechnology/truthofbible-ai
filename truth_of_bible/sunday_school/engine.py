@@ -341,9 +341,28 @@ def redeem_to_wallet(user: str) -> dict:
 				"doctype": "TOB Reward Wallet Ledger",
 				"user": user,
 				"kind": "CONVERT",
-				"title": "Wallet updated via reward coupon redeemed",
+				"title": f"Sunday School reward ({points} points)",
 				"amount": wallet_amount,
 				"dedupe_key": dedupe_key,
+			}
+		).insert(ignore_permissions=True)
+		# A receipt card in the member's My Coupons, so every reward they've
+		# had — Sunday School, admin cash rewards, Edenza coupons — is in one
+		# list. Already USED: the money is in the wallet as of this line.
+		now = now_datetime()
+		frappe.get_doc(
+			{
+				"doctype": "TOB Reward Coupon",
+				"user": user,
+				"kind": "CASH",
+				"code": f"SS-{frappe.generate_hash(length=8).upper()}",
+				"tier": "Sunday School",
+				"title": f"₹{wallet_amount:g} cash reward",
+				"discount_label": f"Sunday School reward · {points} points",
+				"amount": wallet_amount,
+				"points_spent": points,
+				"status": "USED",
+				"used_on": now,
 			}
 		).insert(ignore_permissions=True)
 
