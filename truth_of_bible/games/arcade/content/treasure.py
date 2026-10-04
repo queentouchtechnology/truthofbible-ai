@@ -1,0 +1,103 @@
+"""Bible Treasure Hunt — themed trails of five riddles. Each solved stop
+moves the explorer along the map; the chest at the end opens Bronze /
+Silver / Gold by how many stops were solved first try. `options[0]` is
+always the answer — the server shuffles before sending."""
+
+HUNTS = [
+	{
+		"key": "exodus", "icon": "mountain",
+		"title_en": "The Road out of Egypt", "title_ta": "எகிப்திலிருந்து புறப்பட்ட பாதை",
+		"stops": [
+			{"clue_en": "A bush burned but was not consumed. On which mountain?", "clue_ta": "முட்செடி எரிந்தும் வெந்துபோகவில்லை. எந்த மலையில்?",
+			 "options_en": ["Horeb", "Carmel", "Zion", "Olivet"], "options_ta": ["ஓரேப்", "கர்மேல்", "சீயோன்", "ஒலிவமலை"], "ref": "Exodus 3:1"},
+			{"clue_en": "The last plague: the blood on the doorposts made death pass over. What feast began?", "clue_ta": "கடைசி வாதை: நிலைக்கால்களின் இரத்தத்தால் சங்காரம் கடந்துபோனது. எந்தப் பண்டிகை தொடங்கியது?",
+			 "options_en": ["Passover", "Pentecost", "Tabernacles", "Purim"], "options_ta": ["பஸ்கா", "பெந்தெகொஸ்தே", "கூடாரப்பண்டிகை", "பூரீம்"], "ref": "Exodus 12:11"},
+			{"clue_en": "Waters stood up as walls and Israel crossed on dry ground. Which sea?", "clue_ta": "தண்ணீர் மதில்போல் நின்றது; இஸ்ரவேலர் உலர்ந்த தரையில் கடந்தார்கள். எந்தச் சமுத்திரம்?",
+			 "options_en": ["The Red Sea", "The Dead Sea", "The Sea of Galilee", "The Great Sea"], "options_ta": ["சிவந்த சமுத்திரம்", "உப்புக்கடல்", "கலிலேயாக் கடல்", "மகா சமுத்திரம்"], "ref": "Exodus 14:21–22"},
+			{"clue_en": "Bread fell from heaven every morning, white like coriander seed. Its name?", "clue_ta": "ஒவ்வொரு காலையும் வானத்திலிருந்து அப்பம் விழுந்தது, கொத்தமல்லி விதைபோல் வெண்மையானது. அதன் பெயர்?",
+			 "options_en": ["Manna", "Quail", "Unleavened bread", "Showbread"], "options_ta": ["மன்னா", "காடை", "புளிப்பில்லாத அப்பம்", "சமுகத்தப்பம்"], "ref": "Exodus 16:31"},
+			{"clue_en": "On this mountain God gave the Ten Commandments on tables of stone.", "clue_ta": "இந்த மலையில் தேவன் கற்பலகைகளில் பத்துக் கற்பனைகளைக் கொடுத்தார்.",
+			 "options_en": ["Sinai", "Nebo", "Moriah", "Hermon"], "options_ta": ["சீனாய்", "நேபோ", "மோரியா", "எர்மோன்"], "ref": "Exodus 19:20; 31:18"},
+		],
+	},
+	{
+		"key": "jesus", "icon": "star",
+		"title_en": "Footsteps of Jesus", "title_ta": "இயேசுவின் அடிச்சுவடுகள்",
+		"stops": [
+			{"clue_en": "A star stopped over the town where He was born.", "clue_ta": "அவர் பிறந்த ஊரின்மேல் நட்சத்திரம் நின்றது.",
+			 "options_en": ["Bethlehem", "Nazareth", "Jerusalem", "Capernaum"], "options_ta": ["பெத்லகேம்", "நாசரேத்", "எருசலேம்", "கப்பர்நகூம்"], "ref": "Matthew 2:1, 9"},
+			{"clue_en": "Water became wine at a wedding — His first miracle. Where?", "clue_ta": "ஒரு கலியாணத்தில் தண்ணீர் திராட்சரசமானது — அவருடைய முதல் அற்புதம். எங்கே?",
+			 "options_en": ["Cana", "Bethany", "Jericho", "Nain"], "options_ta": ["கானா", "பெத்தானியா", "எரிகோ", "நாயீன்"], "ref": "John 2:1–11"},
+			{"clue_en": "Five loaves and two fish fed how many men?", "clue_ta": "ஐந்து அப்பமும் இரண்டு மீனும் எத்தனை புருஷருக்குப் போதுமானது?",
+			 "options_en": ["About 5,000", "About 500", "About 12,000", "About 4"], "options_ta": ["ஏறக்குறைய 5,000", "ஏறக்குறைய 500", "ஏறக்குறைய 12,000", "ஏறக்குறைய 4"], "ref": "Matthew 14:21"},
+			{"clue_en": "He prayed in a garden on the night He was betrayed.", "clue_ta": "காட்டிக்கொடுக்கப்பட்ட இரவில் அவர் ஒரு தோட்டத்தில் ஜெபித்தார்.",
+			 "options_en": ["Gethsemane", "Eden", "Golgotha", "Siloam"], "options_ta": ["கெத்செமனே", "ஏதேன்", "கொல்கொதா", "சீலோவாம்"], "ref": "Matthew 26:36"},
+			{"clue_en": "On the third day the tomb was found like this.", "clue_ta": "மூன்றாம் நாளில் கல்லறை இப்படிக் காணப்பட்டது.",
+			 "options_en": ["Empty", "Sealed", "Guarded", "Flooded"], "options_ta": ["வெறுமையாக", "முத்திரையிடப்பட்டு", "காவலோடு", "தண்ணீரால் நிறைந்து"], "ref": "Luke 24:2–3"},
+		],
+	},
+	{
+		"key": "paul", "icon": "ship",
+		"title_en": "Paul's Voyages", "title_ta": "பவுலின் பயணங்கள்",
+		"stops": [
+			{"clue_en": "A light from heaven blinded Saul on the road to this city.", "clue_ta": "இந்தப் பட்டணத்துக்குப் போகும் வழியில் வானத்திலிருந்து வந்த ஒளி சவுலைக் குருடாக்கியது.",
+			 "options_en": ["Damascus", "Rome", "Athens", "Tarsus"], "options_ta": ["தமஸ்கு", "ரோமா", "அத்தேனே", "தர்சு"], "ref": "Acts 9:3"},
+			{"clue_en": "Disciples were first called Christians in this city.", "clue_ta": "சீஷர்கள் முதல்முதல் கிறிஸ்தவர்கள் என்று அழைக்கப்பட்ட பட்டணம்.",
+			 "options_en": ["Antioch", "Corinth", "Ephesus", "Joppa"], "options_ta": ["அந்தியோகியா", "கொரிந்து", "எபேசு", "யோப்பா"], "ref": "Acts 11:26"},
+			{"clue_en": "At midnight Paul and Silas sang — and an earthquake opened the prison. Which city?", "clue_ta": "நடுராத்திரியில் பவுலும் சீலாவும் பாடினார்கள்; பூமியதிர்ச்சி சிறைக்கதவுகளைத் திறந்தது. எந்தப் பட்டணம்?",
+			 "options_en": ["Philippi", "Lystra", "Berea", "Troas"], "options_ta": ["பிலிப்பு", "லீஸ்திரா", "பெரோயா", "துரோவா"], "ref": "Acts 16:12, 25–26"},
+			{"clue_en": "Paul preached about the 'unknown god' on Mars' hill in this city.", "clue_ta": "இந்தப் பட்டணத்தின் மார்ஸ் மேடையில் 'அறியப்படாத தேவனைப்' பற்றி பவுல் பிரசங்கித்தான்.",
+			 "options_en": ["Athens", "Thessalonica", "Caesarea", "Miletus"], "options_ta": ["அத்தேனே", "தெசலோனிக்கே", "செசரியா", "மிலேத்து"], "ref": "Acts 17:22–23"},
+			{"clue_en": "After the shipwreck a viper bit Paul's hand on this island — and he felt no harm.", "clue_ta": "கப்பற்சேதத்திற்குப் பின் இந்தத் தீவில் விரியன் பாம்பு பவுலின் கையைக் கவ்விற்று; அவனுக்கு ஒரு தீங்கும் வரவில்லை.",
+			 "options_en": ["Melita (Malta)", "Cyprus", "Crete", "Patmos"], "options_ta": ["மெலித்தா", "சீப்புரு", "கிரேத்தா", "பத்மு"], "ref": "Acts 28:1–5"},
+		],
+	},
+	{
+		"key": "kings", "icon": "crown",
+		"title_en": "Crowns of Israel", "title_ta": "இஸ்ரவேலின் கிரீடங்கள்",
+		"stops": [
+			{"clue_en": "Israel's first king, taller than everyone from the shoulders up.", "clue_ta": "இஸ்ரவேலின் முதல் ராஜா; தோள்முதல் எல்லாரிலும் உயரமானவன்.",
+			 "options_en": ["Saul", "David", "Solomon", "Rehoboam"], "options_ta": ["சவுல்", "தாவீது", "சாலொமோன்", "ரெகொபெயாம்"], "ref": "1 Samuel 9:2; 10:1"},
+			{"clue_en": "The shepherd king brought the ark into this city with dancing.", "clue_ta": "மேய்ப்பனான ராஜா நடனத்தோடே பெட்டியை இந்தப் பட்டணத்துக்குக் கொண்டுவந்தான்.",
+			 "options_en": ["Jerusalem", "Hebron", "Shiloh", "Bethel"], "options_ta": ["எருசலேம்", "எபிரோன்", "சீலோ", "பெத்தேல்"], "ref": "2 Samuel 6:12–15"},
+			{"clue_en": "Two women claimed one baby; this wise king found the real mother.", "clue_ta": "ஒரு பிள்ளைக்கு இரண்டு ஸ்திரீகள் உரிமை கொண்டாடினார்கள்; ஞானமுள்ள இந்த ராஜா உண்மையான தாயைக் கண்டுபிடித்தான்.",
+			 "options_en": ["Solomon", "Hezekiah", "Josiah", "Asa"], "options_ta": ["சாலொமோன்", "எசேக்கியா", "யோசியா", "ஆசா"], "ref": "1 Kings 3:16–28"},
+			{"clue_en": "The sun's shadow went back ten degrees as a sign to this sick king.", "clue_ta": "வியாதிப்பட்ட இந்த ராஜாவுக்கு அடையாளமாகச் சூரிய நிழல் பத்துப் பாகை பின்னிட்டது.",
+			 "options_en": ["Hezekiah", "Ahab", "Jehu", "Uzziah"], "options_ta": ["எசேக்கியா", "ஆகாப்", "யெகூ", "உசியா"], "ref": "2 Kings 20:8–11"},
+			{"clue_en": "Crowned at eight years old, he found the lost book of the law.", "clue_ta": "எட்டு வயதில் ராஜாவாகி, காணாமற்போன நியாயப்பிரமாண புஸ்தகத்தைக் கண்டடைந்தான்.",
+			 "options_en": ["Josiah", "Joash", "Manasseh", "Jotham"], "options_ta": ["யோசியா", "யோவாஸ்", "மனாசே", "யோதாம்"], "ref": "2 Kings 22:1, 8"},
+		],
+	},
+	{
+		"key": "beginnings", "icon": "tree",
+		"title_en": "In the Beginning", "title_ta": "ஆதியிலே",
+		"stops": [
+			{"clue_en": "God planted a garden eastward for the first man. Its name?", "clue_ta": "முதல் மனுஷனுக்காகத் தேவன் கிழக்கே ஒரு தோட்டத்தை உண்டாக்கினார். அதன் பெயர்?",
+			 "options_en": ["Eden", "Goshen", "Gilead", "Sharon"], "options_ta": ["ஏதேன்", "கோசேன்", "கீலேயாத்", "சாரோன்"], "ref": "Genesis 2:8"},
+			{"clue_en": "God set this in the cloud as a sign of His covenant with Noah.", "clue_ta": "நோவாவோடு செய்த உடன்படிக்கையின் அடையாளமாகத் தேவன் மேகத்தில் இதை வைத்தார்.",
+			 "options_en": ["A rainbow", "A star", "A pillar of fire", "A dove"], "options_ta": ["வானவில்", "நட்சத்திரம்", "அக்கினிஸ்தம்பம்", "புறா"], "ref": "Genesis 9:13"},
+			{"clue_en": "People built a tower to reach heaven; God confused their language. Where?", "clue_ta": "வானத்தை எட்டும் கோபுரத்தைக் கட்டினார்கள்; தேவன் அவர்கள் பாஷையைத் தாறுமாறாக்கினார். எங்கே?",
+			 "options_en": ["Babel", "Ur", "Haran", "Sodom"], "options_ta": ["பாபேல்", "ஊர்", "ஆரான்", "சோதோம்"], "ref": "Genesis 11:9"},
+			{"clue_en": "Lot's wife looked back and became this.", "clue_ta": "லோத்தின் மனைவி பின்னிட்டுப் பார்த்து இப்படியானாள்.",
+			 "options_en": ["A pillar of salt", "A stone", "A tree", "Dust"], "options_ta": ["உப்புத்தூண்", "கல்", "மரம்", "தூசி"], "ref": "Genesis 19:26"},
+			{"clue_en": "Jacob dreamed of a ladder and named the place 'house of God'.", "clue_ta": "யாக்கோபு ஏணியைக் கனவில் கண்டு அந்த இடத்துக்கு 'தேவனுடைய வீடு' என்று பெயரிட்டான்.",
+			 "options_en": ["Bethel", "Beersheba", "Peniel", "Mamre"], "options_ta": ["பெத்தேல்", "பெயெர்செபா", "பெனியேல்", "மம்ரே"], "ref": "Genesis 28:19"},
+		],
+	},
+	{
+		"key": "women", "icon": "heart",
+		"title_en": "Women of Faith", "title_ta": "விசுவாச ஸ்திரீகள்",
+		"stops": [
+			{"clue_en": "She watched over baby Moses in the river and spoke to Pharaoh's daughter.", "clue_ta": "நதியில் குழந்தை மோசேயைக் கவனித்து, பார்வோனின் குமாரத்தியிடம் பேசினாள்.",
+			 "options_en": ["Miriam", "Zipporah", "Rachel", "Deborah"], "options_ta": ["மிரியாம்", "சிப்போராள்", "ராகேல்", "தெபொராள்"], "ref": "Exodus 2:4–8; 15:20"},
+			{"clue_en": "A prophetess who judged Israel under a palm tree.", "clue_ta": "பேரீச்சமரத்தின் கீழ் இஸ்ரவேலை நியாயம் விசாரித்த தீர்க்கதரிசியானவள்.",
+			 "options_en": ["Deborah", "Huldah", "Anna", "Jael"], "options_ta": ["தெபொராள்", "உல்தாள்", "அன்னாள்", "யாகேல்"], "ref": "Judges 4:4–5"},
+			{"clue_en": "She gave the prophet Elijah her last meal, and her flour never ran out.", "clue_ta": "எலியாவுக்குத் தன் கடைசி உணவைக் கொடுத்தாள்; அவளுடைய மாவு குறையவில்லை.",
+			 "options_en": ["The widow of Zarephath", "The Shunammite woman", "Abigail", "Naomi"], "options_ta": ["சாறிபாத் விதவை", "சூனேமிய ஸ்திரீ", "அபிகாயில்", "நகோமி"], "ref": "1 Kings 17:9–16"},
+			{"clue_en": "She sat at Jesus' feet and listened while her sister served.", "clue_ta": "அவள் சகோதரி வேலை செய்தபோது, இவள் இயேசுவின் பாதத்தருகே உட்கார்ந்து கேட்டாள்.",
+			 "options_en": ["Mary of Bethany", "Martha", "Salome", "Joanna"], "options_ta": ["பெத்தானியா மரியாள்", "மார்த்தாள்", "சலோமே", "யோவன்னாள்"], "ref": "Luke 10:39"},
+			{"clue_en": "The first to see the risen Jesus, at the garden tomb.", "clue_ta": "கல்லறைத் தோட்டத்தில் உயிர்த்த இயேசுவை முதலில் கண்டவள்.",
+			 "options_en": ["Mary Magdalene", "Dorcas", "Priscilla", "Lydia"], "options_ta": ["மகதலேனா மரியாள்", "தொர்க்காள்", "பிரிஸ்கில்லாள்", "லீதியாள்"], "ref": "John 20:14–16; Mark 16:9"},
+		],
+	},
+]

@@ -1043,7 +1043,20 @@ _BIBLE_BATTLE_QUESTIONS = [
 
 
 def seed_bible_battle_questions():
-	for entry in _BIBLE_BATTLE_QUESTIONS:
+	"""English bank + its Tamil translation (games/bible_battle/questions_ta).
+	Idempotent: a question already present (same text) is skipped."""
+	from truth_of_bible.games.bible_battle.questions_ta import TA_QUESTIONS
+
+	banks = [(_BIBLE_BATTLE_QUESTIONS, "en")]
+	# `language` links to Language — only seed Tamil where that record exists.
+	if frappe.db.exists("Language", "ta"):
+		banks.append((TA_QUESTIONS, "ta"))
+	for questions, language in banks:
+		_seed_battle_questions(questions, language)
+
+
+def _seed_battle_questions(questions: list, language: str) -> None:
+	for entry in questions:
 		if frappe.db.exists("TOB Bible Battle Question", {"question": entry["question"]}):
 			continue
 		option_a, option_b, option_c, option_d = entry["options"]
@@ -1058,7 +1071,7 @@ def seed_bible_battle_questions():
 					"option_d": option_d,
 					"correct_option": entry["correct"],
 					"difficulty": entry["difficulty"],
-					"language": "en",
+					"language": language,
 					"status": "Published",
 					"bible_book": entry["book"],
 					"chapter": entry["chapter"],

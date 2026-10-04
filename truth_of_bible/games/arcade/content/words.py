@@ -1,0 +1,72 @@
+"""Bible Word Scramble — names, places and words of faith. Book names come
+from content/books.py (single-word ones only). Tamil words are scrambled
+by letter (grapheme cluster), not by code point, so a vowel sign never
+floats free of its consonant."""
+
+WORDS = [
+	# People
+	{"en": "Abraham", "ta": "ஆபிரகாம்", "kind": "person"},
+	{"en": "Moses", "ta": "மோசே", "kind": "person"},
+	{"en": "David", "ta": "தாவீது", "kind": "person"},
+	{"en": "Solomon", "ta": "சாலொமோன்", "kind": "person"},
+	{"en": "Elijah", "ta": "எலியா", "kind": "person"},
+	{"en": "Daniel", "ta": "தானியேல்", "kind": "person"},
+	{"en": "Esther", "ta": "எஸ்தர்", "kind": "person"},
+	{"en": "Joseph", "ta": "யோசேப்பு", "kind": "person"},
+	{"en": "Samuel", "ta": "சாமுவேல்", "kind": "person"},
+	{"en": "Gideon", "ta": "கிதியோன்", "kind": "person"},
+	{"en": "Samson", "ta": "சிம்சோன்", "kind": "person"},
+	{"en": "Peter", "ta": "பேதுரு", "kind": "person"},
+	{"en": "Thomas", "ta": "தோமா", "kind": "person"},
+	{"en": "Stephen", "ta": "ஸ்தேவான்", "kind": "person"},
+	{"en": "Lazarus", "ta": "லாசரு", "kind": "person"},
+	{"en": "Zacchaeus", "ta": "சகேயு", "kind": "person"},
+	{"en": "Nehemiah", "ta": "நெகேமியா", "kind": "person"},
+	{"en": "Jacob", "ta": "யாக்கோபு", "kind": "person"},
+	{"en": "Rebekah", "ta": "ரெபெக்காள்", "kind": "person"},
+	{"en": "Barnabas", "ta": "பர்னபா", "kind": "person"},
+	# Places
+	{"en": "Jerusalem", "ta": "எருசலேம்", "kind": "place"},
+	{"en": "Bethlehem", "ta": "பெத்லகேம்", "kind": "place"},
+	{"en": "Nazareth", "ta": "நாசரேத்", "kind": "place"},
+	{"en": "Egypt", "ta": "எகிப்து", "kind": "place"},
+	{"en": "Babylon", "ta": "பாபிலோன்", "kind": "place"},
+	{"en": "Jordan", "ta": "யோர்தான்", "kind": "place"},
+	{"en": "Galilee", "ta": "கலிலேயா", "kind": "place"},
+	{"en": "Jericho", "ta": "எரிகோ", "kind": "place"},
+	{"en": "Canaan", "ta": "கானான்", "kind": "place"},
+	{"en": "Samaria", "ta": "சமாரியா", "kind": "place"},
+	{"en": "Nineveh", "ta": "நினிவே", "kind": "place"},
+	{"en": "Bethany", "ta": "பெத்தானியா", "kind": "place"},
+	{"en": "Capernaum", "ta": "கப்பர்நகூம்", "kind": "place"},
+	{"en": "Sinai", "ta": "சீனாய்", "kind": "place"},
+	{"en": "Golgotha", "ta": "கொல்கொதா", "kind": "place"},
+	{"en": "Antioch", "ta": "அந்தியோகியா", "kind": "place"},
+	{"en": "Corinth", "ta": "கொரிந்து", "kind": "place"},
+	{"en": "Ephesus", "ta": "எபேசு", "kind": "place"},
+	# Words of faith
+	{"en": "Manna", "ta": "மன்னா", "kind": "word"},
+	{"en": "Covenant", "ta": "உடன்படிக்கை", "kind": "word"},
+	{"en": "Prophet", "ta": "தீர்க்கதரிசி", "kind": "word"},
+	{"en": "Apostle", "ta": "அப்போஸ்தலன்", "kind": "word"},
+	{"en": "Gospel", "ta": "சுவிசேஷம்", "kind": "word"},
+	{"en": "Temple", "ta": "தேவாலயம்", "kind": "word"},
+	{"en": "Sabbath", "ta": "ஓய்வுநாள்", "kind": "word"},
+	{"en": "Passover", "ta": "பஸ்கா", "kind": "word"},
+	{"en": "Baptism", "ta": "ஞானஸ்நானம்", "kind": "word"},
+	{"en": "Grace", "ta": "கிருபை", "kind": "word"},
+	{"en": "Faith", "ta": "விசுவாசம்", "kind": "word"},
+	{"en": "Shepherd", "ta": "மேய்ப்பன்", "kind": "word"},
+	{"en": "Cross", "ta": "சிலுவை", "kind": "word"},
+	{"en": "Prayer", "ta": "ஜெபம்", "kind": "word"},
+	{"en": "Salvation", "ta": "இரட்சிப்பு", "kind": "word"},
+	{"en": "Mercy", "ta": "இரக்கம்", "kind": "word"},
+	{"en": "Resurrection", "ta": "உயிர்த்தெழுதல்", "kind": "word"},
+]
+
+KIND_HINT = {
+	"person": {"en": "A person in the Bible", "ta": "வேதாகமத்திலுள்ள ஒரு நபர்"},
+	"place": {"en": "A place in the Bible", "ta": "வேதாகமத்திலுள்ள ஒரு இடம்"},
+	"word": {"en": "A word of faith", "ta": "விசுவாசச் சொல்"},
+	"book": {"en": "A book of the Bible", "ta": "வேதாகமப் புஸ்தகம்"},
+}

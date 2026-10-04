@@ -10,6 +10,7 @@ What earns points (all automatic, all capped so nothing can be farmed):
   something that didn't happen.
 - Streak milestones — a daily-reading streak, celebrated at 3/7/14/30 days.
 - Daily check-in, sharing the app (capped), completing the profile (once).
+- Playing a Bible game or a Bible Battle (capped at 2 a day).
 
 Removed: "Placed a shop order" (20) and "Explored a prayer topic" (1) —
 neither was on the Earn Points list. Points already credited for orders
@@ -54,13 +55,17 @@ RULES = {
 	"complete_quiz": {"points": 3, "title": "Completed a quiz", "per_day": 3, "event": "quiz_completed"},
 	"devotional": {"points": 1, "title": "Read a devotional", "per_day": 1, "event": "devotional_viewed"},
 	"share_app": {"points": 1, "title": "Shared the app", "per_day": 3},
+	# Bible games + Bible Battle (games/arcade/progress.py). XP is the
+	# games' own currency; these points are the small daily share.
+	"play_game": {"points": 2, "title": "Played a Bible game", "per_day": 2},
 	"complete_profile": {"points": 2, "title": "Completed your profile", "once": True},
 }
 _EVENT_TO_RULE = {r["event"]: code for code, r in RULES.items() if r.get("event")}
 
-# Streak length -> bonus. A streak counts days with a check-in or a chapter read.
+# Streak length -> bonus. A streak counts days with a check-in, a chapter
+# read or a Bible game played.
 STREAK_MILESTONES = ((3, 2), (7, 5), (14, 10), (30, 25))
-_STREAK_REASONS = ("daily_checkin", "read_chapter")
+_STREAK_REASONS = ("daily_checkin", "read_chapter", "play_game")
 
 # Coupon tiers — deliberately small and short-lived. Edit here (or override
 # with `rewards_tiers` in site_config.json) to change the economics.
@@ -818,6 +823,8 @@ def overview(user: str, country: str | None = None) -> dict:
 		 "done": count_today("complete_quiz") >= 3, "kind": "auto", "progress": f"{count_today('complete_quiz')}/3"},
 		{"key": "devotional", "title": "Read a devotional", "subtitle": "Counts automatically", "points": 1,
 		 "done": count_today("devotional") >= 1, "kind": "auto", "progress": None},
+		{"key": "play_game", "title": "Play a Bible game", "subtitle": "Up to 2 a day", "points": 2,
+		 "done": count_today("play_game") >= 2, "kind": "auto", "progress": f"{count_today('play_game')}/2"},
 		{"key": "share_app", "title": "Share the app", "subtitle": "Up to 3 a day", "points": 1,
 		 "done": count_today("share_app") >= 3, "kind": "action", "progress": f"{count_today('share_app')}/3"},
 	]

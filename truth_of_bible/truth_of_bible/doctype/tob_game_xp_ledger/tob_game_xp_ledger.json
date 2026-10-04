@@ -1,0 +1,85 @@
+{
+ "doctype": "DocType",
+ "name": "TOB Game XP Ledger",
+ "module": "Truth Of Bible",
+ "custom": 0,
+ "istable": 0,
+ "issingle": 0,
+ "quick_entry": 0,
+ "track_changes": 0,
+ "autoname": "hash",
+ "naming_rule": "Random",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "engine": "InnoDB",
+ "description": "Every XP grant — game rounds, Bible Battle results, daily missions and badges. Append-only; `dedupe_key` (unique per user, checked under a user row lock) makes a retried request pay once. The global leaderboard sums this table by period.",
+ "field_order": [
+  "user",
+  "xp",
+  "source",
+  "column_break_title",
+  "title",
+  "dedupe_key",
+  "session"
+ ],
+ "fields": [
+  {
+   "fieldname": "user",
+   "fieldtype": "Link",
+   "label": "User",
+   "options": "User",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "xp",
+   "fieldtype": "Int",
+   "label": "XP",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "source",
+   "fieldtype": "Data",
+   "label": "Source",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "description": "Game key, 'battle', 'mission' or 'badge'."
+  },
+  {
+   "fieldname": "column_break_title",
+   "fieldtype": "Column Break",
+   "label": ""
+  },
+  {
+   "fieldname": "title",
+   "fieldtype": "Data",
+   "label": "Title"
+  },
+  {
+   "fieldname": "dedupe_key",
+   "fieldtype": "Data",
+   "label": "Dedupe Key",
+   "search_index": 1
+  },
+  {
+   "fieldname": "session",
+   "fieldtype": "Data",
+   "label": "Session / Battle"
+  }
+ ],
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "report": 1,
+   "export": 1
+  }
+ ],
+ "links": []
+}

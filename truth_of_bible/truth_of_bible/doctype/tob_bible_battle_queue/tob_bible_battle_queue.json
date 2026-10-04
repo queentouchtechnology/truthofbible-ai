@@ -16,6 +16,7 @@
  "field_order": [
   "player",
   "bir_snapshot",
+  "language",
   "queued_at",
   "column_break_status",
   "status",
@@ -38,6 +39,14 @@
    "label": "BIR Snapshot",
    "reqd": 1,
    "description": "The player's BIR at the moment they joined the queue — cached so matchmaking doesn't re-read Rating on every scan, and so tolerance widening is computed against a stable baseline."
+  },
+  {
+   "fieldname": "language",
+   "fieldtype": "Data",
+   "label": "Question Language",
+   "default": "en",
+   "search_index": 1,
+   "description": "Only players searching in the same language are matched."
   },
   {
    "fieldname": "queued_at",

@@ -18,8 +18,9 @@ from truth_of_bible.games.bible_battle.utils import get_or_create_rating
 
 
 @frappe.whitelist(methods=["POST"])
-def start_matchmaking() -> dict:
-	return matchmaking.start_matchmaking(frappe.session.user)
+def start_matchmaking(language: str | None = None) -> dict:
+	"""`language`: 'ta' (Tamil) or 'en' — only same-language players match."""
+	return matchmaking.start_matchmaking(frappe.session.user, language)
 
 
 @frappe.whitelist(methods=["POST"])
@@ -28,10 +29,11 @@ def cancel_matchmaking() -> dict:
 
 
 @frappe.whitelist(methods=["POST"])
-def create_challenge() -> dict:
+def create_challenge(language: str | None = None) -> dict:
 	"""Direct challenge — bypasses BIR matchmaking. Returns a short code
-	the caller shares out-of-band (share sheet) with a specific friend."""
-	return matchmaking.create_challenge(frappe.session.user)
+	the caller shares out-of-band (share sheet) with a specific friend.
+	Questions use the creator's `language` ('ta' / 'en')."""
+	return matchmaking.create_challenge(frappe.session.user, language)
 
 
 @frappe.whitelist(methods=["POST"])
@@ -47,6 +49,12 @@ def cancel_challenge(battle: str) -> dict:
 @frappe.whitelist(methods=["GET", "POST"])
 def get_match_status() -> dict:
 	return matchmaking.get_match_status(frappe.session.user)
+
+
+@frappe.whitelist(methods=["POST"])
+def leave_battle(battle: str) -> dict:
+	"""Leave a lobby / open challenge (cancelled), or forfeit a live battle."""
+	return engine.leave_battle(battle, frappe.session.user)
 
 
 @frappe.whitelist(methods=["POST"])

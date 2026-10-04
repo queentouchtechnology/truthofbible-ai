@@ -1,0 +1,148 @@
+{
+ "doctype": "DocType",
+ "name": "TOB Game Session",
+ "module": "Truth Of Bible",
+ "custom": 0,
+ "istable": 0,
+ "issingle": 0,
+ "quick_entry": 0,
+ "track_changes": 0,
+ "autoname": "hash",
+ "naming_rule": "Random",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "engine": "InnoDB",
+ "description": "One round of a solo Bible game (Complete the Verse, Guess the Character, Who Said It?, Word Scramble, Treasure Hunt). `items` holds the server's answer key — never sent to the app; the app only ever gets the questions (games/arcade/rounds.py). System-Manager-only; players reach it through truth_of_bible.api.games.",
+ "field_order": [
+  "user",
+  "game",
+  "language",
+  "country",
+  "column_break_status",
+  "status",
+  "started_at",
+  "completed_at",
+  "section_break_score",
+  "total",
+  "correct",
+  "score",
+  "xp_awarded",
+  "section_break_data",
+  "items",
+  "answers"
+ ],
+ "fields": [
+  {
+   "fieldname": "user",
+   "fieldtype": "Link",
+   "label": "User",
+   "options": "User",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "game",
+   "fieldtype": "Select",
+   "label": "Game",
+   "options": "verse\ncharacter\nwho_said\nscramble\ntreasure",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "language",
+   "fieldtype": "Data",
+   "label": "Language",
+   "default": "en"
+  },
+  {
+   "fieldname": "country",
+   "fieldtype": "Data",
+   "label": "Country"
+  },
+  {
+   "fieldname": "column_break_status",
+   "fieldtype": "Column Break",
+   "label": ""
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Active\nCompleted\nAbandoned",
+   "default": "Active",
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "started_at",
+   "fieldtype": "Datetime",
+   "label": "Started At"
+  },
+  {
+   "fieldname": "completed_at",
+   "fieldtype": "Datetime",
+   "label": "Completed At"
+  },
+  {
+   "fieldname": "section_break_score",
+   "fieldtype": "Section Break",
+   "label": "Score"
+  },
+  {
+   "fieldname": "total",
+   "fieldtype": "Int",
+   "label": "Questions",
+   "default": "0"
+  },
+  {
+   "fieldname": "correct",
+   "fieldtype": "Int",
+   "label": "Correct",
+   "default": "0",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "score",
+   "fieldtype": "Int",
+   "label": "Score",
+   "default": "0"
+  },
+  {
+   "fieldname": "xp_awarded",
+   "fieldtype": "Int",
+   "label": "XP Awarded",
+   "default": "0",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "section_break_data",
+   "fieldtype": "Section Break",
+   "label": "Data"
+  },
+  {
+   "fieldname": "items",
+   "fieldtype": "Long Text",
+   "label": "Items (answer key)"
+  },
+  {
+   "fieldname": "answers",
+   "fieldtype": "Long Text",
+   "label": "Answers"
+  }
+ ],
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "report": 1,
+   "export": 1
+  }
+ ],
+ "links": []
+}

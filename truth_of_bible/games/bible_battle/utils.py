@@ -64,23 +64,27 @@ def touch_last_seen(battle, slot: str) -> None:
 
 
 def select_question_sequence(language: str = "en") -> list[str]:
-	"""Picks 3 Easy + 5 Medium + 2 Hard published questions, randomized
-	within and across difficulty, returned as an ordered list of question
-	names. Raises if the bank doesn't have enough seeded questions yet."""
+	"""Picks 3 Easy + 5 Medium + 2 Hard published questions in `language`,
+	randomized within and across difficulty, returned as an ordered list of
+	question names. A difficulty with too few questions in `language` is
+	topped up from English, so a Tamil battle still starts while the Tamil
+	bank is smaller. Raises only if even that isn't enough."""
+	language = (language or "en").strip().lower() or "en"
 	sequence: list[str] = []
 	for difficulty, count in QUESTION_DISTRIBUTION.items():
-		pool = frappe.get_all(
-			"TOB Bible Battle Question",
-			filters={"status": "Published", "difficulty": difficulty, "language": language},
-			pluck="name",
-		)
-		if len(pool) < count:
+		filters = {"status": "Published", "difficulty": difficulty}
+		pool = frappe.get_all("TOB Bible Battle Question", filters={**filters, "language": language}, pluck="name")
+		picked = random.sample(pool, min(count, len(pool)))
+		if len(picked) < count and language != "en":
+			english = frappe.get_all("TOB Bible Battle Question", filters={**filters, "language": "en"}, pluck="name")
+			picked += random.sample(english, min(count - len(picked), len(english)))
+		if len(picked) < count:
 			frappe.throw(
 				_("Not enough published {0} questions to start a battle ({1} available, {2} needed).").format(
-					difficulty, len(pool), count
+					difficulty, len(picked), count
 				)
 			)
-		sequence.extend(random.sample(pool, count))
+		sequence.extend(picked)
 	random.shuffle(sequence)
 	return sequence
 

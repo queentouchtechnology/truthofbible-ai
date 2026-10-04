@@ -5,11 +5,21 @@ is simpler and just as correct for V1 scale) — every start_matchmaking
 call itself re-runs the opponent scan, so a newly-joined opponent is
 picked up by the next poll from whoever is already waiting.
 
-Race safety: the opponent scan + claim happens inside one SELECT ... FOR
-UPDATE, so two players calling start_matchmaking at (almost) the same
-moment cannot both claim the same waiting opponent — the second
-transaction blocks on the row lock until the first commits, then re-reads
-and sees the row already Matched.
+The scan runs on EVERY search call — start_matchmaking and each
+get_match_status poll — not only when someone new joins. Otherwise two
+players already waiting (both queued at the same moment, or too far apart
+in BIR when the second arrived) were never paired, and the tolerance that
+widens the longer a player waits (matchmaking_rules) never got a chance
+to apply.
+
+Race safety: the scan locks ALL Searching rows (the caller's own
+included) in one SELECT ... ORDER BY name FOR UPDATE — a consistent lock
+order, so two players polling at the same moment queue up behind each
+other instead of deadlocking or both creating a battle. The second one
+re-reads after the first commits and finds its own row already Matched.
+
+Only players searching in the same question language are matched
+(Tamil with Tamil, English with English).
 """
 
 import random
@@ -28,64 +38,80 @@ _CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
 _CODE_LENGTH = 6
 
 
-def start_matchmaking(user: str) -> dict:
-	rating = get_or_create_rating(user)
+def normalize_language(language: str | None) -> str:
+	"""'ta' for Tamil, else 'en' — the two question banks battles use."""
+	value = (language or "").strip().lower()
+	return "ta" if value in ("ta", "tamil") else "en"
 
-	existing = frappe.db.get_value(
-		"TOB Bible Battle Queue", {"player": user, "status": "Searching"}, "name"
-	)
-	if existing:
-		return {"status": "searching", "queue": existing}
 
-	candidates = frappe.db.sql(
+def _scan_and_claim(user: str, rating, language: str, now) -> str | None:
+	"""Finds a compatible waiting opponent and creates the battle. Returns
+	the battle name, or None. Marks both queue rows Matched. Must run
+	inside the request's transaction (row locks held until commit)."""
+	rows = frappe.db.sql(
 		"""
-		SELECT name, player, bir_snapshot, queued_at
+		SELECT name, player, bir_snapshot, queued_at, language
 		FROM `tabTOB Bible Battle Queue`
-		WHERE status = 'Searching' AND player != %s
-		ORDER BY queued_at ASC
+		WHERE status = 'Searching'
+		ORDER BY name
 		FOR UPDATE
 		""",
-		(user,),
 		as_dict=True,
 	)
+	mine = next((r for r in rows if r.player == user), None)
+	my_elapsed = time_diff_in_seconds(now, mine.queued_at) if mine else 0
 
-	now = now_datetime()
-	match = None
-	for candidate in candidates:
+	for candidate in sorted((r for r in rows if r.player != user), key=lambda r: r.queued_at):
 		elapsed = time_diff_in_seconds(now, candidate.queued_at)
 		if elapsed >= STALE_QUEUE_SECONDS:
 			frappe.db.set_value("TOB Bible Battle Queue", candidate.name, "status", "Cancelled")
 			continue
+		if normalize_language(candidate.language) != language:
+			continue
+		if not is_compatible(rating.bir, candidate.bir_snapshot, my_elapsed, elapsed):
+			continue
 
-		if is_compatible(rating.bir, candidate.bir_snapshot, 0, elapsed):
-			match = candidate
-			break
+		battle = frappe.get_doc(
+			{
+				"doctype": "TOB Bible Battle",
+				"player_1": candidate.player,
+				"player_2": user,
+				"status": "Waiting",
+				"language": language,
+				"waiting_since": now,
+			}
+		)
+		battle.insert(ignore_permissions=True)
+		frappe.db.set_value(
+			"TOB Bible Battle Queue", candidate.name, {"status": "Matched", "matched_battle": battle.name}
+		)
+		if mine:
+			frappe.db.set_value("TOB Bible Battle Queue", mine.name, {"status": "Matched", "matched_battle": battle.name})
+		return battle.name
+	return None
 
-	if not match:
+
+def start_matchmaking(user: str, language: str | None = None) -> dict:
+	rating = get_or_create_rating(user)
+	language = normalize_language(language)
+	now = now_datetime()
+
+	battle = _scan_and_claim(user, rating, language, now)
+	if battle:
+		return {"status": "matched", "battle": battle}
+
+	if not frappe.db.exists("TOB Bible Battle Queue", {"player": user, "status": "Searching"}):
 		frappe.get_doc(
 			{
 				"doctype": "TOB Bible Battle Queue",
 				"player": user,
 				"bir_snapshot": rating.bir,
+				"language": language,
 				"queued_at": now,
 				"status": "Searching",
 			}
 		).insert(ignore_permissions=True)
-		return {"status": "searching"}
-
-	battle = frappe.get_doc(
-		{
-			"doctype": "TOB Bible Battle",
-			"player_1": match.player,
-			"player_2": user,
-			"status": "Waiting",
-		}
-	)
-	battle.insert(ignore_permissions=True)
-
-	frappe.db.set_value("TOB Bible Battle Queue", match.name, {"status": "Matched", "matched_battle": battle.name})
-
-	return {"status": "matched", "battle": battle.name}
+	return {"status": "searching"}
 
 
 def cancel_matchmaking(user: str) -> dict:
@@ -103,7 +129,7 @@ def _generate_invite_code() -> str:
 	frappe.throw(_("Could not generate an invite code — please try again."))
 
 
-def create_challenge(user: str) -> dict:
+def create_challenge(user: str, language: str | None = None) -> dict:
 	"""Direct challenge: bypasses BIR matchmaking entirely. player_1 is set
 	immediately; player_2 stays blank until someone calls join_challenge
 	with the code, at which point the battle moves from Pending to Waiting
@@ -116,6 +142,7 @@ def create_challenge(user: str) -> dict:
 			"player_1": user,
 			"status": "Pending",
 			"invite_code": code,
+			"language": normalize_language(language),
 		}
 	)
 	battle.insert(ignore_permissions=True)
@@ -132,7 +159,9 @@ def join_challenge(code: str, user: str) -> dict:
 		"""
 		SELECT name, player_1, status
 		FROM `tabTOB Bible Battle`
-		WHERE invite_code = %s
+		WHERE invite_code = %s AND status = 'Pending'
+		ORDER BY creation DESC
+		LIMIT 1
 		FOR UPDATE
 		""",
 		(code,),
@@ -146,7 +175,9 @@ def join_challenge(code: str, user: str) -> dict:
 		frappe.throw(_("You can't join your own challenge."))
 
 	get_or_create_rating(user)
-	frappe.db.set_value("TOB Bible Battle", row.name, {"player_2": user, "status": "Waiting"})
+	frappe.db.set_value(
+		"TOB Bible Battle", row.name, {"player_2": user, "status": "Waiting", "waiting_since": now_datetime()}
+	)
 	return {"battle": row.name}
 
 
@@ -163,7 +194,7 @@ def get_match_status(user: str) -> dict:
 	row = frappe.db.get_value(
 		"TOB Bible Battle Queue",
 		{"player": user},
-		["name", "status", "matched_battle", "queued_at"],
+		["name", "status", "matched_battle", "queued_at", "language"],
 		as_dict=True,
 		order_by="creation desc",
 	)
@@ -173,4 +204,10 @@ def get_match_status(user: str) -> dict:
 		return {"status": "matched", "battle": row.matched_battle}
 	if row.status == "Cancelled":
 		return {"status": "cancelled"}
-	return {"status": "searching", "elapsed_seconds": time_diff_in_seconds(now_datetime(), row.queued_at)}
+
+	# Still searching: look for an opponent on every poll (see module doc).
+	now = now_datetime()
+	battle = _scan_and_claim(user, get_or_create_rating(user), normalize_language(row.language), now)
+	if battle:
+		return {"status": "matched", "battle": battle}
+	return {"status": "searching", "elapsed_seconds": time_diff_in_seconds(now, row.queued_at)}

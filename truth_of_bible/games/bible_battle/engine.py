@@ -31,12 +31,22 @@ from truth_of_bible.games.bible_battle.utils import (
 #: treated as disconnected for forfeit purposes (§20).
 FORFEIT_SECONDS = 60
 
+#: Lobby (status Waiting): both players must be Ready within this long, or
+#: the battle is cancelled — nobody is left waiting for someone who left.
+READY_TIMEOUT_SECONDS = 90
+
+#: Lobby: an opponent whose app hasn't polled for this long has left.
+LOBBY_STALE_SECONDS = 45
+
 
 def load_battle(battle_name: str, user: str):
 	"""Every battle-scoped API entry point starts here: load, verify the
 	caller is actually a participant (PermissionError otherwise), and mark
 	them as freshly seen. Returns (battle_doc, 'player_1'|'player_2')."""
-	battle = frappe.get_doc("TOB Bible Battle", battle_name)
+	# FOR UPDATE: the two players' requests (both poll every 2s and save)
+	# take turns on this row instead of clashing — a clash used to fail
+	# submit_answer AFTER its Answer row was written, losing those points.
+	battle = frappe.get_doc("TOB Bible Battle", battle_name, for_update=True)
 	slot = require_participant(battle, user)
 	touch_last_seen(battle, slot)
 	return battle, slot
@@ -56,7 +66,7 @@ def set_ready(battle_name: str, user: str) -> dict:
 
 
 def _begin_battle(battle) -> None:
-	sequence = select_question_sequence()
+	sequence = select_question_sequence(battle.language or "en")
 	battle.question_sequence = encode_question_sequence(sequence)
 	battle.total_questions = len(sequence)
 	battle.current_question_index = 1
@@ -146,7 +156,7 @@ def submit_answer(battle_name: str, question_name: str, selected_option: str | N
 	opponent = battle.get(opponent_slot(slot))
 	frappe.publish_realtime(
 		"bible_battle_opponent_answered",
-		{"battle": battle.name, "question_index": current_question},
+		{"battle": battle.name, "question_index": battle.current_question_index, "question": current_question},
 		user=opponent,
 	)
 	if battle.status == "Completed":
@@ -254,6 +264,7 @@ def battle_state(battle, slot: str) -> dict:
 		"opponent_ready": bool(battle.get(f"{opp_slot}_ready")),
 		"opponent": user_display(battle.get(opp_slot), include_bir=True),
 		"winner": battle.winner,
+		"language": battle.language or "en",
 	}
 
 
@@ -268,6 +279,9 @@ def check_and_advance(battle) -> None:
 	"""Mutates `battle` in place. Called opportunistically from every
 	battle-scoped whitelisted method plus the cron backstop — this is the
 	ONLY place question-advancement/forfeit rules are implemented."""
+	if battle.status == "Waiting":
+		_check_lobby(battle)
+		return
 	if battle.status != "In Progress":
 		return
 
@@ -292,6 +306,36 @@ def check_and_advance(battle) -> None:
 
 	battle.current_question_index += 1
 	battle.question_start_time = now_datetime()
+
+
+def _check_lobby(battle) -> None:
+	"""Waiting → Cancelled when the ready-up runs out of time, or when a
+	player who was in the lobby stopped polling (closed the app)."""
+	since = battle.waiting_since or battle.creation
+	timed_out = since and time_diff_in_seconds(now_datetime(), since) > READY_TIMEOUT_SECONDS
+	left = any(
+		last_seen and time_diff_in_seconds(now_datetime(), last_seen) > LOBBY_STALE_SECONDS
+		for last_seen in (battle.player_1_last_seen, battle.player_2_last_seen)
+	)
+	if timed_out or left:
+		battle.status = "Cancelled"
+		battle.completed_at = now_datetime()
+
+
+def leave_battle(battle_name: str, user: str) -> dict:
+	"""The player leaves: an open challenge or a lobby is cancelled (no
+	rating change); a battle in progress is forfeited to the opponent."""
+	battle, slot = load_battle(battle_name, user)
+	if battle.status in ("Pending", "Waiting"):
+		battle.status = "Cancelled"
+		battle.completed_at = now_datetime()
+	elif battle.status == "In Progress":
+		_finalize_battle(battle, forced_winner_slot=opponent_slot(slot))
+	battle.save(ignore_permissions=True)
+	opponent = battle.get(opponent_slot(slot))
+	if opponent:
+		frappe.publish_realtime("bible_battle_left", {"battle": battle.name, "status": battle.status}, user=opponent)
+	return battle_state(battle, slot)
 
 
 def _both_answered(battle, question_index: int) -> bool:
@@ -333,6 +377,11 @@ def _finalize_battle(battle, forced_winner_slot: str | None = None) -> None:
 
 	battle.winner = battle.get(winner_slot) if winner_slot else None
 	_update_ratings(battle, winner_slot)
+
+	# XP, reward points, badges and missions (never raises into the battle).
+	from truth_of_bible.games.arcade.progress import on_battle_finished
+
+	on_battle_finished(battle)
 
 
 def _update_ratings(battle, winner_slot: str | None) -> None:
@@ -381,9 +430,9 @@ def sweep_stale_battles() -> None:
 	nobody has polled an In Progress battle recently enough for
 	check_and_advance to run opportunistically (e.g. both apps died
 	mid-question). Normal play never needs this."""
-	names = frappe.get_all("TOB Bible Battle", filters={"status": "In Progress"}, pluck="name")
+	names = frappe.get_all("TOB Bible Battle", filters={"status": ["in", ["In Progress", "Waiting"]]}, pluck="name")
 	for name in names:
-		battle = frappe.get_doc("TOB Bible Battle", name)
+		battle = frappe.get_doc("TOB Bible Battle", name, for_update=True)
 		check_and_advance(battle)
 		battle.save(ignore_permissions=True)
 		frappe.db.commit()

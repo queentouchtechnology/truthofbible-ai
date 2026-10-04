@@ -1,0 +1,114 @@
+{
+ "doctype": "DocType",
+ "name": "TOB Game Profile",
+ "module": "Truth Of Bible",
+ "custom": 0,
+ "istable": 0,
+ "issingle": 0,
+ "quick_entry": 0,
+ "track_changes": 0,
+ "autoname": "field:user",
+ "naming_rule": "By fieldname",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "engine": "InnoDB",
+ "description": "Per-player game progress: total XP (sum of the XP ledger, kept here for fast reads), country for the leaderboard filter, earned badges and per-game stats.",
+ "field_order": [
+  "user",
+  "country",
+  "language",
+  "column_break_xp",
+  "total_xp",
+  "games_played",
+  "perfect_rounds",
+  "last_played",
+  "section_break_data",
+  "badges",
+  "stats"
+ ],
+ "fields": [
+  {
+   "fieldname": "user",
+   "fieldtype": "Link",
+   "label": "User",
+   "options": "User",
+   "reqd": 1,
+   "unique": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "country",
+   "fieldtype": "Data",
+   "label": "Country",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "search_index": 1,
+   "description": "ISO code from the app (profile country, else device region)."
+  },
+  {
+   "fieldname": "language",
+   "fieldtype": "Data",
+   "label": "Language",
+   "default": "en"
+  },
+  {
+   "fieldname": "column_break_xp",
+   "fieldtype": "Column Break",
+   "label": ""
+  },
+  {
+   "fieldname": "total_xp",
+   "fieldtype": "Int",
+   "label": "Total XP",
+   "default": "0",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "games_played",
+   "fieldtype": "Int",
+   "label": "Games Played",
+   "default": "0"
+  },
+  {
+   "fieldname": "perfect_rounds",
+   "fieldtype": "Int",
+   "label": "Perfect Rounds",
+   "default": "0"
+  },
+  {
+   "fieldname": "last_played",
+   "fieldtype": "Datetime",
+   "label": "Last Played"
+  },
+  {
+   "fieldname": "section_break_data",
+   "fieldtype": "Section Break",
+   "label": "Progress"
+  },
+  {
+   "fieldname": "badges",
+   "fieldtype": "Long Text",
+   "label": "Badges",
+   "description": "JSON {badge code: earned date}."
+  },
+  {
+   "fieldname": "stats",
+   "fieldtype": "Long Text",
+   "label": "Stats",
+   "description": "JSON {game: {played, correct, answered, best}}."
+  }
+ ],
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "report": 1,
+   "export": 1
+  }
+ ],
+ "links": []
+}

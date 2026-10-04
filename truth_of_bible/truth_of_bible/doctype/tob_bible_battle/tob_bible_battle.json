@@ -19,6 +19,8 @@
   "column_break_players",
   "status",
   "invite_code",
+  "language",
+  "waiting_since",
   "winner",
   "section_break_ready",
   "player_1_ready",
@@ -89,6 +91,19 @@
    "in_standard_filter": 1,
    "search_index": 1,
    "description": "Short code shared out-of-band (share sheet) for a direct challenge. Only set for Pending/since-joined challenge battles, blank for normal matchmade ones. Deliberately NOT a DB-unique field (Frappe would reject a second blank value) — uniqueness among live Pending codes is enforced in matchmaking.create_challenge()."
+  },
+  {
+   "fieldname": "language",
+   "fieldtype": "Data",
+   "label": "Question Language",
+   "default": "en",
+   "description": "Questions are served in this language (en / ta); a short pool is topped up from English."
+  },
+  {
+   "fieldname": "waiting_since",
+   "fieldtype": "Datetime",
+   "label": "Waiting Since",
+   "description": "When both players were in the lobby — for the ready-up timeout."
   },
   {
    "fieldname": "winner",
