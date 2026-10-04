@@ -463,3 +463,83 @@ def old_sunday_school_points(reward_types="all", dry_run=1, list_types=0) -> dic
 			+ ", ".join(f"{k} {v:g}" for k, v in sorted(no_user.items(), key=lambda kv: -kv[1])[:10])
 		)
 	return {"students": len(report), "already": already, "no_user": len(no_user), **totals}
+
+
+
+# --- take back points from removed earning rules ----------------------------
+
+
+def revert_points(reasons="order", dry_run=1, allow_negative=0) -> dict:
+	"""Takes back points credited by earning rules that were removed
+	("order" = Placed a shop order, 20; "prayer" = Explored a prayer topic, 1).
+
+	Preview (nothing written):
+		bench --site <site> execute truth_of_bible.rewards.legacy.revert_points
+	Shop orders and prayer topics:
+		... --kwargs "{'reasons': 'order,prayer'}"
+	Write it:
+		... --kwargs "{'dry_run': 0}"
+
+	One negative row per member and reason ("<reason>_reverted"), so the
+	original awards stay in the history for the record and re-running skips
+	members already done. A member who already SPENT those points (coupon,
+	wallet) only loses what is left — the balance never goes below 0 unless
+	allow_negative=1 — and the shortfall is reported.
+	"""
+	from truth_of_bible.rewards import engine
+
+	dry_run = str(dry_run) not in ("0", "false", "False")
+	allow_negative = str(allow_negative) in ("1", "true", "True")
+	codes = [r.strip() for r in str(reasons).split(",") if r.strip()]
+	report = []
+	for code in codes:
+		rows = frappe.db.sql(
+			"""select user, count(*) as n, sum(points) as pts from `tabTOB Reward Ledger`
+			where reason=%s and points > 0 group by user order by pts desc""",
+			(code,),
+			as_dict=True,
+		)
+		for r in rows:
+			key = f"revert:{code}"
+			already = frappe.db.exists("TOB Reward Ledger", {"user": r.user, "dedupe_key": key})
+			balance = engine.balance(r.user)
+			credited = int(r.pts or 0)
+			take = credited if allow_negative else max(0, min(credited, balance))
+			entry = {
+				"reason": code,
+				"user": r.user,
+				"awards": int(r.n),
+				"credited": credited,
+				"balance": balance,
+				"take": 0 if already else take,
+				"short": 0 if already else credited - take,
+				"already": bool(already),
+			}
+			report.append(entry)
+			if dry_run or already or take <= 0:
+				continue
+			engine._lock_user(r.user)
+			engine._insert_once(
+				{
+					"doctype": "TOB Reward Ledger",
+					"user": r.user,
+					"reason": f"{code}_reverted",
+					"title": f"Points reversed: {'shop orders' if code == 'order' else code} ({int(r.n)})",
+					"points": -take,
+					"dedupe_key": key,
+				}
+			)
+
+	if not dry_run:
+		frappe.db.commit()
+	verb = "would take back" if dry_run else "took back"
+	print(f"{'reason':<8} {'user':<40} {'awards':>6} {'credited':>8} {'balance':>8} {'take':>6} {'short':>6}")
+	for e in report:
+		flag = "  (already done)" if e["already"] else ""
+		print(f"{e['reason']:<8} {e['user'][:40]:<40} {e['awards']:>6} {e['credited']:>8} {e['balance']:>8} {e['take']:>6} {e['short']:>6}{flag}")
+	totals = {k: sum(e[k] for e in report) for k in ("credited", "take", "short")}
+	print(
+		f"{len(report)} member row(s): {verb} {totals['take']} of {totals['credited']} points; "
+		f"{totals['short']} already spent (kept, balances not taken below 0)."
+	)
+	return {"members": len(report), **totals}

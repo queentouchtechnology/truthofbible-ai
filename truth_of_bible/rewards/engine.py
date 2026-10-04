@@ -4,13 +4,16 @@ person can't be "approved" into points; the app's own activity earns them.
 
 What earns points (all automatic, all capped so nothing can be farmed):
 
-- Reading, quizzes, devotionals, prayer topics — awarded from the activity
+- Reading, quizzes, devotionals — awarded from the activity
   events the app already reports (analytics/activity.py calls
   `on_activity`), so there is no separate "claim" step and no way to claim
   something that didn't happen.
 - Streak milestones — a daily-reading streak, celebrated at 3/7/14/30 days.
-- Daily check-in, sharing the app (capped), completing the profile (once),
-  and a completed shop order (from the WooCommerce webhook).
+- Daily check-in, sharing the app (capped), completing the profile (once).
+
+Removed: "Placed a shop order" (20) and "Explored a prayer topic" (1) —
+neither was on the Earn Points list. Points already credited for orders
+are taken back by rewards.legacy.revert_points.
 
 Deliberately NOT included: "follow on Instagram", "write a review" and
 similar — they can't be verified from here, and an honour-system reward
@@ -50,10 +53,8 @@ RULES = {
 	"read_chapter": {"points": 2, "title": "Read a Bible chapter", "per_day": 1, "event": "verse_opened"},
 	"complete_quiz": {"points": 3, "title": "Completed a quiz", "per_day": 3, "event": "quiz_completed"},
 	"devotional": {"points": 1, "title": "Read a devotional", "per_day": 1, "event": "devotional_viewed"},
-	"prayer": {"points": 1, "title": "Explored a prayer topic", "per_day": 1, "event": "prayer_topic_explored"},
 	"share_app": {"points": 1, "title": "Shared the app", "per_day": 3},
 	"complete_profile": {"points": 2, "title": "Completed your profile", "once": True},
-	"order": {"points": 20, "title": "Placed a shop order", "once_per_ref": True},
 }
 _EVENT_TO_RULE = {r["event"]: code for code, r in RULES.items() if r.get("event")}
 
@@ -88,9 +89,14 @@ def balance(user: str) -> int:
 
 
 def lifetime(user: str) -> int:
+	"""Points ever earned — minus any taken back (`*_reverted` rows, see
+	rewards.legacy.revert_points), so a reversal lowers this too."""
 	return int(
 		frappe.db.sql(
-			"select coalesce(sum(points), 0) from `tabTOB Reward Ledger` where user=%s and points > 0", user
+			"""select coalesce(sum(case when points > 0 then points
+				when reason like '%%\\_reverted' then points else 0 end), 0)
+			from `tabTOB Reward Ledger` where user=%s""",
+			user,
 		)[0][0]
 	)
 
@@ -215,7 +221,9 @@ def on_activity(user: str, event: str, event_time) -> None:
 
 
 def on_order_completed(user: str, order_id) -> None:
-	_award_rule(user, "order", ref=str(order_id))
+	"""Shop orders no longer earn points (the rule was removed). Kept so the
+	WooCommerce webhook's call stays harmless."""
+	return None
 
 
 # --- explicit actions --------------------------------------------------

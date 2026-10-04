@@ -37,6 +37,9 @@ _POINT_LABELS = {
 	"wallet": "Points conversion",
 	"redeem": "Coupon",
 	"order": "Shop order",
+	"order_reverted": "Shop order (reversed)",
+	"prayer": "Prayer topic",
+	"prayer_reverted": "Prayer topic (reversed)",
 }
 
 
