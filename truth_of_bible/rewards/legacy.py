@@ -284,3 +284,169 @@ def backfill_sunday_school_cards(dry_run=1) -> dict:
 		f"₹{report['amount']:g} in total; already had a card: {report['already']}"
 	)
 	return report
+
+
+# --- old Sunday School rewards -> Sunday School points history -------------
+
+_LEGACY_SS_KEY = "legacy-ss"
+
+
+def _reward_types(value) -> list[str]:
+	if not value:
+		return []
+	if isinstance(value, str):
+		return [t.strip() for t in value.split(",") if t.strip()]
+	return [str(t).strip() for t in value if str(t).strip()]
+
+
+def old_sunday_school_points(reward_types=None, dry_run=1) -> dict:
+	"""Shows old-system Sunday School rewards (Customer Coupon) in the
+	Sunday School points history, as history only.
+
+	Step 1 — which old reward types are Sunday School? Run without
+	reward_types: it lists every old reward_type with counts and totals.
+
+		bench --site <site> execute truth_of_bible.rewards.legacy.old_sunday_school_points
+
+	Step 2 — preview the points per member for the chosen types (nothing
+	is written while dry_run is 1):
+
+		bench --site <site> execute truth_of_bible.rewards.legacy.old_sunday_school_points \
+			--kwargs "{'reward_types': 'Sunday Goal, Weekly Quiz'}"
+
+	Step 3 — write them:
+
+		... --kwargs "{'reward_types': 'Sunday Goal, Weekly Quiz', 'dry_run': 0}"
+
+	Points = the old ₹ amount ÷ Sunday School `wallet_conversion_rate` (₹ per
+	point — the rate a redemption uses today), rounded.
+
+	Each old reward becomes TWO ledger rows on its original date, so the
+	balance, leaderboards, group totals and expiry clock don't change:
+	  +points  "Manual Adjustment"  "Earlier system · <type>"
+	  −points  closing row by the old status:
+	           Redeemed  -> "Redemption"  (already paid in the old wallet)
+	           Expired   -> "Expired"
+	           Available -> "Redemption"  "Moved to My Coupons" — it is
+	                         redeemable there once, as a cash card (see
+	                         copy_old_rewards), never from the points balance.
+	The history header then shows them in Earned / Redeemed / Expired.
+	Skips rewards already written (dedupe keys legacy-ss:<coupon>:…), so it
+	can be re-run.
+	"""
+	from frappe.utils import get_datetime, getdate
+
+	from truth_of_bible.sunday_school import engine as sunday_school
+
+	dry_run = str(dry_run) not in ("0", "false", "False")
+	types = _reward_types(reward_types)
+
+	if not types:
+		rows = frappe.db.sql(
+			"""select coalesce(reward_type, '') as reward_type, status, count(*) as n,
+				sum(reward_amount) as amount, count(distinct customer) as members
+			from `tabCustomer Coupon` group by coalesce(reward_type, ''), status
+			order by reward_type, status""",
+			as_dict=True,
+		)
+		print(f"{'reward_type':<30} {'status':<10} {'count':>6} {'members':>8} {'total ₹':>10}")
+		for r in rows:
+			print(f"{r.reward_type or '(blank)':<30} {r.status or '':<10} {r.n:>6} {r.members:>8} {flt(r.amount):>10.2f}")
+		print("Pick the Sunday School ones and run again with reward_types.")
+		return {"reward_types": sorted({r.reward_type for r in rows})}
+
+	rate = flt(sunday_school.settings().wallet_conversion_rate) or 1
+	today_ = getdate()
+	users: dict[str, str | None] = {}
+	per_user: dict[str, dict] = {}
+	skipped_no_user = 0
+	already = 0
+	unconvertible = []  # amounts that aren't a whole number of points at this rate
+
+	for c in frappe.get_all(
+		"Customer Coupon",
+		filters={"reward_type": ["in", types]},
+		fields=["name", "creation", "customer", "coupon_code", "expiry", "reward_amount", "status", "reward_type"],
+		order_by="creation asc",
+		limit_page_length=0,
+	):
+		if c.customer not in users:
+			users[c.customer] = _user_for(c.customer)
+		user = users[c.customer]
+		if not user:
+			skipped_no_user += 1
+			continue
+		earn_key = f"{_LEGACY_SS_KEY}:{c.name}:earn"
+		if frappe.db.exists("TOB Sunday School Points Ledger", {"user": user, "dedupe_key": earn_key}):
+			already += 1
+			continue
+
+		amount = flt(c.reward_amount)
+		exact = amount / rate
+		points = int(round(exact))
+		if abs(exact - points) > 0.01:
+			unconvertible.append((user, c.name, amount))
+		if points <= 0:
+			continue
+
+		status = c.status
+		if status == "Available" and c.expiry and getdate(c.expiry) < today_:
+			status = "Expired"
+		if status == "Redeemed":
+			close_source, close_title, bucket = "Redemption", f"Paid out in earlier system (₹{amount:g})", "redeemed"
+		elif status == "Available":
+			close_source, close_title, bucket = "Redemption", f"Moved to My Coupons as ₹{amount:g} cash reward", "my_coupons"
+		else:
+			close_source, close_title, bucket = "Expired", "Expired in earlier system", "expired"
+
+		row = per_user.setdefault(user, {"earned": 0, "redeemed": 0, "expired": 0, "my_coupons": 0, "amount": 0.0, "rewards": 0})
+		row["earned"] += points
+		row[bucket] += points
+		row["amount"] += amount
+		row["rewards"] += 1
+		if dry_run:
+			continue
+
+		at = get_datetime(c.creation)
+		week = sunday_school.week_start_of(getdate(at))
+		# Written directly, not via sunday_school.award(): award() would start
+		# the expiry clock on the +points row.
+		for source, title, pts, key in (
+			("Manual Adjustment", f"Earlier system · {c.reward_type}", points, earn_key),
+			(close_source, close_title, -points, f"{_LEGACY_SS_KEY}:{c.name}:close"),
+		):
+			doc = frappe.get_doc(
+				{
+					"doctype": "TOB Sunday School Points Ledger",
+					"user": user,
+					"week_start": week,
+					"source": source,
+					"title": title,
+					"points": pts,
+					"group": None,  # no group: past group totals stay as they were
+					"dedupe_key": key,
+				}
+			).insert(ignore_permissions=True)
+			# Original date, so history sorts the way it happened and the
+			# "since last reset" history view isn't affected.
+			frappe.db.set_value("TOB Sunday School Points Ledger", doc.name, "creation", at, update_modified=False)
+
+	if not dry_run:
+		frappe.db.commit()
+
+	verb = "would add" if dry_run else "added"
+	print(f"Rate: ₹{rate:g} per point. Types: {', '.join(types)}")
+	print(f"{'member':<40} {'rewards':>7} {'₹':>9} {'earned':>7} {'redeemed':>8} {'expired':>7} {'MyCoupons':>9}")
+	for user, r in sorted(per_user.items()):
+		print(
+			f"{user:<40} {r['rewards']:>7} {r['amount']:>9.2f} {r['earned']:>7} {r['redeemed']:>8} {r['expired']:>7} {r['my_coupons']:>9}"
+		)
+	totals = {k: sum(r[k] for r in per_user.values()) for k in ("rewards", "amount", "earned", "redeemed", "expired", "my_coupons")}
+	print(
+		f"{len(per_user)} member(s) {verb}: {totals['rewards']} rewards, ₹{totals['amount']:g} = {totals['earned']} points "
+		f"(redeemed {totals['redeemed']}, expired {totals['expired']}, in My Coupons {totals['my_coupons']}). "
+		f"Available balance unchanged. Already added {already}; no matching user {skipped_no_user}."
+	)
+	if unconvertible:
+		print(f"⚠ {len(unconvertible)} reward(s) aren't a whole number of points at ₹{rate:g}/point (rounded), e.g. {unconvertible[:3]}")
+	return {"members": len(per_user), "already": already, "no_user": skipped_no_user, "unconvertible": len(unconvertible), **totals}
