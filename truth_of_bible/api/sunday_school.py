@@ -205,8 +205,11 @@ def _weekly_performance(user: str, week, *, current: bool) -> dict:
 		["attended_class", "attended_quiz", "completed_memory_verse", "goal_bonus_awarded"], as_dict=True,
 	) or {"attended_class": 0, "attended_quiz": 0, "completed_memory_verse": 0, "goal_bonus_awarded": 0}
 
+	# Earned this week (same rule as the points table): a redemption or
+	# expiry this week must not shrink it, or push it below 0.
 	points_week = frappe.db.sql(
-		"select sum(points) from `tabTOB Sunday School Points Ledger` where user=%s and week_start=%s", (user, week)
+		f"select sum(points) from `tabTOB Sunday School Points Ledger` where user=%s and week_start=%s and {_EARNED}",
+		(user, week),
 	)[0][0] or 0
 
 	return {
@@ -219,6 +222,49 @@ def _weekly_performance(user: str, week, *, current: bool) -> dict:
 	}
 
 
+def _quiz_summary(user: str) -> dict:
+	"""Every Sunday School quiz assigned so far (not just this week's):
+	how many the student attended, their last score and their average %.
+	A quiz counts its FIRST attempt — the one Sunday School scores (see
+	engine.on_lms_quiz_submission)."""
+	week = engine.week_start_of()
+	quiz_ids = sorted(
+		set(
+			frappe.get_all(
+				"TOB Sunday School Quiz Assignment", filters={"week_start": ["<=", week]}, pluck="lms_quiz"
+			)
+		)
+		- {None, ""}
+	)
+	summary = {"assigned": len(quiz_ids), "attended": 0, "last": None, "average_pct": None}
+	if not quiz_ids:
+		return summary
+	first = {}
+	for row in frappe.db.sql(
+		"""select quiz, score, score_out_of, creation from `tabLMS Quiz Submission`
+		where member=%s and quiz in %s order by creation asc""",
+		(user, tuple(quiz_ids)),
+		as_dict=True,
+	):
+		first.setdefault(row.quiz, row)
+	if not first:
+		return summary
+	last = max(first.values(), key=lambda r: r.creation)
+	pcts = [100 * (r.score or 0) / r.score_out_of for r in first.values() if r.score_out_of]
+	summary.update(
+		attended=len(first),
+		last={
+			"quiz": last.quiz,
+			"title": frappe.db.get_value("LMS Quiz", last.quiz, "title") or last.quiz,
+			"score": int(last.score or 0),
+			"total": int(last.score_out_of or 0),
+			"date": str(last.creation.date()) if last.creation else None,
+		},
+		average_pct=round(sum(pcts) / len(pcts)) if pcts else None,
+	)
+	return summary
+
+
 @frappe.whitelist(methods=["GET"])
 def get_dashboard():
 	user = _require_login()
@@ -228,8 +274,9 @@ def get_dashboard():
 	# Lifetime EARNED (positive rows only) — distinct from the current
 	# unredeemed balance (engine.balance()), which drops to 0 on every
 	# redemption/expiry. This stat should only ever go up.
+	# Same rule as the All-time points table, so the two always agree.
 	points_all_time = frappe.db.sql(
-		"select sum(points) from `tabTOB Sunday School Points Ledger` where user=%s and points > 0", (user,)
+		f"select sum(points) from `tabTOB Sunday School Points Ledger` where user=%s and {_EARNED}", (user,)
 	)[0][0] or 0
 
 	overall = get_leaderboard("overall", str(week))
@@ -262,6 +309,7 @@ def get_dashboard():
 		"next_up": next_up,
 		"recent_history": recent,
 		"expiry": expiry_info,
+		"quiz_summary": _quiz_summary(user),
 	}
 
 
@@ -298,19 +346,37 @@ def get_weekly_winner_group(week_start=None):
 	Winner yet (that's what actually pays the Group Bonus; this is just
 	the standings), so it updates the moment points land."""
 	week = engine.week_start_of(week_start) if week_start else engine.week_start_of()
-	totals = frappe.db.sql(
-		"""select `group`, sum(points) as total from `tabTOB Sunday School Points Ledger`
-		where week_start=%s and `group` is not null and `group` != ''
-		group by `group` order by total desc limit 1""",
-		(week,), as_dict=True,
-	)
+	totals = _group_rank_rows(week)[:1]  # earned points, same rule as the points table
 	if not totals:
 		return {"week_start": str(week), "group": None}
 
 	top_group = totals[0]["group"]
 	group_doc = frappe.get_doc("TOB Sunday School Group", top_group)
-	members = frappe.get_all("TOB Sunday School Profile", filters={"group": top_group, "status": "Active"}, fields=["user"])
-	brief = _user_brief([m.user for m in members])
+	users = frappe.get_all("TOB Sunday School Profile", filters={"group": top_group, "status": "Active"}, pluck="user")
+	brief = _user_brief(users)
+	# Each member's points earned this week, so the app can rank them
+	# (podium + carousel), highest first.
+	earned = dict(
+		frappe.db.sql(
+			f"""select user, sum(points) from `tabTOB Sunday School Points Ledger`
+			where week_start=%s and {_EARNED} and user in %s group by user""",
+			(week, tuple(users)),
+		)
+	) if users else {}
+	members = sorted(
+		(
+			{
+				"id": u,
+				"name": (brief.get(u) or {}).get("full_name") or u,
+				"image": (brief.get(u) or {}).get("user_image"),
+				"points": int(earned.get(u) or 0),
+			}
+			for u in users
+		),
+		key=lambda m: (-m["points"], m["name"].lower()),
+	)
+	for i, m in enumerate(members):
+		m["rank"] = i + 1
 	return {
 		"week_start": str(week),
 		"group": {
@@ -318,10 +384,7 @@ def get_weekly_winner_group(week_start=None):
 			"group_name": group_doc.group_name,
 			"accent_color": group_doc.accent_color,
 			"points": int(totals[0]["total"]),
-			"members": [
-				{"name": (brief.get(m.user) or {}).get("full_name") or m.user, "image": (brief.get(m.user) or {}).get("user_image")}
-				for m in members
-			],
+			"members": members,
 		},
 	}
 
