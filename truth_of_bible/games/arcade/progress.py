@@ -19,7 +19,7 @@ import math
 import random
 
 import frappe
-from frappe.utils import add_days, get_datetime, getdate, now_datetime, nowdate
+from frappe.utils import add_days, getdate, now_datetime, nowdate
 
 from truth_of_bible.games.arcade.rounds import GAMES
 
