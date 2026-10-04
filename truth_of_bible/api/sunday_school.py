@@ -30,25 +30,42 @@ def _user_brief(users):
 	return {r.name: r for r in rows}
 
 
+# Points tables rank what was EARNED. Redemptions / expiries are negative
+# ledger rows that only empty the spendable balance, so they're left out
+# (otherwise cashing out points would drop a student down this week's
+# table, and an all-time table would just show current balances).
+_EARNED = "points > 0 and source not in ('Redemption', 'Expired')"
+
+
 def _rank_rows(week_start, source=None):
-	conditions = "week_start=%s"
-	params = [week_start]
+	"""week_start None = all time (lifetime points, incl. earlier-system
+	rewards added by rewards.legacy.old_sunday_school_points)."""
+	conditions = [_EARNED]
+	params = []
+	if week_start is not None:
+		conditions.append("week_start=%s")
+		params.append(week_start)
 	if source:
-		conditions += " and source=%s"
+		conditions.append("source=%s")
 		params.append(source)
 	return frappe.db.sql(
 		f"""select user, sum(points) as total from `tabTOB Sunday School Points Ledger`
-		where {conditions} group by user order by total desc""",
+		where {" and ".join(conditions)} group by user order by total desc""",
 		params, as_dict=True,
 	)
 
 
 def _group_rank_rows(week_start):
+	conditions = [_EARNED, "`group` is not null and `group` != ''"]
+	params = []
+	if week_start is not None:
+		conditions.append("week_start=%s")
+		params.append(week_start)
 	return frappe.db.sql(
-		"""select `group`, sum(points) as total from `tabTOB Sunday School Points Ledger`
-		where week_start=%s and `group` is not null and `group` != ''
+		f"""select `group`, sum(points) as total from `tabTOB Sunday School Points Ledger`
+		where {" and ".join(conditions)}
 		group by `group` order by total desc""",
-		(week_start,), as_dict=True,
+		params, as_dict=True,
 	)
 
 
@@ -61,8 +78,10 @@ _KIND_TO_SOURCE = {
 
 
 @frappe.whitelist(methods=["GET"])
-def get_leaderboard(kind="overall", week_start=None):
-	week = engine.week_start_of(week_start) if week_start else engine.week_start_of()
+def get_leaderboard(kind="overall", week_start=None, period="week"):
+	"""period "week" (default): the given / current week. "all": lifetime."""
+	lifetime = str(period).lower() in ("all", "lifetime", "all_time")
+	week = None if lifetime else (engine.week_start_of(week_start) if week_start else engine.week_start_of())
 
 	if kind == "group":
 		rows = _group_rank_rows(week)
@@ -94,7 +113,8 @@ def get_leaderboard(kind="overall", week_start=None):
 
 	return {
 		"kind": kind,
-		"week_start": str(week),
+		"period": "all" if lifetime else "week",
+		"week_start": str(week) if week else None,
 		"podium": entries[:3],
 		"leaderboard": entries,
 		"my_rank": my_entry["rank"] if my_entry else None,
