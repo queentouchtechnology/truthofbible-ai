@@ -1,0 +1,92 @@
+{
+ "doctype": "DocType",
+ "name": "TOB Bible Character",
+ "module": "Truth Of Bible",
+ "custom": 0,
+ "istable": 0,
+ "issingle": 0,
+ "quick_entry": 0,
+ "track_changes": 1,
+ "autoname": "hash",
+ "naming_rule": "Random",
+ "sort_field": "sort_order",
+ "sort_order": "ASC",
+ "engine": "InnoDB",
+ "description": "One Bible character (e.g. Moses, Paul, Ruth). Admin-authored content, browsed by every logged-in user via truth_of_bible.api.bible_characters (never raw REST for a normal user — same closed-permission-table pattern as TOB Bible Place).",
+ "field_order": [
+  "title",
+  "testament",
+  "status",
+  "column_break_1",
+  "sort_order",
+  "section_break_content",
+  "role",
+  "relevant_passages"
+ ],
+ "fields": [
+  {
+   "fieldname": "title",
+   "fieldtype": "Data",
+   "label": "Title",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "testament",
+   "fieldtype": "Select",
+   "label": "Testament",
+   "options": "Old Testament\nNew Testament",
+   "default": "Old Testament",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Draft\nPublished",
+   "default": "Draft",
+   "in_list_view": 1,
+   "description": "Only Published characters are ever returned to the app."
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "sort_order",
+   "fieldtype": "Int",
+   "label": "Sort Order",
+   "default": "0",
+   "description": "Lower shows first on the browse screen."
+  },
+  {
+   "fieldname": "section_break_content",
+   "fieldtype": "Section Break",
+   "label": "Content"
+  },
+  {
+   "fieldname": "role",
+   "fieldtype": "Small Text",
+   "label": "Role",
+   "description": "One-line description shown under the name, e.g. \"Led Israel out of Egypt and received the Ten Commandments.\""
+  },
+  {
+   "fieldname": "relevant_passages",
+   "fieldtype": "Long Text",
+   "label": "Relevant Passages",
+   "description": "One Bible reference per line (e.g. \"Acts 9\"), shown as tappable passages when this character comes up in search."
+  }
+ ],
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "report": 1,
+   "export": 1
+  }
+ ],
+ "links": []
+}
