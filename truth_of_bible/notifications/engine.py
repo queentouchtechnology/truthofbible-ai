@@ -171,6 +171,24 @@ def _send_one(template: dict, user: str, variables: dict, event_code: str) -> bo
 	)
 
 
+# Events fired once per real item — a quiz submission, a ticket reply, an
+# order, an enrollment. Each send is about a different thing, so the
+# once-per-event-per-day rule and the daily cap (meant for scheduled nudges
+# like "continue reading") must not swallow them: a second quiz result the
+# same day was silently dropped. Preferences and quiet hours still apply.
+_PER_ITEM_EVENTS = frozenset({
+	"QUIZ_RESULT_AVAILABLE", "NEW_QUIZ_AVAILABLE",
+	"TICKET_AGENT_REPLIED", "NEW_SUPPORT_TICKET", "TICKET_HIGH_PRIORITY",
+	"NEW_USER_REGISTERED", "NEW_ENROLLMENT", "COURSE_ENROLLED", "USER_ADDED_TO_BATCH", "LESSON_AVAILABLE",
+	"ORDER_PLACED", "ORDER_DELIVERED", "ORDER_CANCELLED", "REFUND_PROCESSED", "PAYMENT_FAILED",
+	"NEW_ORDER", "PAYMENT_FAILED_ADMIN",
+	"COMMUNITY_REPLY", "COMMUNITY_MENTION", "COMMUNITY_REPORT", "NEW_WHATSAPP_MESSAGE",
+	"READING_PLAN_COMPLETED", "SS_NEW_QUIZ_AVAILABLE", "SS_NEW_MEMORY_VERSE",
+	"SELLER_APPLICATION_RECEIVED", "SELLER_ACCOUNT_APPROVED", "SELLER_PRODUCT_SUBMITTED",
+	"SELLER_PRODUCT_APPROVED", "SELLER_PRODUCT_REJECTED", "SELLER_NEW_ORDER",
+})
+
+
 def _passes_checks(event_code: str, user: str, template: dict, force: bool, field_map: dict) -> bool:
 	pref = get_or_create_preference(user)
 
@@ -184,6 +202,9 @@ def _passes_checks(event_code: str, user: str, template: dict, force: bool, fiel
 	now_local = timeutils.local_now(pref.timezone)
 	if timeutils.in_quiet_hours(now_local, pref.quiet_hours_start, pref.quiet_hours_end):
 		return False
+
+	if event_code in _PER_ITEM_EVENTS:
+		return True
 
 	cap = pref.max_daily_notifications
 	if cap is None:
