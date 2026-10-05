@@ -30,7 +30,7 @@ import json
 import pytz
 
 import frappe
-from frappe.utils import get_system_timezone
+from frappe.utils import get_system_timezone, now_datetime
 
 from truth_of_bible.notifications import delivery, timeutils
 from truth_of_bible.notifications.admin_audience import admin_users
