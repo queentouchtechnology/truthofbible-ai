@@ -1456,7 +1456,7 @@ _NOTIFICATION_TEMPLATES = [
 		"audience": "User",
 		"category": "Encouragement",
 		"priority": "Low",
-		"deeplink_route": "/prayer",
+		"deeplink_route": "/todayVerse",
 		"trigger_note": "Hourly scan · sent once during your Daily Reminder Time, a different message chosen at random each day.",
 		"live_status": "Working",
 		"title": "{{ enc_title }}",
@@ -1981,25 +1981,25 @@ _ENCOURAGEMENT_MESSAGES = [
 	{
 		"title": "You don't have to carry this alone",
 		"body": "Jesus is right here with you. Whatever today has been, you don't have to face it by yourself.",
-		"deeplink_route": "/prayer",
+		"deeplink_route": "/todayVerse",
 		"tag": "Comfort",
 	},
 	{
 		"title": "Three words are enough to start",
 		"body": "Just say, \"Jesus, help me.\" He's already listening.",
-		"deeplink_route": "/prayer",
+		"deeplink_route": "/todayVerse",
 		"tag": "Invitation to Pray",
 	},
 	{
 		"title": "Don't know how to pray?",
 		"body": "There's no right way to begin. Tap here and we'll help you find the words.",
-		"deeplink_route": "/prayer",
+		"deeplink_route": "/todayVerse",
 		"tag": "Invitation to Pray",
 	},
 	{
 		"title": "Someone is listening",
 		"body": "It might feel like no one has time for you today. Jesus does.",
-		"deeplink_route": "/prayer",
+		"deeplink_route": "/todayVerse",
 		"tag": "Reassurance",
 	},
 	{
@@ -2011,13 +2011,13 @@ _ENCOURAGEMENT_MESSAGES = [
 	{
 		"title": "You're not forgotten",
 		"body": "Whatever today has been, you're seen, you're loved, and you're not alone.",
-		"deeplink_route": "/prayer",
+		"deeplink_route": "/todayVerse",
 		"tag": "Comfort",
 	},
 	{
 		"title": "A quiet place for you",
 		"body": "Step away for a moment. Bring whatever's on your heart to Him.",
-		"deeplink_route": "/prayer",
+		"deeplink_route": "/todayVerse",
 		"tag": "Invitation to Pray",
 	},
 	{
@@ -2029,25 +2029,25 @@ _ENCOURAGEMENT_MESSAGES = [
 	{
 		"title": "Hope for today",
 		"body": "Whatever's heavy right now, it doesn't get the final word.",
-		"deeplink_route": "/prayer",
+		"deeplink_route": "/todayVerse",
 		"tag": "Hope",
 	},
 	{
 		"title": "He already knows",
 		"body": "You don't have to explain everything. He already understands.",
-		"deeplink_route": "/prayer",
+		"deeplink_route": "/todayVerse",
 		"tag": "Reassurance",
 	},
 		{
 		"title": "He knows your name",
 		"body": "Not a number, not a stranger. He knows exactly who you are and what you're carrying.",
-		"deeplink_route": "/prayer",
+		"deeplink_route": "/todayVerse",
 		"tag": "Reassurance",
 	},
 	{
 		"title": "This moment counts",
 		"body": "You don't need a perfect setting or a clear head. Right now is enough.",
-		"deeplink_route": "/prayer",
+		"deeplink_route": "/todayVerse",
 		"tag": "Invitation to Pray",
 	},
 	{
@@ -2059,25 +2059,25 @@ _ENCOURAGEMENT_MESSAGES = [
 	{
 		"title": "Tired is okay",
 		"body": "You don't have to have it together to come to Him. Come as you are.",
-		"deeplink_route": "/prayer",
+		"deeplink_route": "/todayVerse",
 		"tag": "Comfort",
 	},
 	{
 		"title": "Small prayers still reach Him",
 		"body": "It doesn't have to be long or eloquent. He hears the small ones too.",
-		"deeplink_route": "/prayer",
+		"deeplink_route": "/todayVerse",
 		"tag": "Invitation to Pray",
 	},
 	{
 		"title": "Not the end of the story",
 		"body": "Whatever's unresolved today, it's still being written.",
-		"deeplink_route": "/prayer",
+		"deeplink_route": "/todayVerse",
 		"tag": "Hope",
 	},
 	{
 		"title": "Rest for a minute",
 		"body": "You don't have to solve everything before you talk to Him. Just rest here for a moment.",
-		"deeplink_route": "/prayer",
+		"deeplink_route": "/todayVerse",
 		"tag": "Comfort",
 	},
 	{
@@ -2089,19 +2089,19 @@ _ENCOURAGEMENT_MESSAGES = [
 	{
 		"title": "He's not keeping score",
 		"body": "However long it's been, He's not waiting to bring it up. He's just glad you're here.",
-		"deeplink_route": "/prayer",
+		"deeplink_route": "/todayVerse",
 		"tag": "Reassurance",
 	},
 	{
 		"title": "You're allowed to ask",
 		"body": "For peace, for strength, for anything. He wants to hear it from you.",
-		"deeplink_route": "/prayer",
+		"deeplink_route": "/todayVerse",
 		"tag": "Invitation to Pray",
 	},
 	{
 		"title": "Even now, there's hope",
 		"body": "Nothing you're facing today is bigger than what He can carry with you.",
-		"deeplink_route": "/prayer",
+		"deeplink_route": "/todayVerse",
 		"tag": "Hope",
 	},
 	{
@@ -2113,19 +2113,19 @@ _ENCOURAGEMENT_MESSAGES = [
 		{
 		"title": "Jesus already knows",
 		"body": "You don't have to explain the whole day. Jesus already understands it.",
-		"deeplink_route": "/prayer",
+		"deeplink_route": "/todayVerse",
 		"tag": "Reassurance",
 	},
 	{
 		"title": "Talk to Jesus about it",
 		"body": "Whatever's on your mind right now, He wants to hear it from you.",
-		"deeplink_route": "/prayer",
+		"deeplink_route": "/todayVerse",
 		"tag": "Invitation to Pray",
 	},
 	{
 		"title": "Jesus isn't rushing you",
 		"body": "Take your time. He's not going anywhere.",
-		"deeplink_route": "/prayer",
+		"deeplink_route": "/todayVerse",
 		"tag": "Comfort",
 	},
 	{
@@ -2137,37 +2137,37 @@ _ENCOURAGEMENT_MESSAGES = [
 	{
 		"title": "Jesus is still with you",
 		"body": "However today has gone, He hasn't stepped away.",
-		"deeplink_route": "/prayer",
+		"deeplink_route": "/todayVerse",
 		"tag": "Reassurance",
 	},
 	{
 		"title": "Bring it to Jesus",
 		"body": "You don't have to carry it alone. Bring it to Him, just as it is.",
-		"deeplink_route": "/prayer",
+		"deeplink_route": "/todayVerse",
 		"tag": "Invitation to Pray",
 	},
 	{
 		"title": "Jesus sees what today cost you",
 		"body": "Even the parts no one else noticed. Come rest for a minute.",
-		"deeplink_route": "/prayer",
+		"deeplink_route": "/todayVerse",
 		"tag": "Comfort",
 	},
 	{
 		"title": "A minute with Jesus",
 		"body": "That's all it takes to start. He'll meet you there.",
-		"deeplink_route": "/prayer",
+		"deeplink_route": "/todayVerse",
 		"tag": "Invitation to Pray",
 	},
 	{
 		"title": "Jesus is not keeping His distance",
 		"body": "Whatever's between you and today, He's closer than you think.",
-		"deeplink_route": "/prayer",
+		"deeplink_route": "/todayVerse",
 		"tag": "Reassurance",
 	},
 	{
 		"title": "Jesus goes first",
 		"body": "Before you find the words, He's already listening.",
-		"deeplink_route": "/prayer",
+		"deeplink_route": "/todayVerse",
 		"tag": "Invitation to Pray",
 	},
 	{
@@ -2179,7 +2179,7 @@ _ENCOURAGEMENT_MESSAGES = [
 	{
 		"title": "Jesus doesn't need a good day from you",
 		"body": "Come as you are, hard day and all.",
-		"deeplink_route": "/prayer",
+		"deeplink_route": "/todayVerse",
 		"tag": "Comfort",
 	},
 ]
