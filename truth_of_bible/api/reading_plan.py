@@ -539,11 +539,25 @@ def get_reading_stats():
 
 @frappe.whitelist(methods=["POST"])
 def save_note(plan, day_number, note=""):
-	"""The user's private journal note for one day (empty deletes it)."""
+	"""The user's private journal note for one day (empty deletes it).
+
+	Never loses a note: saves for one user run one at a time (user lock),
+	the existing row is re-read under that lock, and the database allows
+	only one note per (user, plan, day) — so a double tap or two devices
+	saving together update the same note instead of creating a second one.
+	Too-long text is refused (not silently cut)."""
 	user = _user()
 	day_number = int(day_number)
-	note = (note or "").strip()[:5000]
-	name = frappe.db.get_value("TOB Reading Plan Note", {"user": user, "plan": plan, "day_number": day_number}, "name")
+	note = (note or "").strip()
+	if len(note) > 5000:
+		frappe.throw(_("That note is too long — please keep it under 5,000 characters."), frappe.ValidationError)
+	_lock_user(user)
+	key = {"user": user, "plan": plan, "day_number": day_number}
+	row = frappe.db.sql(
+		"select name from `tabTOB Reading Plan Note` where user=%s and plan=%s and day_number=%s for update",
+		(user, plan, day_number),
+	)
+	name = row[0][0] if row else None
 	if not note:
 		if name:
 			frappe.delete_doc("TOB Reading Plan Note", name, ignore_permissions=True)
@@ -552,9 +566,14 @@ def save_note(plan, day_number, note=""):
 	else:
 		if not frappe.db.exists("TOB Reading Plan Day", {"plan": plan, "day_number": day_number}):
 			frappe.throw(_("That day doesn't exist on this plan."), frappe.ValidationError)
-		frappe.get_doc(
-			{"doctype": "TOB Reading Plan Note", "user": user, "plan": plan, "day_number": day_number, "note": note}
-		).insert(ignore_permissions=True)
+		try:
+			frappe.get_doc({"doctype": "TOB Reading Plan Note", **key, "note": note}).insert(ignore_permissions=True)
+		except (frappe.UniqueValidationError, frappe.DuplicateEntryError):
+			# Another save created it a moment ago — update that one.
+			frappe.clear_last_message()
+			frappe.db.set_value(
+				"TOB Reading Plan Note", frappe.db.get_value("TOB Reading Plan Note", key, "name"), "note", note
+			)
 	frappe.db.commit()
 	return {"plan": plan, "day_number": day_number, "note": note}
 
