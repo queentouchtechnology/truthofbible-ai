@@ -98,7 +98,7 @@ def _on_quiz_submission_created(doc):
 	if not member:
 		return
 
-	handle_event(
+	sent = handle_event(
 		"QUIZ_RESULT_AVAILABLE",
 		member,
 		{
@@ -106,6 +106,24 @@ def _on_quiz_submission_created(doc):
 			"quiz_id": doc.get("quiz"),
 			"percentage": doc.get("percentage") or 0,
 		},
+	)
+	# TEMP diagnostic for QUIZ_RESULT_AVAILABLE — remove once the gate is found.
+	pref = frappe.db.get_value(
+		"TOB Notification Preference",
+		member,
+		["quiz", "timezone", "quiet_hours_start", "quiet_hours_end", "max_daily_notifications"],
+		as_dict=True,
+	)
+	template = frappe.db.get_value(
+		"TOB Notification Template", "QUIZ_RESULT_AVAILABLE", ["enabled", "category", "title"], as_dict=True
+	)
+	frappe.log_error(
+		title="TEMP QUIZ_RESULT diag",
+		message=(
+			f"submission={doc.name} member={member} sent={sent}\n"
+			f"template={template}\npref={pref}\n"
+			f"sends_today={frappe.db.count('TOB Notification Send Log', {'user': member})}"
+		),
 	)
 
 
