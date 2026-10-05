@@ -24,7 +24,11 @@
   "section_break_look",
   "icon",
   "accent_color",
-  "description"
+  "category",
+  "description",
+  "section_break_generate",
+  "generate_books",
+  "generate_days"
  ],
  "fields": [
   {
@@ -99,9 +103,37 @@
    "description": "A fixed palette key the Flutter app maps to its own theme-aware colors — same reasoning as Icon."
   },
   {
+   "fieldname": "category",
+   "fieldtype": "Select",
+   "label": "Category",
+   "options": "Starter\nTopical\nBook Study\nThrough the Bible",
+   "default": "Starter",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "description": "Groups plans on the app's Reading Plans screen."
+  },
+  {
    "fieldname": "description",
    "fieldtype": "Small Text",
    "label": "Description"
+  },
+  {
+   "fieldname": "section_break_generate",
+   "fieldtype": "Section Break",
+   "label": "Generate days from books",
+   "collapsible": 1,
+   "description": "Build this plan's days automatically: whole chapters of the chosen books, split into the chosen number of days by reading length. Use the 'Generate days' button."
+  },
+  {
+   "fieldname": "generate_books",
+   "fieldtype": "Data",
+   "label": "Books",
+   "description": "Book numbers 1–66: a range like 40-43 (the Gospels), a list like 45-57, 19 — in reading order."
+  },
+  {
+   "fieldname": "generate_days",
+   "fieldtype": "Int",
+   "label": "Number of days"
   }
  ],
  "permissions": [

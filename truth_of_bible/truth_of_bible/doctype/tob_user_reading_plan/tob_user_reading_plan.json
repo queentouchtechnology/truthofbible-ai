@@ -22,7 +22,13 @@
   "started_at",
   "completed_at",
   "last_activity_at",
-  "completed_days"
+  "last_reminded_date",
+  "stale_nudged",
+  "completed_days",
+  "completion_log",
+  "schedule_start",
+  "reminder_time",
+  "reading_group"
  ],
  "fields": [
   {
@@ -77,10 +83,49 @@
    "label": "Last Activity At"
   },
   {
+   "fieldname": "last_reminded_date",
+   "fieldtype": "Date",
+   "label": "Last Reminded Date",
+   "read_only": 1,
+   "description": "The user's local date the daily \"Day N is ready\" reminder was last sent (notifications/reading_plan.py)."
+  },
+  {
+   "fieldname": "stale_nudged",
+   "fieldtype": "Check",
+   "label": "Stale Nudge Sent",
+   "default": "0",
+   "read_only": 1,
+   "description": "Set when the \"pick up where you left off\" nudge was sent for the current gap; cleared by any progress."
+  },
+  {
    "fieldname": "completed_days",
    "fieldtype": "Long Text",
    "label": "Completed Days",
    "description": "JSON list of completed day_number values, e.g. [1,2,3]. Read/written only by reading_plan.py."
+  },
+  {
+   "fieldname": "completion_log",
+   "fieldtype": "Long Text",
+   "label": "Completion Log",
+   "description": "JSON {day_number: 'YYYY-MM-DD'} — the date each day was ticked. Drives streaks and the reading calendar."
+  },
+  {
+   "fieldname": "schedule_start",
+   "fieldtype": "Date",
+   "label": "Schedule Start",
+   "description": "Day 1 of the user's schedule (they can move it). 'Behind' = scheduled days not yet read."
+  },
+  {
+   "fieldname": "reminder_time",
+   "fieldtype": "Time",
+   "label": "Reminder Time",
+   "description": "This plan's daily reminder time; empty = the user's Daily Reminder Time."
+  },
+  {
+   "fieldname": "reading_group",
+   "fieldtype": "Link",
+   "label": "Reading Group",
+   "options": "TOB Reading Plan Group"
   }
  ],
  "permissions": [

@@ -106,6 +106,7 @@ after_install = [
 	"truth_of_bible.install.seed_encouragement_messages",
 	"truth_of_bible.install.seed_whatsapp_quick_replies",
 	"truth_of_bible.install.seed_reading_plans",
+	"truth_of_bible.reading_plans.catalog.seed_catalog_plans",
 	"truth_of_bible.install.seed_bible_places",
 	"truth_of_bible.install.seed_bible_characters",
 	"truth_of_bible.install.seed_bible_events",
@@ -125,6 +126,7 @@ after_migrate = [
 	"truth_of_bible.install.seed_encouragement_messages",
 	"truth_of_bible.install.seed_whatsapp_quick_replies",
 	"truth_of_bible.install.seed_reading_plans",
+	"truth_of_bible.reading_plans.catalog.seed_catalog_plans",
 	"truth_of_bible.install.seed_bible_places",
 	"truth_of_bible.install.seed_bible_characters",
 	"truth_of_bible.install.seed_bible_events",
@@ -161,6 +163,7 @@ scheduler_events = {
 	},
 	"hourly": [
 		"truth_of_bible.notifications.reading.daily_scan",
+		"truth_of_bible.notifications.reading_plan.daily_scan",
 		"truth_of_bible.notifications.prayer.daily_scan",
 		"truth_of_bible.notifications.bible_study.daily_scan",
 		"truth_of_bible.notifications.encouragement.daily_scan",

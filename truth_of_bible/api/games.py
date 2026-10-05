@@ -48,6 +48,5 @@ def get_leaderboard(board: str = "xp", period: str = "week", country: str | None
 
 @frappe.whitelist(methods=["GET", "POST"])
 def get_badges(language: str | None = None) -> dict:
-	from truth_of_bible.games.bible_battle.matchmaking import normalize_language
-
-	return {"badges": progress.badges(_user(), normalize_language(language))}
+	"""Badge text is always English (dashboard text); `language` is ignored."""
+	return {"badges": progress.badges(_user())}

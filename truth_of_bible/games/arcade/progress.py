@@ -163,6 +163,10 @@ BADGES = [
 	{"code": "xp_5000", "icon": "workspace_premium", "en": "Sage", "ta": "ஞானி", "desc_en": "Earn 5,000 XP", "desc_ta": "5,000 XP பெறுங்கள்"},
 	{"code": "battle_win_1", "icon": "sports_martial_arts", "en": "First Victory", "ta": "முதல் வெற்றி", "desc_en": "Win a Bible Battle", "desc_ta": "ஒரு வேதாகமப் போரில் வெல்லுங்கள்"},
 	{"code": "battle_win_10", "icon": "emoji_events", "en": "Champion", "ta": "சாம்பியன்", "desc_en": "Win 10 Bible Battles", "desc_ta": "10 வேதாகமப் போர்களில் வெல்லுங்கள்"},
+	{"code": "plan_first", "icon": "menu_book", "en": "Finisher", "ta": "நிறைவு செய்தவர்", "desc_en": "Finish a reading plan", "desc_ta": "ஒரு வாசிப்புத் திட்டத்தை முடியுங்கள்"},
+	{"code": "plan_5", "icon": "workspace_premium", "en": "Faithful Reader", "ta": "உண்மையுள்ள வாசகர்", "desc_en": "Finish 5 reading plans", "desc_ta": "5 வாசிப்புத் திட்டங்களை முடியுங்கள்"},
+	{"code": "plan_streak_7", "icon": "local_fire_department", "en": "Daily Bread", "ta": "அன்றாட அப்பம்", "desc_en": "Read a plan 7 days in a row", "desc_ta": "7 நாள் தொடர்ந்து திட்டம் வாசியுங்கள்"},
+	{"code": "bible_year", "icon": "auto_awesome", "en": "Whole Bible", "ta": "முழு வேதாகமம்", "desc_en": "Finish Bible in a Year", "desc_ta": "ஒரு வருடத்தில் வேதாகமம் முடியுங்கள்"},
 	{"code": "bir_1200", "icon": "trending_up", "en": "Rising Star", "ta": "உயரும் நட்சத்திரம்", "desc_en": "Reach 1,200 BIR", "desc_ta": "1,200 BIR அடையுங்கள்"},
 ]
 
@@ -170,8 +174,12 @@ BADGES = [
 def _badge_context(user: str, profile) -> dict:
 	from truth_of_bible.rewards import engine as rewards
 
+	from truth_of_bible.reading_plans.stats import plan_dates, streaks
+
 	stats = _json(profile.stats, {})
 	rating = frappe.db.get_value("TOB Bible Battle Rating", user, ["bir", "wins"], as_dict=True) or {}
+	finished = frappe.get_all("TOB User Reading Plan", filters={"user": user, "status": "Completed"}, pluck="plan")
+	year_plan = frappe.db.get_value("TOB Reading Plan", {"title": "Bible in a Year"}, "name")
 	return {
 		"stats": stats,
 		"played": profile.games_played or 0,
@@ -180,6 +188,9 @@ def _badge_context(user: str, profile) -> dict:
 		"streak": rewards.streak(user),
 		"wins": rating.get("wins") or 0,
 		"bir": rating.get("bir") or 0,
+		"plans_done": len(set(finished)),
+		"plan_streak": streaks(plan_dates(user))[1],
+		"bible_year": bool(year_plan and year_plan in finished),
 	}
 
 
@@ -203,6 +214,10 @@ def _badge_met(code: str, c: dict) -> bool:
 		"battle_win_1": c["wins"] >= 1,
 		"battle_win_10": c["wins"] >= 10,
 		"bir_1200": c["bir"] >= 1200,
+		"plan_first": c["plans_done"] >= 1,
+		"plan_5": c["plans_done"] >= 5,
+		"plan_streak_7": c["plan_streak"] >= 7,
+		"bible_year": c["bible_year"],
 	}.get(code, False)
 
 
@@ -327,9 +342,8 @@ def on_battle_finished(battle) -> None:
 				outcome = "win" if battle.winner == user else "loss"
 			award_xp(user, BATTLE_XP[outcome], "battle", f"Bible Battle — {outcome}", f"battle:{battle.name}", battle.name)
 			rewards._award_rule(user, "play_game")
-			language = get_profile(user).language or "en"
-			check_badges(user, language)
-			missions(user, language)
+			check_badges(user)
+			missions(user)
 		except Exception:
 			frappe.log_error(title="Bible Battle progress", message=frappe.get_traceback())
 

@@ -33,6 +33,8 @@ _POINT_LABELS = {
 	"devotional": "Devotional",
 	"share_app": "Sharing",
 	"play_game": "Bible games",
+	"plan_day": "Reading plans",
+	"plan_complete": "Reading plans",
 	"complete_profile": "Profile",
 	"referral": "Referral",
 	"wallet": "Points conversion",

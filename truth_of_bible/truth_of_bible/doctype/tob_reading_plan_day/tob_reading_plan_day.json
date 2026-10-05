@@ -22,6 +22,8 @@
   "chapter_start",
   "chapter_end",
   "reference_label",
+  "segments",
+  "reflection",
   "note"
  ],
  "fields": [
@@ -79,6 +81,18 @@
    "label": "Reference Label",
    "reqd": 1,
    "description": "The human-readable reference shown on the card, e.g. \"Genesis 1-2\" or \"Psalm 23\"."
+  },
+  {
+   "fieldname": "segments",
+   "fieldtype": "Long Text",
+   "label": "Segments",
+   "description": "JSON [[book_id, chapter_start, chapter_end], …] — set when a day spans more than one book. Empty = book_id/chapter_start/chapter_end."
+  },
+  {
+   "fieldname": "reflection",
+   "fieldtype": "Small Text",
+   "label": "Reflection question",
+   "description": "Shown under Reflect for this day. Empty = a gentle general question."
   },
   {
    "fieldname": "note",

@@ -1,0 +1,74 @@
+{
+ "doctype": "DocType",
+ "name": "TOB Reading Plan Group",
+ "module": "Truth Of Bible",
+ "custom": 0,
+ "istable": 0,
+ "issingle": 0,
+ "quick_entry": 0,
+ "track_changes": 0,
+ "autoname": "hash",
+ "naming_rule": "Random",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "engine": "InnoDB",
+ "description": "Friends (or a Sunday School group) reading the same plan together. Members are TOB User Reading Plan rows linked by `group`; joined by invite code.",
+ "field_order": [
+  "plan",
+  "title",
+  "owner_user",
+  "invite_code",
+  "sunday_school_group"
+ ],
+ "fields": [
+  {
+   "fieldname": "plan",
+   "fieldtype": "Link",
+   "label": "Plan",
+   "options": "TOB Reading Plan",
+   "reqd": 1,
+   "in_list_view": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "title",
+   "fieldtype": "Data",
+   "label": "Title",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "owner_user",
+   "fieldtype": "Link",
+   "label": "Created By",
+   "options": "User"
+  },
+  {
+   "fieldname": "invite_code",
+   "fieldtype": "Data",
+   "label": "Invite Code",
+   "unique": 1,
+   "in_list_view": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "sunday_school_group",
+   "fieldtype": "Link",
+   "label": "Sunday School Group",
+   "options": "TOB Sunday School Group",
+   "search_index": 1,
+   "description": "Set when this is a Sunday School group's shared reading of the plan."
+  }
+ ],
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "report": 1,
+   "export": 1
+  }
+ ],
+ "links": []
+}

@@ -109,6 +109,12 @@ def _scan_one(row) -> None:
 def _try_continue_nudge(row, pref, now_local, today_local) -> bool:
 	if row.last_notified_continue_date == today_local:
 		return False
+	# A user following a reading plan gets the plan's own daily reminder
+	# (notifications/reading_plan.py) instead of this one.
+	from truth_of_bible.notifications.reading_plan import user_has_active_plan
+
+	if user_has_active_plan(row.user):
+		return False
 	if now_local.hour != timeutils.time_to_seconds(pref.daily_reminder_time) // 3600:
 		return False
 

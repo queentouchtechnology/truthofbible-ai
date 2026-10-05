@@ -79,12 +79,11 @@ def finish(user: str, session_name: str) -> dict:
 		frappe.throw(_("This round is already finished."))
 	if session.status != "Active":
 		frappe.throw(_("This round has ended."))
-	language = session.language or "en"
 	answered = len(json.loads(session.answers or "[]"))
 	perfect = answered == session.total and session.correct == session.total and session.total > 0
 
 	xp_before = progress.get_profile(user).total_xp or 0
-	level_before = progress.level_info(xp_before, language)["level"]
+	level_before = progress.level_info(xp_before)["level"]
 
 	session.status = "Completed"
 	session.completed_at = now_datetime()
@@ -98,10 +97,12 @@ def finish(user: str, session_name: str) -> dict:
 		progress.award_xp(user, round_xp, session.game, f"{session.game} round", f"round:{session.name}", session.name)
 	points = rewards._award_rule(user, "play_game") if answered else 0
 
-	new_badges = progress.check_badges(user, language)
-	mission_state = progress.missions(user, language)
+	# Badges, missions and levels are dashboard text: always English. Only
+	# the questions themselves follow the language setting.
+	new_badges = progress.check_badges(user)
+	mission_state = progress.missions(user)
 	xp_after = progress.get_profile(user).total_xp or 0
-	level = progress.level_info(xp_after, language)
+	level = progress.level_info(xp_after)
 
 	meta = json.loads(session.items).get("meta") or {}
 	chest = None
@@ -124,7 +125,7 @@ def hub(user: str, language: str | None, country: str | None) -> dict:
 	profile = progress.get_profile(user, country, language)
 	stats = progress._json(profile.stats, {})
 	rating = frappe.db.get_value("TOB Bible Battle Rating", user, ["bir", "wins", "losses", "games_played"], as_dict=True) or {}
-	all_badges = progress.badges(user, language)
+	all_badges = progress.badges(user)
 	games = []
 	for g in rounds.GAMES:
 		s = stats.get(g) or {}
@@ -136,7 +137,7 @@ def hub(user: str, language: str | None, country: str | None) -> dict:
 	return {
 		"language": language,
 		"country": profile.country,
-		"level": progress.level_info(profile.total_xp or 0, language),
+		"level": progress.level_info(profile.total_xp or 0),
 		"xp_today": progress.xp_today(user),
 		"games_played": profile.games_played or 0,
 		"streak": rewards.streak(user),
@@ -145,7 +146,7 @@ def hub(user: str, language: str | None, country: str | None) -> dict:
 		"battle": {"wins": rating.get("wins") or 0, "losses": rating.get("losses") or 0, "played": rating.get("games_played") or 0},
 		"weekly_rank": rank["rank"] if rank else None,
 		"games": games,
-		"missions": progress.missions(user, language),
+		"missions": progress.missions(user),
 		"badges": {"earned": sum(1 for b in all_badges if b["earned"]), "total": len(all_badges),
 			"recent": [b for b in all_badges if b["earned"]][-3:]},
 	}
