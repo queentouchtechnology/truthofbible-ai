@@ -1183,7 +1183,7 @@ _NOTIFICATION_TEMPLATES = [
 		"trigger_note": "Hourly scan · same trigger as Continue Reading, used when no last-read book is known yet.",
 		"live_status": "Working",
 		"title": "Take a few quiet moments in God's Word today",
-		"body": "",
+		"body": "Open today's reading and let God speak to you.",
 		"description": "Same trigger as BIBLE_READING_CONTINUE, used when there's no known last-read location yet (e.g. a brand new reader).",
 	},
 	# Reading plans (notifications/reading_plan.py). For a user with an active
@@ -1237,7 +1237,7 @@ _NOTIFICATION_TEMPLATES = [
 		"trigger_note": "Hourly scan · sent once you've gone 3 days without reading.",
 		"live_status": "Working",
 		"title": "It's a new day. Spend a few moments in God's Word.",
-		"body": "",
+		"body": "Even a few verses today can restart your rhythm.",
 		"description": "3-day inactivity tier. Never mentions the gap in days — see the plan's Phase 12/9 tone rules.",
 	},
 	{
@@ -1249,7 +1249,7 @@ _NOTIFICATION_TEMPLATES = [
 		"trigger_note": "Hourly scan · sent once you've gone 7 days without reading.",
 		"live_status": "Working",
 		"title": "Whenever you're ready, God's Word is here for you.",
-		"body": "",
+		"body": "A short reading today is a good place to start again.",
 		"description": "7-day inactivity tier.",
 	},
 	{
@@ -1261,7 +1261,7 @@ _NOTIFICATION_TEMPLATES = [
 		"trigger_note": "Hourly scan · sent once you've gone 14 days without reading.",
 		"live_status": "Working",
 		"title": "A quiet moment in Scripture is always waiting for you.",
-		"body": "",
+		"body": "Pick up where you left off whenever you're ready.",
 		"description": "14-day inactivity tier.",
 	},
 	{
@@ -1273,7 +1273,7 @@ _NOTIFICATION_TEMPLATES = [
 		"trigger_note": "Hourly scan · sent once you've gone 30 days without reading.",
 		"live_status": "Working",
 		"title": "We'd love to walk through God's Word with you again.",
-		"body": "",
+		"body": "Come back to the Word today. We'll be glad to have you.",
 		"description": "30-day inactivity tier — the gentlest, most welcoming copy of the four, not the most urgent.",
 	},
 	# --- Quiz + support-ticket slice (notifications/triggers.py). Both
@@ -2283,7 +2283,7 @@ def backfill_notification_template_metadata():
 	future migrate.)
 	"""
 	for entry in _NOTIFICATION_TEMPLATES:
-		fields_to_fill = {k: entry[k] for k in ("trigger_note", "live_status") if entry.get(k)}
+		fields_to_fill = {k: entry[k] for k in ("trigger_note", "live_status", "body") if entry.get(k)}
 		if not fields_to_fill:
 			continue
 		current = frappe.db.get_value(

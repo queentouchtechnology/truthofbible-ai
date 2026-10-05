@@ -45,7 +45,10 @@ doc_events = {
 		"after_insert": "truth_of_bible.notifications.triggers.on_quiz_created",
 	},
 	"LMS Quiz Submission": {
-		"after_insert": "truth_of_bible.notifications.triggers.on_quiz_submission_created",
+		"after_insert": [
+			"truth_of_bible.notifications.triggers.on_quiz_submission_created",
+			"truth_of_bible.api.lms_quiz_hooks.on_submission_created",
+		],
 	},
 	"Communication": {
 		"after_insert": "truth_of_bible.notifications.triggers.on_communication_created",
@@ -87,9 +90,6 @@ doc_events = {
 	# submission rather than the student ever calling a Sunday-School-owned
 	# submit endpoint (there isn't one; quizzes are taken entirely through
 	# the app's existing LMS Quiz flow).
-	"LMS Quiz Submission": {
-		"after_insert": "truth_of_bible.api.lms_quiz_hooks.on_submission_created",
-	},
 }
 
 # Idempotent — safe to run on every migrate, matching qmp_lms_bridge's own

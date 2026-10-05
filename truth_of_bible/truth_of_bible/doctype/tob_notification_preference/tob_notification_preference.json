@@ -31,6 +31,8 @@
   "column_break_cat2",
   "account",
   "announcements",
+  "sunday_school",
+  "marketplace",
   "marketing_opt_in",
   "section_break_timing",
   "daily_reminder_time",
@@ -152,6 +154,18 @@
    "fieldname": "announcements",
    "fieldtype": "Check",
    "label": "Announcements",
+   "default": "1"
+  },
+  {
+   "fieldname": "sunday_school",
+   "fieldtype": "Check",
+   "label": "Sunday School",
+   "default": "1"
+  },
+  {
+   "fieldname": "marketplace",
+   "fieldtype": "Check",
+   "label": "Marketplace",
    "default": "1"
   },
   {

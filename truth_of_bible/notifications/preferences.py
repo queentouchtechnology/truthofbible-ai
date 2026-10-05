@@ -18,6 +18,8 @@ DEFAULTS = {
 	"shopping": 1,
 	"account": 1,
 	"announcements": 1,
+	"sunday_school": 1,
+	"marketplace": 1,
 	"marketing_opt_in": 0,
 	"daily_reminder_time": "07:00:00",
 	"quiet_hours_start": "21:00:00",

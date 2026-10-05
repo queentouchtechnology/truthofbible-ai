@@ -108,7 +108,7 @@ def flag_created():
 
 	frappe.log_error(
 		title="Notification engine: flag_created payload (shape discovery)",
-		message=f"Raw payload: {payload}",
+		message=f"Top-level keys: {sorted(payload.keys()) if isinstance(payload, dict) else type(payload).__name__}",
 	)
 	_handle_flag(payload)
 	return {"ok": True}

@@ -25,8 +25,10 @@ style (plain service functions, e.g. `games/bible_battle/*.py`) rather
 than an interpreter for rule rows nobody but this file will ever read.
 """
 
+import pytz
+
 import frappe
-from frappe.utils import get_datetime, now_datetime, nowdate
+from frappe.utils import get_system_timezone
 
 from truth_of_bible.notifications import delivery, timeutils
 from truth_of_bible.notifications.admin_audience import admin_users
@@ -44,6 +46,8 @@ _CATEGORY_PREFERENCE_FIELD = {
 	"Shopping": "shopping",
 	"Account": "account",
 	"Announcements": "announcements",
+	"Sunday School": "sunday_school",
+	"Marketplace": "marketplace",
 }
 
 # Admin-audience categories → the admin-side preference toggle. A separate
@@ -154,7 +158,7 @@ def _send_one(template: dict, user: str, variables: dict, event_code: str) -> bo
 	# reports "received"/"tapped" back against it, which is what makes
 	# open rates and engagement measurable at all.
 	send_id = _record_send(user, event_code)
-	delivery.send_push(
+	return delivery.send_push(
 		user=user,
 		title=title,
 		body=body,
@@ -163,27 +167,29 @@ def _send_one(template: dict, user: str, variables: dict, event_code: str) -> bo
 		notif_type=event_code,
 		send_id=send_id,
 	)
-	return True
 
 
 def _passes_checks(event_code: str, user: str, template: dict, force: bool, field_map: dict) -> bool:
 	pref = get_or_create_preference(user)
 
+	if force:
+		return True
+
 	field = field_map.get(template.category)
 	if field and not pref.get(field):
 		return False
-
-	if force:
-		return True
 
 	now_local = timeutils.local_now(pref.timezone)
 	if timeutils.in_quiet_hours(now_local, pref.quiet_hours_start, pref.quiet_hours_end):
 		return False
 
-	if _sent_today_count(user) >= (pref.max_daily_notifications or 6):
+	cap = pref.max_daily_notifications
+	if cap is None:
+		cap = 6
+	if _sent_today_count(user, pref.timezone) >= cap:
 		return False
 
-	if _already_sent_today(user, event_code):
+	if _already_sent_today(user, event_code, pref.timezone):
 		return False
 
 	return True
@@ -201,21 +207,26 @@ def _write_notification_log(user: str, title: str, body: str) -> None:
 	).insert(ignore_permissions=True)
 
 
-def _today_start():
-	return get_datetime(nowdate())
+def _today_start(user_timezone: str | None):
+	"""Start of the user's own local day, as a naive site-time datetime —
+	the same form sent_at is stored in — so caps and dedup reset at the
+	user's midnight, not the site's."""
+	local_midnight = timeutils.local_now(user_timezone).replace(hour=0, minute=0, second=0, microsecond=0)
+	site_tz = pytz.timezone(get_system_timezone())
+	return local_midnight.astimezone(site_tz).replace(tzinfo=None)
 
 
-def _sent_today_count(user: str) -> int:
+def _sent_today_count(user: str, user_timezone: str | None) -> int:
 	return frappe.db.count(
-		"TOB Notification Send Log", {"user": user, "sent_at": [">=", _today_start()]}
+		"TOB Notification Send Log", {"user": user, "sent_at": [">=", _today_start(user_timezone)]}
 	)
 
 
-def _already_sent_today(user: str, event_code: str) -> bool:
+def _already_sent_today(user: str, event_code: str, user_timezone: str | None) -> bool:
 	return bool(
 		frappe.db.exists(
 			"TOB Notification Send Log",
-			{"user": user, "event_code": event_code, "sent_at": [">=", _today_start()]},
+			{"user": user, "event_code": event_code, "sent_at": [">=", _today_start(user_timezone)]},
 		)
 	)
 
