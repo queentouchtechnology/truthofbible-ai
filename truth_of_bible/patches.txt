@@ -4,3 +4,4 @@
 # (as opposed to schema) do belong here — see the entry below.
 truth_of_bible.patches.v1_0.merge_duplicate_whatsapp_conversations
 truth_of_bible.patches.v1_0.unique_reward_ledger_dedupe
+truth_of_bible.patches.v1_0.quiz_result_deeplink_to_result_screen

@@ -104,6 +104,7 @@ def _on_quiz_submission_created(doc):
 		{
 			"quiz_title": doc.get("quiz_title") or "",
 			"quiz_id": doc.get("quiz"),
+			"submission_id": doc.name,
 			"percentage": doc.get("percentage") or 0,
 		},
 	)

@@ -1301,8 +1301,9 @@ _NOTIFICATION_TEMPLATES = [
 		"audience": "User",
 		"category": "Quiz",
 		"priority": "Low",
-		"deeplink_route": "/viewQuiz",
-		"deeplink_id_field": "quiz_id",
+		# Opens this submission's result (ScoreScreen), not the quiz itself.
+		"deeplink_route": "/viewQuizResult",
+		"deeplink_id_field": "submission_id",
 		"trigger_note": "Instant · fires the moment a quiz submission is graded.",
 		"live_status": "Working",
 		"title": "Your result for {{ quiz_title }} is ready",
