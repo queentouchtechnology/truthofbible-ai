@@ -1466,18 +1466,16 @@ _NOTIFICATION_TEMPLATES = [
 	# --- Admin-audience events (engine.py fans these out to
 	# admin_audience.admin_users() — Batch Evaluator / Moderator / Course
 	# Creator role holders, matching the Flutter app's own admin-access
-	# check). No dedicated admin deep-link routes exist yet in the Flutter
-	# app (only user-facing routes are registered in deepLink_routes.dart),
-	# so these deliberately deep-link to /dashboard as a safe, always-real
-	# interim target — same honest-interim-route pattern already used for
-	# the Bible-reading templates' /todayVerse, ahead of a real admin
-	# screen route being added later.
+	# check). The two ticket events deep-link to /adminTicket (the admin
+	# SupportTicketDetailScreen, id = Issue name); the rest still use
+	# /dashboard as a safe interim target until admin routes exist for them.
 	{
 		"event_code": "NEW_SUPPORT_TICKET",
 		"audience": "Admin",
 		"category": "Support",
 		"priority": "High",
-		"deeplink_route": "/dashboard",
+		"deeplink_route": "/adminTicket",
+		"deeplink_id_field": "ticket_id",
 		"trigger_note": "Instant · fires when a new support ticket is raised, to every admin.",
 		"live_status": "Working",
 		"title": "New support ticket",
@@ -1489,7 +1487,8 @@ _NOTIFICATION_TEMPLATES = [
 		"audience": "Admin",
 		"category": "Support",
 		"priority": "High",
-		"deeplink_route": "/dashboard",
+		"deeplink_route": "/adminTicket",
+		"deeplink_id_field": "ticket_id",
 		"trigger_note": "Instant · fires when a ticket's priority changes to High or Urgent.",
 		"live_status": "Working",
 		"title": "Ticket escalated to {{ priority }}",
