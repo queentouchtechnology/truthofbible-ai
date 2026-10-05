@@ -25,6 +25,8 @@ style (plain service functions, e.g. `games/bible_battle/*.py`) rather
 than an interpreter for rule rows nobody but this file will ever read.
 """
 
+import json
+
 import pytz
 
 import frappe
@@ -147,7 +149,7 @@ def _send_one(template: dict, user: str, variables: dict, event_code: str) -> bo
 	# hook must never block the actual push below, which is this app's own,
 	# independent, already-proven-working delivery path.
 	try:
-		_write_notification_log(user, title, body)
+		_write_notification_log(user, title, body, route, route_id)
 	except Exception:
 		frappe.log_error(
 			title=f"Notification engine: writing Notification Log failed ({event_code})",
@@ -195,7 +197,10 @@ def _passes_checks(event_code: str, user: str, template: dict, force: bool, fiel
 	return True
 
 
-def _write_notification_log(user: str, title: str, body: str) -> None:
+def _write_notification_log(user: str, title: str, body: str, route: str | None, route_id) -> None:
+	# The app's in-app list reads this back to open the same destination the
+	# push did — without it every tap from the list fell through to the dashboard.
+	link = json.dumps({"route": route, "id": str(route_id) if route_id is not None else ""}) if route else None
 	frappe.get_doc(
 		{
 			"doctype": "Notification Log",
@@ -203,6 +208,7 @@ def _write_notification_log(user: str, title: str, body: str) -> None:
 			"email_content": body,
 			"type": "Alert",
 			"for_user": user,
+			"link": link,
 		}
 	).insert(ignore_permissions=True)
 
