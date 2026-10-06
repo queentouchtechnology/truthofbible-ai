@@ -53,8 +53,14 @@ def _credentials(user: str) -> dict:
 	if not api_key or not api_secret:
 		api_key = api_key or frappe.generate_hash(length=15)
 		api_secret = frappe.generate_hash(length=15)
-		frappe.db.set_value("User", user, "api_key", api_key, update_modified=False)
 		set_encrypted_password("User", user, api_secret, "api_secret")
+		# The column must hold the masked placeholder (as Frappe's own
+		# generate_keys leaves it): an EMPTY Password field makes the next
+		# save of this User (profile edit, role change, ...) delete the
+		# stored secret, which silently breaks the member's key.
+		frappe.db.set_value(
+			"User", user, {"api_key": api_key, "api_secret": "*" * len(api_secret)}, update_modified=False
+		)
 	return {"api_key": api_key, "api_secret": api_secret, "auth": f"token {api_key}:{api_secret}"}
 
 
