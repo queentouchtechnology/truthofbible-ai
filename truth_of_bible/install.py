@@ -1467,7 +1467,9 @@ _NOTIFICATION_TEMPLATES = [
 	# admin_audience.admin_users() — Batch Evaluator / Moderator / Course
 	# Creator role holders, matching the Flutter app's own admin-access
 	# check). The two ticket events deep-link to /adminTicket (the admin
-	# SupportTicketDetailScreen, id = Issue name); the rest still use
+	# SupportTicketDetailScreen, id = Issue name) and NEW_ENROLLMENT to
+	# /adminEnrollments (Enrollments & Progress searched for the member's
+	# email); the rest still use
 	# /dashboard as a safe interim target until admin routes exist for them.
 	{
 		"event_code": "NEW_SUPPORT_TICKET",
@@ -1512,7 +1514,8 @@ _NOTIFICATION_TEMPLATES = [
 		"audience": "Admin",
 		"category": "LMS",
 		"priority": "Low",
-		"deeplink_route": "/dashboard",
+		"deeplink_route": "/adminEnrollments",
+		"deeplink_id_field": "member",
 		"trigger_note": "Instant · fires when a member enrolls in a course.",
 		"live_status": "Working",
 		"title": "New course enrollment",
