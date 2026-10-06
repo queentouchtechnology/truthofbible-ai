@@ -22,7 +22,7 @@ def _theme_dict(t) -> dict:
 	}
 
 
-@frappe.whitelist(methods=["GET"])
+@frappe.whitelist(allow_guest=True, methods=["GET"])
 def list_themes():
 	themes = frappe.get_all(
 		"TOB Bible Theme",

@@ -22,7 +22,7 @@ def _event_dict(e) -> dict:
 	}
 
 
-@frappe.whitelist(methods=["GET"])
+@frappe.whitelist(allow_guest=True, methods=["GET"])
 def list_events():
 	events = frappe.get_all(
 		"TOB Bible Event",

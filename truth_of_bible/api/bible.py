@@ -164,7 +164,7 @@ def _ask(conversation_name: str, question: str, language: str) -> dict:
 	}
 
 
-@frappe.whitelist(methods=["GET", "POST"])
+@frappe.whitelist(allow_guest=True, methods=["GET", "POST"])
 def get_blessing_verse() -> dict:
 	"""One reference from the curated TOB Blessing Verse bank -- the same
 	pick for every user on a given day (deterministic by day-of-year), so

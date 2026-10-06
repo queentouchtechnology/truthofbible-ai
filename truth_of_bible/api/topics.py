@@ -4,7 +4,7 @@ involved. This is curated/admin-entered data, not generated."""
 import frappe
 
 
-@frappe.whitelist()
+@frappe.whitelist(allow_guest=True)
 def search(query: str, language: str) -> list[dict]:
 	return frappe.get_all(
 		"TOB Bible Topic Translation",

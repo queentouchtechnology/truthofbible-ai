@@ -4,6 +4,8 @@ import requests
 from frappe import _
 from frappe.utils.file_manager import save_file
 
+from truth_of_bible.api.app_auth import APP_MEMBER_ROLES
+
 
 def _token_is_for_this_app(access_token) -> bool:
 	"""Strict: a Google access token is accepted only if it was issued to one
@@ -86,7 +88,7 @@ def google_login(access_token, referralCode=None):
 			)
 			user.insert(ignore_permissions=True)
 
-			for role in ["Customer", "LMS Student"]:
+			for role in APP_MEMBER_ROLES:
 				user.append("roles", {"role": role})
 
 			user.save(ignore_permissions=True)
@@ -133,6 +135,11 @@ def google_login(access_token, referralCode=None):
 			"user_id": email,
 			"profile_image": frappe.utils.get_url() + profile_image if profile_image else "",
 		}
+		# The member's own API key (+ roles) — the app no longer uses a
+		# shared admin key; see app_auth.
+		from truth_of_bible.api.app_auth import signed_in_payload
+
+		response = {**signed_in_payload(email), **response}
 
 		frappe.db.commit()
 		return response

@@ -43,7 +43,7 @@ def _journey_dict(j) -> dict:
 	}
 
 
-@frappe.whitelist(methods=["GET"])
+@frappe.whitelist(allow_guest=True, methods=["GET"])
 def list_places():
 	places = frappe.get_all(
 		"TOB Bible Place",
@@ -58,7 +58,7 @@ def list_places():
 	return {"places": [_place_dict(p) for p in places]}
 
 
-@frappe.whitelist(methods=["GET"])
+@frappe.whitelist(allow_guest=True, methods=["GET"])
 def get_place(place):
 	p = frappe.get_doc("TOB Bible Place", place)
 	if p.status != "Published" and "System Manager" not in frappe.get_roles():
@@ -87,7 +87,7 @@ def get_place(place):
 	return result
 
 
-@frappe.whitelist(methods=["GET"])
+@frappe.whitelist(allow_guest=True, methods=["GET"])
 def list_journeys():
 	journeys = frappe.get_all(
 		"TOB Bible Journey",
@@ -117,7 +117,7 @@ def list_journeys():
 	return {"journeys": rows}
 
 
-@frappe.whitelist(methods=["GET"])
+@frappe.whitelist(allow_guest=True, methods=["GET"])
 def get_journey(journey):
 	j = frappe.get_doc("TOB Bible Journey", journey)
 	if j.status != "Published" and "System Manager" not in frappe.get_roles():

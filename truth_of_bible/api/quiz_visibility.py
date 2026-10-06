@@ -24,7 +24,7 @@ from frappe.utils import cint
 from truth_of_bible.sunday_school import engine
 
 
-@frappe.whitelist(methods=["GET"])
+@frappe.whitelist(allow_guest=True, methods=["GET"])
 def list_public_quizzes(fields=None, filters=None, order_by=None, limit_page_length=None, limit_start=None):
 	all_filters = json.loads(filters) if filters else []
 	if not isinstance(all_filters, list):

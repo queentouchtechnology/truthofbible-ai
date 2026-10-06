@@ -22,7 +22,7 @@ def _character_dict(c) -> dict:
 	}
 
 
-@frappe.whitelist(methods=["GET"])
+@frappe.whitelist(allow_guest=True, methods=["GET"])
 def list_characters():
 	characters = frappe.get_all(
 		"TOB Bible Character",

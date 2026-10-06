@@ -5,3 +5,4 @@
 truth_of_bible.patches.v1_0.merge_duplicate_whatsapp_conversations
 truth_of_bible.patches.v1_0.unique_reward_ledger_dedupe
 truth_of_bible.patches.v1_0.quiz_result_deeplink_to_result_screen
+truth_of_bible.patches.v1_0.app_member_permissions
