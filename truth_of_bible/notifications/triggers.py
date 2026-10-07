@@ -120,15 +120,25 @@ def on_communication_created(doc, method=None):
 		)
 
 
+# Roles whose replies count as support answering the ticket.
+_SUPPORT_AGENT_ROLES = {"System Manager", "Support Team", "Batch Evaluator", "Moderator", "Course Creator"}
+
+
+def _mark_replied(issue: str) -> None:
+	"""Support answered: show the ticket as Replied (the member app reads
+	this). Frappe itself only ever moves a ticket back to Open (on a received
+	message), so without this the member saw "Open" forever. Resolved /
+	Closed tickets are left alone."""
+	if frappe.db.get_value("Issue", issue, "status") not in ("Resolved", "Closed", "Replied"):
+		frappe.db.set_value("Issue", issue, "status", "Replied")
+
+
 def _on_communication_created(doc):
 	if doc.get("reference_doctype") != "Issue" or not doc.get("reference_name"):
 		return
-	# `sent_or_received == "Sent"` is set by BOTH an agent's reply to a
-	# ticket AND the customer's own "reply to my ticket" flow — it cannot
-	# distinguish the two on its own (confirmed against the Flutter client's
-	# own addReply_request.dart, which posts the customer's replies through
-	# the exact same field). The only reliable discriminator is comparing
-	# who actually sent this Communication against who raised the ticket.
+	# Agent replies are "Sent"; the member app posts the member's own replies
+	# as "Received" (Frappe then reopens the ticket). Older app builds sent
+	# member replies as "Sent" too, so the sender is still checked below.
 	if doc.get("sent_or_received") != "Sent":
 		return
 
@@ -137,8 +147,15 @@ def _on_communication_created(doc):
 		return
 
 	sender = (doc.get("sender") or "").strip().lower()
-	if sender == raised_by.strip().lower():
-		return  # the ticket's own raiser replying to themselves — not an agent reply
+	sender_user = frappe.db.get_value("User", {"email": sender}, "name") or sender
+	is_raiser = sender == raised_by.strip().lower()
+	# An agent reply: someone other than the raiser, or a support/admin role
+	# holder (covers an admin answering a ticket they raised themselves).
+	# The member app posts the member's own replies as "Received", so a
+	# member never notifies themselves.
+	if is_raiser and not (set(frappe.get_roles(sender_user)) & _SUPPORT_AGENT_ROLES):
+		return  # the raiser replying from an older app build — not an agent reply
+	_mark_replied(doc.reference_name)
 
 	# Issue.raised_by is an email; Frappe's User.name is normally that same
 	# email (autoname), but this falls back to a lookup rather than assuming
