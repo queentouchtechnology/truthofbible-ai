@@ -7,6 +7,7 @@ Discover hints from, instead of every screen working it out on its own.
     started    things in progress (reading position, active reading plans,
                courses not finished)
     completed  counters of what they've done
+    habit      day streak and this week's active days against the weekly goal
     never_tried  app areas with no activity yet (for gentle Discover hints)
     next       at most 3 suggestions, most useful first, each with the same
                route/id shape push notifications use, so the app can open
@@ -18,13 +19,15 @@ at sign-in, when it comes back to the foreground and after relevant changes
 """
 
 import frappe
-from frappe.utils import getdate
+from frappe.utils import add_days, getdate, strip_html
 from frappe.utils.password import get_decrypted_password
 
 from truth_of_bible.rewards import engine as rewards
 
 _MAX_STARTED_COURSES = 3
 _MAX_SUGGESTIONS = 3
+# Active days a week the app cheers for (Explore's "Weekly goal" card).
+_WEEKLY_GOAL_DAYS = 5
 
 
 def _reading(user):
@@ -74,12 +77,49 @@ def _courses(user):
 		order_by="modified desc",
 		limit_page_length=_MAX_STARTED_COURSES,
 	)
-	titles = dict(
-		frappe.get_all("LMS Course", filters={"name": ["in", [r.course for r in rows]]}, fields=["name", "title"],
-			as_list=True)
-	) if rows else {}
-	return [{"course": r.course, "title": titles.get(r.course) or r.course, "progress": round(r.progress or 0)}
-		for r in rows]
+	meta = {
+		c.name: c
+		for c in frappe.get_all("LMS Course", filters={"name": ["in", [r.course for r in rows]]},
+			fields=["name", "title", "image"])
+	} if rows else {}
+	return [
+		{"course": r.course, "title": (meta.get(r.course) or {}).get("title") or r.course,
+		 "image": (meta.get(r.course) or {}).get("image") or None, "progress": round(r.progress or 0)}
+		for r in rows
+	]
+
+
+def _habit(user):
+	"""Same active days as the Rewards streak (reading, check-in, games, plan
+	days) — one query for both numbers."""
+	days = rewards._active_days(user)
+	today = getdate(rewards._today())
+	cursor = today if today in days else add_days(today, -1)
+	current = 0
+	while cursor in days:
+		current += 1
+		cursor = getdate(add_days(cursor, -1))
+	week_start = add_days(today, -today.weekday())
+	return {
+		"streak": current,
+		"active_today": today in days,
+		"week_days": sum(1 for d in days if week_start <= d <= today),
+		"weekly_goal": _WEEKLY_GOAL_DAYS,
+	}
+
+
+def _latest_unread(user):
+	"""The newest unread notification — what Explore's Live Updates shows."""
+	row = frappe.get_all(
+		"Notification Log",
+		filters={"for_user": user, "read": 0},
+		fields=["name", "subject", "creation"],
+		order_by="creation desc",
+		limit_page_length=1,
+	)
+	if not row:
+		return None
+	return {"name": row[0].name, "subject": strip_html(row[0].subject or ""), "at": str(row[0].creation)}
 
 
 def _has_community_account(user):
@@ -95,7 +135,7 @@ def get_user_context() -> dict:
 	replied = frappe.get_all(
 		"Issue",
 		filters={"raised_by": user, "status": "Replied"},
-		fields=["name", "subject"],
+		fields=["name", "subject", "modified"],
 		order_by="modified desc",
 	)
 	reading = _reading(user)
@@ -116,6 +156,8 @@ def get_user_context() -> dict:
 			("courses", bool(enrollments)),
 			("quizzes", bool(quizzes_taken)),
 			("ai", frappe.db.exists("TOB AI Usage Log", {"user": user})),
+			("games", frappe.db.exists("TOB Game Session", {"user": user})
+				or frappe.db.exists("TOB Bible Battle Rating", {"user": user})),
 			("community", _has_community_account(user)),
 		)
 		if not tried
@@ -125,7 +167,8 @@ def get_user_context() -> dict:
 	nxt = []
 	if replied:
 		nxt.append({"kind": "ticket_reply", "title": "Support replied to your ticket",
-			"subtitle": replied[0].subject, "route": "/viewTicket", "id": replied[0].name})
+			"subtitle": replied[0].subject, "route": "/viewTicket", "id": replied[0].name,
+			"at": str(replied[0].modified)})
 	if reading and not reading["read_today"]:
 		nxt.append({"kind": "continue_reading", "title": f"Continue {reading['book']} {reading['chapter']}",
 			"subtitle": "Pick up where you left off", "route": "/continueReading",
@@ -156,6 +199,7 @@ def get_user_context() -> dict:
 			"ticket_replies": len(replied),
 			"open_tickets": frappe.db.count("Issue", {"raised_by": user, "status": ["in", ["Open", "Replied"]]}),
 			"unread_notifications": frappe.db.count("Notification Log", {"for_user": user, "read": 0}),
+			"latest_notification": _latest_unread(user),
 		},
 		"started": {"reading": reading, "reading_plans": plans, "courses": courses},
 		"completed": {
@@ -165,6 +209,7 @@ def get_user_context() -> dict:
 			"reading_plans": frappe.db.count("TOB User Reading Plan", {"user": user, "status": "Completed"}),
 			"reading_days": reading["reading_days"] if reading else 0,
 		},
+		"habit": _habit(user),
 		"rewards": {"points": rewards.balance(user), "wallet": rewards.wallet_balance(user), "checked_in_today": checked_in},
 		"never_tried": never_tried,
 		"next": nxt[:_MAX_SUGGESTIONS],
