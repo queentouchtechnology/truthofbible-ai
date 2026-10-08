@@ -21,7 +21,11 @@ _WRAPPER_TEMPLATE = "TOB Notification Email"
 # (lib/src/config/route_id_sources.dart) — the admin Communication Center's
 # campaign composer builds this exact same link by hand for its own "Insert
 # app link" button. Keep both in sync if this ever changes.
-_APP_OPEN_LINK_BASE = "https://learn.truthofbible.org/app/open"
+#
+# NOT `/app/...` — that prefix is Frappe's own reserved Desk route, so a
+# guest tap used to 301 to `/login?redirect-to=%2Fapp%2Fopen` instead of
+# ever reaching the app (confirmed live 2026-10-08).
+_APP_OPEN_LINK_BASE = "https://learn.truthofbible.org/open"
 
 
 def send_notification_email(user: str, title: str, body: str, route: str | None, route_id, event_code: str) -> None:
