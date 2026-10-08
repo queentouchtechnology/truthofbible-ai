@@ -452,11 +452,21 @@ def find_members(query: str = "") -> list:
 
 
 @frappe.whitelist(methods=["POST"])
-def save_fcm_token(fcm_token: str, device: str = "android") -> str:
-	"""Register this device for the signed-in user only."""
+def save_fcm_token(fcm_token: str = "", device: str = "android") -> str:
+	"""Register this device for the signed-in user only. An empty token
+	unregisters it (the app sends that on logout)."""
 	user = frappe.session.user
-	if user == "Guest" or not fcm_token:
+	if user == "Guest":
 		frappe.throw(_("Not permitted"), frappe.PermissionError)
+	fcm_token = (fcm_token or "").strip()
+	if not fcm_token:
+		frappe.db.delete("User FCM Token", {"user": user, "device": device})
+		return "removed"
+	# Real FCM tokens are long and space-free. Refuse placeholders such as
+	# "Token Not Found": saving one replaced the device's real token, which
+	# the sender then pruned, leaving the phone with no pushes at all.
+	if len(fcm_token) < 64 or " " in fcm_token:
+		frappe.throw(_("Invalid push token"), frappe.ValidationError)
 	name = frappe.db.get_value("User FCM Token", {"user": user, "device": device})
 	if name:
 		frappe.db.set_value("User FCM Token", name, "fcm_token", fcm_token)
