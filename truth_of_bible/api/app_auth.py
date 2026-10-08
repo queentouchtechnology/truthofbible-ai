@@ -19,7 +19,7 @@ import secrets
 import frappe
 from frappe import _
 from frappe.rate_limiter import rate_limit
-from frappe.utils import add_to_date, get_datetime, now_datetime, validate_email_address
+from frappe.utils import add_to_date, cint, get_datetime, now_datetime, validate_email_address
 from frappe.utils.password import get_decrypted_password, set_encrypted_password, update_password
 
 # Roles every self-registered app member gets (was chosen by the app itself;
@@ -452,24 +452,37 @@ def find_members(query: str = "") -> list:
 
 
 @frappe.whitelist(methods=["POST"])
-def save_fcm_token(fcm_token: str = "", device: str = "android") -> str:
-	"""Register this device for the signed-in user only. An empty token
-	unregisters it (the app sends that on logout)."""
+def save_fcm_token(fcm_token: str = "", device: str = "android", remove: int = 0) -> str:
+	"""Register this phone's push token for the signed-in member.
+
+	One row per token (not per member + device type), so a member's phones
+	and tablets all get notifications, and a token belongs only to whoever
+	is signed in on that phone now — it moves when someone else signs in
+	there. `remove=1` (sent on sign-out) deletes just this phone's row.
+	The sender prunes tokens Google reports as dead, so old devices clear
+	themselves.
+	"""
 	user = frappe.session.user
 	if user == "Guest":
 		frappe.throw(_("Not permitted"), frappe.PermissionError)
 	fcm_token = (fcm_token or "").strip()
 	if not fcm_token:
-		frappe.db.delete("User FCM Token", {"user": user, "device": device})
-		return "removed"
+		# Older app versions sign out with an empty token: nothing identifies
+		# the phone, so leave it — it moves on the next sign-in there.
+		return "ignored"
 	# Real FCM tokens are long and space-free. Refuse placeholders such as
-	# "Token Not Found": saving one replaced the device's real token, which
-	# the sender then pruned, leaving the phone with no pushes at all.
+	# "Token Not Found": saving one used to replace the phone's real token,
+	# which the sender then pruned, leaving it with no pushes at all.
 	if len(fcm_token) < 64 or " " in fcm_token:
 		frappe.throw(_("Invalid push token"), frappe.ValidationError)
-	name = frappe.db.get_value("User FCM Token", {"user": user, "device": device})
+	if cint(remove):
+		frappe.db.delete("User FCM Token", {"user": user, "fcm_token": fcm_token})
+		return "removed"
+	# This phone now belongs to this member only.
+	frappe.db.delete("User FCM Token", {"fcm_token": fcm_token, "user": ["!=", user]})
+	name = frappe.db.get_value("User FCM Token", {"user": user, "fcm_token": fcm_token})
 	if name:
-		frappe.db.set_value("User FCM Token", name, "fcm_token", fcm_token)
+		frappe.db.set_value("User FCM Token", name, "device", device)
 	else:
 		frappe.get_doc({"doctype": "User FCM Token", "user": user, "fcm_token": fcm_token, "device": device}).insert(
 			ignore_permissions=True
