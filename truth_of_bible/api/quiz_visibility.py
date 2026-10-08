@@ -39,7 +39,9 @@ def list_public_quizzes(fields=None, filters=None, order_by=None, limit_page_len
 		fields=json.loads(fields) if fields else ["*"],
 		filters=all_filters,
 		order_by=order_by or "creation desc",
-		limit_page_length=cint(limit_page_length) or 20,
+		# 0 means "all" (the admin Assessments screen asks for the whole list);
+		# only a missing value falls back to a page of 20.
+		limit_page_length=20 if limit_page_length in (None, "") else cint(limit_page_length),
 		limit_start=cint(limit_start) or 0,
 	)
 	# Mirrors the wire shape of a plain `/api/resource/LMS Quiz` list GET
