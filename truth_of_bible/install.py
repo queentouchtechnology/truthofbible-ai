@@ -2279,7 +2279,7 @@ _OTP_EMAIL_BODY = """
     </tr>
     <tr>
       <td style="padding:20px 32px;background:#f9fafb;text-align:center;border-top:1px solid #e5e7eb;">
-        <p style="margin:0;font-size:12px;color:#9ca3af;">Truth of Bible &middot; learn.truthofbible.org</p>
+        <p style="margin:0;font-size:12px;color:#9ca3af;">Truth of Bible &middot; truthofbible.org</p>
       </td>
     </tr>
   </table>
@@ -2300,6 +2300,59 @@ def seed_otp_email_template():
 			"name": _OTP_EMAIL_TEMPLATE_NAME,
 			"subject": _OTP_EMAIL_SUBJECT,
 			"response": _OTP_EMAIL_BODY,
+			"use_html": 0,
+		}
+	).insert(ignore_permissions=True)
+	frappe.db.commit()
+
+
+_NOTIFICATION_EMAIL_TEMPLATE_NAME = "TOB Notification Email"
+_NOTIFICATION_EMAIL_SUBJECT = "{{ title }}"
+_NOTIFICATION_EMAIL_BODY = """
+<div style="background:#f4f5f7;padding:32px 16px;font-family:'Segoe UI',Helvetica,Arial,sans-serif;">
+  <table role="presentation" width="100%" style="max-width:480px;margin:0 auto;background:#ffffff;border-radius:12px;overflow:hidden;border:1px solid #e5e7eb;">
+    <tr>
+      <td style="background:#f2a128;padding:24px 32px;text-align:center;">
+        <span style="font-size:20px;font-weight:700;color:#ffffff;">Truth of Bible</span>
+      </td>
+    </tr>
+    <tr>
+      <td style="padding:32px;">
+        <h1 style="margin:0 0 16px;font-size:19px;font-weight:700;color:#1f2937;">{{ title }}</h1>
+        <p style="margin:0 0 24px;font-size:15px;color:#374151;line-height:1.6;white-space:pre-line;">{{ body }}</p>
+        {% if cta_url %}
+        <div style="text-align:center;margin:0 0 8px;">
+          <a href="{{ cta_url }}" style="display:inline-block;padding:12px 28px;background:#f2a128;color:#ffffff;border-radius:8px;font-size:14px;font-weight:700;text-decoration:none;">{{ cta_label or "Open in App" }}</a>
+        </div>
+        {% endif %}
+      </td>
+    </tr>
+    <tr>
+      <td style="padding:20px 32px;background:#f9fafb;text-align:center;border-top:1px solid #e5e7eb;">
+        <p style="margin:0;font-size:12px;color:#9ca3af;">Truth of Bible &middot; truthofbible.org</p>
+      </td>
+    </tr>
+  </table>
+</div>
+"""
+
+
+def seed_notification_email_template():
+	"""Create-only, same as every other seed_* function here — an admin's own
+	edits to this template from the desk are never overwritten on a later
+	migrate. `notifications/email_delivery.py` renders this shell around
+	whichever event's title/body just fired, so this is the ONE template that
+	needs editing to change the look of every event email, rather than one
+	template per event. Falls back to a plain-text email if this record is
+	ever deleted."""
+	if frappe.db.exists("Email Template", _NOTIFICATION_EMAIL_TEMPLATE_NAME):
+		return
+	frappe.get_doc(
+		{
+			"doctype": "Email Template",
+			"name": _NOTIFICATION_EMAIL_TEMPLATE_NAME,
+			"subject": _NOTIFICATION_EMAIL_SUBJECT,
+			"response": _NOTIFICATION_EMAIL_BODY,
 			"use_html": 0,
 		}
 	).insert(ignore_permissions=True)

@@ -32,7 +32,7 @@ import pytz
 import frappe
 from frappe.utils import get_system_timezone, now_datetime
 
-from truth_of_bible.notifications import delivery, timeutils
+from truth_of_bible.notifications import delivery, email_delivery, timeutils
 from truth_of_bible.notifications.admin_audience import admin_users
 from truth_of_bible.notifications.preferences import get_or_create_preference
 
@@ -90,7 +90,10 @@ def _handle_event(event_code: str, user: str | None, variables: dict, force: boo
 	template = frappe.db.get_value(
 		"TOB Notification Template",
 		event_code,
-		["name", "audience", "enabled", "category", "priority", "title", "body", "deeplink_route", "deeplink_id_field"],
+		[
+			"name", "audience", "enabled", "send_email", "category", "priority",
+			"title", "body", "deeplink_route", "deeplink_id_field",
+		],
 		as_dict=True,
 	)
 	if not template or not template.enabled:
@@ -160,7 +163,7 @@ def _send_one(template: dict, user: str, variables: dict, event_code: str) -> bo
 	# reports "received"/"tapped" back against it, which is what makes
 	# open rates and engagement measurable at all.
 	send_id = _record_send(user, event_code)
-	return delivery.send_push(
+	sent = delivery.send_push(
 		user=user,
 		title=title,
 		body=body,
@@ -169,6 +172,14 @@ def _send_one(template: dict, user: str, variables: dict, event_code: str) -> bo
 		notif_type=event_code,
 		send_id=send_id,
 	)
+
+	# A second, admin-opted-in channel alongside the push above — never the
+	# push's own return value, since a push failure (no device token, an
+	# expired FCM token) must not also cancel the email for the same event.
+	if template.get("send_email"):
+		email_delivery.send_notification_email(user, title, body, route, route_id, event_code)
+
+	return sent
 
 
 # Events fired once per real item — a quiz submission, a ticket reply, an
