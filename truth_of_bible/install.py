@@ -2247,6 +2247,65 @@ def seed_whatsapp_quick_replies():
 			frappe.db.rollback()
 
 
+_OTP_EMAIL_TEMPLATE_NAME = "OTP Verification Email"
+_OTP_EMAIL_SUBJECT = "Your Truth of Bible verification code"
+_OTP_EMAIL_BODY = """
+<div style="background:#f4f5f7;padding:32px 16px;font-family:'Segoe UI',Helvetica,Arial,sans-serif;">
+  <table role="presentation" width="100%" style="max-width:480px;margin:0 auto;background:#ffffff;border-radius:12px;overflow:hidden;border:1px solid #e5e7eb;">
+    <tr>
+      <td style="background:#f2a128;padding:24px 32px;text-align:center;">
+        <span style="font-size:20px;font-weight:700;color:#ffffff;">Truth of Bible</span>
+      </td>
+    </tr>
+    <tr>
+      <td style="padding:32px;">
+        <p style="margin:0 0 16px;font-size:15px;color:#1f2937;">Hello,</p>
+        <p style="margin:0 0 24px;font-size:15px;color:#1f2937;line-height:1.5;">
+          Use the verification code below to continue in the Truth of Bible app.
+        </p>
+        <div style="text-align:center;margin:0 0 24px;">
+          <span style="display:inline-block;padding:14px 28px;background:#fff7e6;border:1px solid #f2a128;border-radius:10px;font-size:32px;font-weight:700;letter-spacing:10px;color:#92400e;">{{ otp }}</span>
+        </div>
+        <p style="margin:0 0 24px;font-size:14px;color:#4b5563;text-align:center;">
+          This code expires in <strong>{{ minutes }} minutes</strong>.
+        </p>
+        <p style="margin:0 0 8px;font-size:13px;color:#6b7280;line-height:1.5;">
+          For your security, never share this code with anyone — not even someone claiming to be from Truth of Bible. Our team will never ask you for it.
+        </p>
+        <p style="margin:0;font-size:13px;color:#6b7280;line-height:1.5;">
+          If you didn't request this code, you can safely ignore this email.
+        </p>
+      </td>
+    </tr>
+    <tr>
+      <td style="padding:20px 32px;background:#f9fafb;text-align:center;border-top:1px solid #e5e7eb;">
+        <p style="margin:0;font-size:12px;color:#9ca3af;">Truth of Bible &middot; learn.truthofbible.org</p>
+      </td>
+    </tr>
+  </table>
+</div>
+"""
+
+
+def seed_otp_email_template():
+	"""Create-only, same as the other seed_* functions here — an admin's own
+	edits to this template from the desk are never overwritten on a later
+	migrate. `api/app_auth.py`'s `_send()` renders this with the OTP and
+	falls back to a plain-text message if this record is ever deleted."""
+	if frappe.db.exists("Email Template", _OTP_EMAIL_TEMPLATE_NAME):
+		return
+	frappe.get_doc(
+		{
+			"doctype": "Email Template",
+			"name": _OTP_EMAIL_TEMPLATE_NAME,
+			"subject": _OTP_EMAIL_SUBJECT,
+			"response": _OTP_EMAIL_BODY,
+			"use_html": 0,
+		}
+	).insert(ignore_permissions=True)
+	frappe.db.commit()
+
+
 def seed_notification_templates():
 	for entry in _NOTIFICATION_TEMPLATES:
 		if frappe.db.exists("TOB Notification Template", entry["event_code"]):
