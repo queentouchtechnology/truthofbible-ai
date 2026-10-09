@@ -89,6 +89,49 @@ def set_charging_settings(**kwargs):
 	return _settings(*_CHARGING_FIELDS)
 
 
+@frappe.whitelist(methods=["GET"])
+def get_charging_status():
+	"""Read-only, any signed-in user (their own status, not an admin
+	report) — what the client shows *before* acting (the "3 free today"
+	pill on the AI chat input, the Translate button, the Premium voice
+	toggle). Always advisory: a status read and the real charge_* gate at
+	the point of action aren't atomic, so the actual call is still the
+	source of truth (this can't itself block or charge anything)."""
+	user = frappe.session.user
+	off = {"enabled": False, "free_remaining_today": None, "cost": 0}
+	if user in ("Guest", "Administrator"):
+		return {"ai": off, "translation": off, "tts": off}
+
+	settings = _settings(*_CHARGING_FIELDS)
+
+	def status(prefix: str, used_today: int) -> dict:
+		if not settings[f"{prefix}_charge_enabled"]:
+			return off
+		free = int(settings[f"{prefix}_free_per_day"] or 0)
+		return {
+			"enabled": True,
+			"free_remaining_today": max(0, free - used_today),
+			"cost": float(settings[f"{prefix}_cost"] or 0),
+		}
+
+	ai_used = frappe.db.count(
+		"TOB Bible Conversation Message", {"owner": user, "role": "user", "creation": [">=", nowdate()]}
+	)
+	translation_used = frappe.db.count(
+		"TOB Translation Usage Log",
+		{"user": user, "was_cache_hit": 0, "status": "success", "creation": [">=", nowdate()]},
+	)
+	tts_used = frappe.db.count(
+		"TOB TTS Usage Log",
+		{"user": user, "was_cache_hit": 0, "status": "success", "creation": [">=", nowdate()]},
+	)
+	return {
+		"ai": status("ai", ai_used),
+		"translation": status("translation", translation_used),
+		"tts": status("tts", tts_used),
+	}
+
+
 _NOT_CHARGED = ChargeResult(charged=False, cost=0, free_remaining_today=None, wallet_balance=0)
 
 
