@@ -204,6 +204,123 @@ def add_group_points(group, points, title=None, week_start=None):
 	return {"group": group, "points": points, "title": title, "members": awarded}
 
 
+# --- quiz assignment results (who took it, who didn't, marks) ------------
+
+
+def _roster():
+	"""Active "Sunday School Student" role holders — the class a quiz is
+	assigned to. Same population as list_role_students."""
+	return frappe.db.sql(
+		"""select u.name as user, u.full_name, u.user_image, p.group as `group`
+		from `tabHas Role` hr
+		inner join `tabUser` u on u.name = hr.parent
+		left join `tabTOB Sunday School Profile` p on p.user = u.name
+		where hr.role = 'Sunday School Student' and hr.parenttype = 'User' and u.enabled = 1
+		and ifnull(p.status, 'Active') = 'Active'""",
+		as_dict=True,
+	)
+
+
+def _first_attempts(quiz_ids, users) -> dict:
+	"""{(quiz, user): submission} — each student's FIRST attempt, the one
+	Sunday School scores (engine.on_lms_quiz_submission)."""
+	if not quiz_ids or not users:
+		return {}
+	first = {}
+	for row in frappe.db.sql(
+		"""select quiz, member, score, score_out_of, creation from `tabLMS Quiz Submission`
+		where quiz in %s and member in %s order by creation asc""",
+		(tuple(quiz_ids), tuple(users)), as_dict=True,
+	):
+		first.setdefault((row.quiz, row.member), row)
+	return first
+
+
+def _pct(row) -> int | None:
+	return round(100 * (row.score or 0) / row.score_out_of) if row.score_out_of else None
+
+
+@frappe.whitelist(methods=["GET"])
+def quiz_assignment_stats():
+	"""Per assignment: how many of the class took it, average %, top mark —
+	for the Quiz Assignments list cards."""
+	require_admin()
+	assignments = frappe.get_all(
+		"TOB Sunday School Quiz Assignment", fields=["name", "lms_quiz"], order_by="week_start desc", limit_page_length=200
+	)
+	roster = [r.user for r in _roster()]
+	first = _first_attempts({a.lms_quiz for a in assignments}, roster)
+	stats = {}
+	for a in assignments:
+		rows = [first[(a.lms_quiz, u)] for u in roster if (a.lms_quiz, u) in first]
+		pcts = [p for p in (_pct(r) for r in rows) if p is not None]
+		top = max(rows, key=lambda r: r.score or 0) if rows else None
+		stats[a.name] = {
+			"attended": len(rows),
+			"average_pct": round(sum(pcts) / len(pcts)) if pcts else None,
+			"top_score": int(top.score or 0) if top else None,
+			"total_marks": int(top.score_out_of or 0) if top else None,
+		}
+	return {"total_students": len(roster), "stats": stats}
+
+
+@frappe.whitelist(methods=["GET"])
+def quiz_assignment_report(assignment):
+	"""One assignment in full: every student who took it (ranked by mark,
+	with %, when) and everyone who hasn't yet (with their group)."""
+	require_admin()
+	a = frappe.get_doc("TOB Sunday School Quiz Assignment", assignment)
+	quiz = frappe.db.get_value("LMS Quiz", a.lms_quiz, ["title", "total_marks"], as_dict=True) or frappe._dict()
+	roster = _roster()
+	first = _first_attempts([a.lms_quiz], [r.user for r in roster])
+	group_names = dict(frappe.get_all("TOB Sunday School Group", fields=["name", "group_name"], as_list=True))
+
+	scored, not_done = [], []
+	for r in roster:
+		base = {
+			"user": r.user,
+			"full_name": r.full_name or r.user,
+			"user_image": r.user_image,
+			"group": group_names.get(r.group) if r.group else None,
+		}
+		sub = first.get((a.lms_quiz, r.user))
+		if sub:
+			scored.append({
+				**base,
+				"score": int(sub.score or 0),
+				"total": int(sub.score_out_of or quiz.total_marks or 0),
+				"pct": _pct(sub),
+				"submitted_at": str(sub.creation),
+			})
+		else:
+			not_done.append(base)
+	scored.sort(key=lambda s: (-(s["score"]), s["submitted_at"]))
+	for i, s in enumerate(scored):
+		s["rank"] = i + 1
+	not_done.sort(key=lambda s: s["full_name"].lower())
+
+	pcts = [s["pct"] for s in scored if s["pct"] is not None]
+	return {
+		"assignment": a.name,
+		"quiz": a.lms_quiz,
+		"title": quiz.title or a.lms_quiz,
+		"slot": a.quiz_type or "",
+		"week_start": str(a.week_start),
+		"status": a.status,
+		"total_marks": int(quiz.total_marks or 0),
+		"summary": {
+			"students": len(roster),
+			"attended": len(scored),
+			"not_done": len(not_done),
+			"average_pct": round(sum(pcts) / len(pcts)) if pcts else None,
+			"highest": scored[0]["score"] if scored else None,
+			"lowest": min(s["score"] for s in scored) if scored else None,
+		},
+		"scored": scored,
+		"not_done": not_done,
+	}
+
+
 @frappe.whitelist(methods=["GET"])
 def list_role_students(search=None):
 	"""Every user actually holding the "Sunday School Student" role (see
