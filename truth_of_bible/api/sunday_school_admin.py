@@ -78,10 +78,11 @@ def get_pending_verse_completions(memory_verse=None, course=None):
 
 @frappe.whitelist(methods=["POST"])
 def verify_verse_completion(completion, verified, rank=None):
+	"""`rank` is ignored (older app versions still send it): verifying no
+	longer awards points — see engine.verify_verse_completion."""
 	require_admin()
 	verified = str(verified).lower() in ("1", "true", "yes")
-	rank = int(rank) if rank not in (None, "", "null") else None
-	return engine.verify_verse_completion(completion, verified, rank)
+	return engine.verify_verse_completion(completion, verified)
 
 
 @frappe.whitelist(methods=["POST"])
@@ -130,6 +131,7 @@ def add_manual_points(user, points, title=None, week_start=None):
 
 
 _DEFAULT_REASONS = [
+	engine.COMPLETE_VERSE_REASON,
 	"Bible reading",
 	"Prayer participation",
 	"Helping in class",
@@ -153,7 +155,8 @@ def list_point_reasons():
 		group by title order by uses desc, title asc limit 100""",
 		(_AUTO_TITLES,), as_dict=True,
 	)
-	reasons = [r.title for r in used]
+	# Complete Verse always first (it feeds the Complete Verse leaderboard).
+	reasons = [engine.COMPLETE_VERSE_REASON] + [r.title for r in used if r.title != engine.COMPLETE_VERSE_REASON]
 	seen = {r.lower() for r in reasons}
 	reasons += [r for r in _DEFAULT_REASONS if r.lower() not in seen]
 	return {"reasons": reasons}

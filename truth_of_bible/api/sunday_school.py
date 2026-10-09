@@ -45,7 +45,12 @@ def _rank_rows(week_start, source=None):
 	if week_start is not None:
 		conditions.append("week_start=%s")
 		params.append(week_start)
-	if source:
+	if source == engine.COMPLETE_VERSE_REASON:
+		# Point Entry rows with the Complete Verse reason, plus older
+		# auto-awarded Complete Verse rows.
+		conditions.append("(source=%s or (source='Manual Adjustment' and title=%s))")
+		params += [source, engine.COMPLETE_VERSE_REASON]
+	elif source:
 		conditions.append("source=%s")
 		params.append(source)
 	return frappe.db.sql(

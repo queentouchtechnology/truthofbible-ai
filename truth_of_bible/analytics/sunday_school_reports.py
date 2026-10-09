@@ -50,11 +50,12 @@ def get_overview_stats():
 		"total_groups": frappe.db.count("TOB Sunday School Group", {"status": "Active"}),
 		"points_awarded_this_week": int(
 			frappe.db.sql(
-				"select sum(points) from `tabTOB Sunday School Points Ledger` where week_start=%s", (week,)
+				f"select sum(points) from `tabTOB Sunday School Points Ledger` where week_start=%s and {student_api._EARNED}",
+				(week,),
 			)[0][0] or 0
 		),
 		"points_awarded_all_time": int(
-			frappe.db.sql("select sum(points) from `tabTOB Sunday School Points Ledger`")[0][0] or 0
+			frappe.db.sql(f"select sum(points) from `tabTOB Sunday School Points Ledger` where {student_api._EARNED}")[0][0] or 0
 		),
 		"open_quizzes": frappe.db.count("TOB Sunday School Quiz Assignment", {"status": "Active"}),
 		"pending_verse_verifications": frappe.db.count("TOB Sunday School Verse Completion", {"status": "Pending"}),
@@ -74,8 +75,9 @@ def get_group_standings():
 	this_week = student_api.get_leaderboard("group", str(week))["leaderboard"]
 
 	all_time_rows = frappe.db.sql(
-		"""select `group`, sum(points) as total from `tabTOB Sunday School Points Ledger`
-		where `group` is not null and `group` != '' group by `group` order by total desc""",
+		f"""select `group`, sum(points) as total from `tabTOB Sunday School Points Ledger`
+		where `group` is not null and `group` != '' and {student_api._EARNED}
+		group by `group` order by total desc""",
 		as_dict=True,
 	)
 	names = {}
@@ -101,38 +103,47 @@ def get_group_scoreboard(week_start=None):
 	carrying the team, not just the team total."""
 	require_admin()
 	week = engine.week_start_of(week_start) if week_start else engine.week_start_of()
+
+	# Points EARNED that week, credited to the group each row was earned for
+	# (the ledger stores it) — groups are re-formed weekly, so today's roster
+	# says nothing about a past week. Redemptions/expiries only empty a
+	# student's balance; they're not a team's score (same rule as the
+	# student-facing tables, student_api._EARNED).
+	earned = frappe.db.sql(
+		f"""select `group`, user, sum(points) as pts from `tabTOB Sunday School Points Ledger`
+		where week_start=%s and {student_api._EARNED} and ifnull(`group`, '') != ''
+		group by `group`, user""",
+		(week,), as_dict=True,
+	)
+	points_by_group = {}
+	for r in earned:
+		points_by_group.setdefault(r.group, {})[r.user] = int(r.pts or 0)
+
+	# This week also lists the current rosters (members with no points yet).
+	if week == engine.week_start_of():
+		for m in frappe.get_all(
+			"TOB Sunday School Profile", filters={"group": ["is", "set"], "status": "Active"}, fields=["user", "group"]
+		):
+			points_by_group.setdefault(m.group, {}).setdefault(m.user, 0)
+
+	# Groups that earned that week; this week also every active group.
+	or_filters = [["status", "=", "Active"]] if week == engine.week_start_of() or not points_by_group else []
+	if points_by_group:
+		or_filters.append(["name", "in", list(points_by_group)])
 	groups = frappe.get_all(
-		"TOB Sunday School Group", filters={"status": "Active"},
+		"TOB Sunday School Group", or_filters=or_filters,
 		fields=["name", "group_name", "location", "accent_color"],
 	)
 	if not groups:
 		return {"week_start": str(week), "groups": []}
 
-	group_names = [g.name for g in groups]
-	members = frappe.get_all(
-		"TOB Sunday School Profile", filters={"group": ["in", group_names], "status": "Active"},
-		fields=["user", "group"],
-	)
-	members_by_group = {}
-	for m in members:
-		members_by_group.setdefault(m.group, []).append(m.user)
-
-	week_points_rows = frappe.get_all(
-		"TOB Sunday School Points Ledger", filters={"week_start": week, "user": ["in", [m.user for m in members]] or [""]},
-		fields=["user", "points"],
-	)
-	week_points_by_user = {}
-	for r in week_points_rows:
-		week_points_by_user[r.user] = week_points_by_user.get(r.user, 0) + r.points
-
-	brief = _user_brief([m.user for m in members])
+	brief = _user_brief([u for users in points_by_group.values() for u in users])
 
 	out = []
 	for g in groups:
 		roster = []
 		total = 0
-		for user in members_by_group.get(g.name, []):
-			pts = week_points_by_user.get(user, 0)
+		for user, pts in points_by_group.get(g.name, {}).items():
 			total += pts
 			u = brief.get(user)
 			roster.append({

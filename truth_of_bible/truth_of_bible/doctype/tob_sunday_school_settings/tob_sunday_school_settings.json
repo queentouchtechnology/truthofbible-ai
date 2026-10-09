@@ -8,14 +8,11 @@
  "quick_entry": 0,
  "track_changes": 1,
  "engine": "InnoDB",
- "description": "Tunable point values for the Sunday School weekly rewards system, read by truth_of_bible.sunday_school.engine on every award so an admin can adjust the economy without a code deploy — exposed via the admin control panel's Settings screen.",
+ "description": "Tunable point values for the Sunday School weekly rewards system, read by truth_of_bible.sunday_school.engine on every award so an admin can adjust the economy without a code deploy \u2014 exposed via the admin control panel's Settings screen.",
  "field_order": [
   "quiz_points_per_mark",
   "sunday_goal_bonus_points",
   "column_break_1",
-  "verse_points_1st",
-  "verse_points_2nd",
-  "verse_points_3rd",
   "group_bonus_divisor",
   "section_break_expiry",
   "points_expiry_days",
@@ -31,7 +28,7 @@
    "fieldtype": "Float",
    "label": "Quiz Points per Mark",
    "default": "1",
-   "description": "Multiplier applied to a student's quiz score to get points, e.g. 92 marks × 1 = 92 points. Applies to both Weekly Bible Quiz and Faith Leader Exam."
+   "description": "Multiplier applied to a student's quiz score to get points, e.g. 92 marks \u00d7 1 = 92 points. Applies to both Weekly Bible Quiz and Faith Leader Exam."
   },
   {
    "fieldname": "sunday_goal_bonus_points",
@@ -45,29 +42,11 @@
    "fieldtype": "Column Break"
   },
   {
-   "fieldname": "verse_points_1st",
-   "fieldtype": "Int",
-   "label": "Complete Verse — 1st Place",
-   "default": "15"
-  },
-  {
-   "fieldname": "verse_points_2nd",
-   "fieldtype": "Int",
-   "label": "Complete Verse — 2nd Place",
-   "default": "10"
-  },
-  {
-   "fieldname": "verse_points_3rd",
-   "fieldtype": "Int",
-   "label": "Complete Verse — 3rd Place",
-   "default": "5"
-  },
-  {
    "fieldname": "group_bonus_divisor",
    "fieldtype": "Float",
    "label": "Winner Group Bonus Divisor",
    "default": "2",
-   "description": "Each member of the week's top-scoring group gets their own quiz mark ÷ this number added as a bonus. Default 2 matches \"Quiz Mark / 2\"."
+   "description": "Each member of the week's top-scoring group gets their own quiz mark \u00f7 this number added as a bonus. Default 2 matches \"Quiz Mark / 2\"."
   },
   {
    "fieldname": "section_break_expiry",
@@ -79,7 +58,7 @@
    "fieldtype": "Int",
    "label": "Points Expire After (days)",
    "default": "14",
-   "description": "A student's unredeemed weekly-rewards balance expires this many days after they first had a positive balance, unless they redeem it to their wallet before then. Only this reward system expires — the app-wide points/shop system never does."
+   "description": "A student's unredeemed weekly-rewards balance expires this many days after they first had a positive balance, unless they redeem it to their wallet before then. Only this reward system expires \u2014 the app-wide points/shop system never does."
   },
   {
    "fieldname": "expiry_warning_days_1",
@@ -102,7 +81,7 @@
    "fieldtype": "Float",
    "label": "Wallet Credit per Point",
    "default": "1",
-   "description": "Redeeming N points credits the student's app wallet (TOB Reward Wallet Ledger — the same wallet the shop/AI credits use) with N × this amount."
+   "description": "Redeeming N points credits the student's app wallet (TOB Reward Wallet Ledger \u2014 the same wallet the shop/AI credits use) with N \u00d7 this amount."
   },
   {
    "fieldname": "show_full_points_history",

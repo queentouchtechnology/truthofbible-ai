@@ -27,7 +27,11 @@ from datetime import timedelta
 import frappe
 from frappe.utils import getdate, now_datetime, nowdate
 
-_VERSE_RANK_FIELD = {1: "verse_points_1st", 2: "verse_points_2nd", 3: "verse_points_3rd"}
+# Complete Verse points are given by an admin in Point Entry with this
+# reason (a Manual Adjustment row titled so). Older rows, from when verse
+# verification awarded rank points itself, have source "Complete Verse";
+# the Complete Verse leaderboard counts both.
+COMPLETE_VERSE_REASON = "Complete Verse"
 
 
 def week_start_of(day=None):
@@ -228,10 +232,13 @@ def check_sunday_goal(user: str, week_start) -> bool:
 # --- memory verse ----------------------------------------------------------
 
 
-def verify_verse_completion(completion_name: str, verified: bool, rank=None) -> dict:
+def verify_verse_completion(completion_name: str, verified: bool) -> dict:
+	"""Approves or rejects an "I recited it" claim. Approval marks the
+	week's memory verse done (one of the Sunday Goal's three tasks) and
+	awards no points itself — Complete Verse points are a Point Entry
+	reason now (see COMPLETE_VERSE_REASON)."""
 	completion = frappe.get_doc("TOB Sunday School Verse Completion", completion_name)
 	completion.status = "Verified" if verified else "Rejected"
-	completion.rank = rank if verified else None
 	completion.save(ignore_permissions=True)
 	frappe.db.commit()
 
@@ -239,15 +246,6 @@ def verify_verse_completion(completion_name: str, verified: bool, rank=None) -> 
 		return {"completion": completion.name, "status": "Rejected"}
 
 	verse = frappe.get_doc("TOB Sunday School Memory Verse", completion.memory_verse)
-	cfg = settings()
-	if rank in _VERSE_RANK_FIELD:
-		points = cfg.get(_VERSE_RANK_FIELD[rank]) or 0
-		if points:
-			award(
-				completion.user, "Complete Verse", f"{verse.reference} — {['1st','2nd','3rd'][rank-1]} place", points,
-				week_start=verse.week_start, dedupe_key=f"verse:{completion.name}",
-			)
-
 	attendance = ensure_attendance(completion.user, verse.week_start)
 	if not attendance.completed_memory_verse:
 		attendance.completed_memory_verse = 1
@@ -273,6 +271,7 @@ def compute_weekly_group_bonus(week_start) -> dict:
 		"""select `group`, sum(points) as total
 		from `tabTOB Sunday School Points Ledger`
 		where week_start=%s and `group` is not null and `group` != ''
+		and points > 0 and source not in ('Redemption', 'Expired')
 		group by `group` order by total desc limit 1""",
 		(week_start,), as_dict=True,
 	)
