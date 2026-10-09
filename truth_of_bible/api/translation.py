@@ -21,12 +21,14 @@ import json
 
 import frappe
 from frappe import _
+from frappe.utils import add_days, getdate, nowdate
 
 from truth_of_bible.ai import service
 from truth_of_bible.ai.core.exceptions import AiProviderException
 from truth_of_bible.ai.core.request import AiMessage, AiRequest
 from truth_of_bible.ai.prompts import language_instruction, resolve_prompt
 from truth_of_bible.communication.auth import require_admin
+from truth_of_bible.rewards import gate
 
 _TASK = "translate_content"
 _PUBLISHED = "Published"
@@ -312,6 +314,27 @@ def get_translated_fields(source_doctype, source_names, fields, language):
 	return out
 
 
+def _log_translation_usage(user, source_doctype, source_name, fields, language, *, was_cache_hit, status, error_message=None):
+	"""One row per translate_now/translate_local_text call (not per field —
+	see rewards.gate.charge_translation's docstring: charging is per-call,
+	so usage logging stays at the same granularity, otherwise a multi-field
+	call would burn through several days' free quota at once while only
+	ever being charged for one)."""
+	frappe.get_doc(
+		{
+			"doctype": "TOB Translation Usage Log",
+			"user": user,
+			"source_doctype": source_doctype,
+			"source_name": source_name,
+			"field": ",".join(fields) if isinstance(fields, list) else fields,
+			"language": language,
+			"was_cache_hit": 1 if was_cache_hit else 0,
+			"status": status,
+			"error_message": error_message,
+		}
+	).insert(ignore_permissions=True)
+
+
 @frappe.whitelist(methods=["GET"])
 def translate_now(source_doctype, source_name, fields, language):
 	"""On-demand, student-triggered translation — the "Translate" button
@@ -320,15 +343,23 @@ def translate_now(source_doctype, source_name, fields, language):
 	text immediately when translation_requires_approval is off — when
 	it's on, the result is queued for admin review instead and the
 	response carries `"_pending": true` with no field text, so the client
-	can tell "will show once approved" apart from "translation failed"."""
+	can tell "will show once approved" apart from "translation failed".
+
+	Charging (rewards.gate.charge_translation) only kicks in once at least
+	one field here is a genuine cache miss — a call that's entirely cache
+	hits (the common case once content has been translated once) never
+	touches the gate at all, costs nothing, and carries no "usage" block."""
 	if not language or language == "en":
 		return {}
 	fields = _as_list(fields)
 	if not fields:
 		return {}
 	gated = requires_approval()
+	user = frappe.session.user
 	out: dict = {}
 	generated_any = False
+	pending_fields = []
+	hit_fields = []
 	for field in fields:
 		source_text = frappe.db.get_value(source_doctype, source_name, field)
 		if not source_text:
@@ -345,19 +376,52 @@ def translate_now(source_doctype, source_name, fields, language):
 		)
 		if already_servable:
 			out[field] = existing.translated_text
+			hit_fields.append(field)
 			continue
 		if existing and existing.source_hash == source_hash and gated:
 			# Cached but still awaiting approval — nothing new to generate.
 			generated_any = True
 			continue
-		try:
-			doc = _upsert_translation(source_doctype, source_name, field, language, source_text)
-			generated_any = True
-			if not gated:
-				out[field] = doc.translated_text
-		except AiProviderException:
-			continue  # this field just falls back to the original text client-side
-	if gated and generated_any and not out:
+		pending_fields.append((field, source_text))
+
+	if hit_fields:
+		_log_translation_usage(
+			user, source_doctype, source_name, hit_fields, language, was_cache_hit=True, status="success"
+		)
+
+	if pending_fields:
+		# Raises (out of free translations, can't afford the next one)
+		# before any AI call is made — nothing here is charged for work
+		# that didn't happen.
+		result = gate.charge_translation(user)
+		charged_any = False
+		field_names = [f for f, _ in pending_fields]
+		error = None
+		for field, source_text in pending_fields:
+			try:
+				doc = _upsert_translation(source_doctype, source_name, field, language, source_text)
+				generated_any = True
+				charged_any = True
+				if not gated:
+					out[field] = doc.translated_text
+			except AiProviderException as exc:
+				error = str(exc)
+				continue  # this field just falls back to the original text client-side
+		_log_translation_usage(
+			user, source_doctype, source_name, field_names, language,
+			was_cache_hit=False, status="success" if charged_any else "error", error_message=error,
+		)
+		if charged_any:
+			gate.record_translation_charge(user, result, frappe.generate_hash(length=10))
+
+		if gated and generated_any and not out:
+			out["_pending"] = True
+		# Only present when translation charging is actually enabled —
+		# charge_translation() returns the None-sentinel result above
+		# otherwise, same convention bible.qa's usage block follows.
+		if result.free_remaining_today is not None:
+			out["usage"] = result._asdict()
+	elif gated and generated_any and not out:
 		out["_pending"] = True
 	return out
 
@@ -373,13 +437,16 @@ def translate_local_text(source_doctype, source_name, text, language):
 	instead (POST, not GET, since commentary text can be long); everything
 	else — caching in TOB Content Translation, the source_hash staleness
 	check, and the requires_approval() gate — is identical to translate_now,
-	just against one field always named "text"."""
+	just against one field always named "text". Charging (rewards.gate.
+	charge_translation) only applies on a genuine cache miss, same as
+	translate_now."""
 	if not language or language == "en":
 		return {}
 	if not text:
 		return {}
 	field = "text"
 	gated = requires_approval()
+	user = frappe.session.user
 	source_hash = _hash(text)
 	existing = frappe.db.get_value(
 		"TOB Content Translation",
@@ -391,16 +458,127 @@ def translate_local_text(source_doctype, source_name, text, language):
 		existing.translation_status == _PUBLISHED if gated else existing.translation_status != "Needs Revision"
 	)
 	if already_servable:
+		_log_translation_usage(user, source_doctype, source_name, [field], language, was_cache_hit=True, status="success")
 		return {"text": existing.translated_text}
 	if existing and existing.source_hash == source_hash and gated:
 		return {"_pending": True}
+
+	# Raises before any AI call if out of free translations and can't
+	# afford the next one.
+	result = gate.charge_translation(user)
 	try:
 		doc = _upsert_translation(source_doctype, source_name, field, language, text)
-	except AiProviderException:
+	except AiProviderException as exc:
+		_log_translation_usage(
+			user, source_doctype, source_name, [field], language,
+			was_cache_hit=False, status="error", error_message=str(exc),
+		)
 		return {}
+	_log_translation_usage(user, source_doctype, source_name, [field], language, was_cache_hit=False, status="success")
+	gate.record_translation_charge(user, result, frappe.generate_hash(length=10))
+
+	usage = {"usage": result._asdict()} if result.free_remaining_today is not None else {}
 	if gated:
-		return {"_pending": True}
-	return {"text": doc.translated_text}
+		return {"_pending": True, **usage}
+	return {"text": doc.translated_text, **usage}
+
+
+# --- Admin: usage & billing visibility --------------------------------------
+
+
+@frappe.whitelist(methods=["GET"])
+def get_translation_usage(from_date: str | None = None, to_date: str | None = None):
+	"""Admin usage summary from TOB Translation Usage Log for
+	[from_date]..[to_date] (default: the last 30 days) — mirrors
+	api/tts.py's get_tts_usage shape. No per-call cost estimate (unlike
+	TTS, translation has no simple per-request vendor price to multiply
+	by); this is request/hit-rate visibility, same thing get_tts_usage
+	gives before its own cost math on top."""
+	require_admin()
+	end = getdate(to_date) if to_date else getdate(nowdate())
+	start = getdate(from_date) if from_date else add_days(end, -29)
+	end_exclusive = add_days(end, 1)
+	args = {"start": start, "end": end_exclusive}
+	where = "creation >= %(start)s AND creation < %(end)s"
+
+	def grouped(column: str) -> list[dict]:
+		rows = frappe.db.sql(
+			f"""
+			SELECT COALESCE({column}, '') AS label,
+				COUNT(*) AS requests,
+				SUM(was_cache_hit) AS cache_hits,
+				SUM(CASE WHEN status = 'error' THEN 1 ELSE 0 END) AS errors
+			FROM `tabTOB Translation Usage Log`
+			WHERE {where}
+			GROUP BY {column}
+			ORDER BY requests DESC
+			""",
+			args,
+			as_dict=True,
+		)
+		return [
+			{
+				"label": r.label or "Unknown",
+				"requests": int(r.requests or 0),
+				"cache_hits": int(r.cache_hits or 0),
+				"new_translations": int(r.requests or 0) - int(r.cache_hits or 0),
+				"errors": int(r.errors or 0),
+			}
+			for r in rows
+		]
+
+	daily = frappe.db.sql(
+		f"""
+		SELECT DATE(creation) AS day, COUNT(*) AS requests,
+			SUM(was_cache_hit) AS cache_hits
+		FROM `tabTOB Translation Usage Log`
+		WHERE {where}
+		GROUP BY DATE(creation)
+		ORDER BY day
+		""",
+		args,
+		as_dict=True,
+	)
+
+	recent = frappe.get_all(
+		"TOB Translation Usage Log",
+		filters=[["creation", ">=", start], ["creation", "<", end_exclusive]],
+		fields=["creation", "user", "source_doctype", "field", "language", "was_cache_hit", "status", "error_message"],
+		order_by="creation desc",
+		limit_page_length=25,
+	)
+
+	by_language = grouped("language")
+	by_doctype = grouped("source_doctype")
+	return {
+		"from_date": str(start),
+		"to_date": str(end),
+		"totals": {
+			"requests": sum(r["requests"] for r in by_language),
+			"cache_hits": sum(r["cache_hits"] for r in by_language),
+			"new_translations": sum(r["new_translations"] for r in by_language),
+			"errors": sum(r["errors"] for r in by_language),
+		},
+		"by_language": by_language,
+		"by_source_doctype": by_doctype,
+		"daily": [
+			{"date": str(d.day), "requests": int(d.requests or 0), "cache_hits": int(d.cache_hits or 0)}
+			for d in daily
+		],
+		"recent": [
+			{
+				"created_at": str(r.creation),
+				"user": r.user,
+				"source_doctype": r.source_doctype,
+				"field": r.field,
+				"language": r.language,
+				"cached": bool(r.was_cache_hit),
+				"status": r.status,
+				"error_message": r.error_message,
+			}
+			for r in recent
+		],
+	}
 
 
 @frappe.whitelist(methods=["GET"])

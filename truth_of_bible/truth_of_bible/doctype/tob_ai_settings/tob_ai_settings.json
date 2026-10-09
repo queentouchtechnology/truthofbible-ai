@@ -19,7 +19,19 @@
   "default_language",
   "disclaimer_footer_enabled",
   "translation_requires_approval",
-  "translation_feature_enabled"
+  "translation_feature_enabled",
+  "usage_charging_section",
+  "ai_charge_enabled",
+  "ai_free_per_day",
+  "ai_cost",
+  "column_break_translation_charge",
+  "translation_charge_enabled",
+  "translation_free_per_day",
+  "translation_cost",
+  "column_break_tts_charge",
+  "tts_charge_enabled",
+  "tts_free_per_day",
+  "tts_cost"
  ],
  "fields": [
   {
@@ -85,6 +97,77 @@
    "label": "Show Translate Button On Content Screens",
    "default": "1",
    "description": "Master on/off switch for the Translate button and its language sheet across every content screen that has one (Sunday School memory verses, Dictionary, Matthew Henry Commentary, Devotionals, and any future one). Off hides the option app-wide without touching translation_requires_approval or any already-cached TOB Content Translation rows."
+  },
+  {
+   "fieldname": "usage_charging_section",
+   "fieldtype": "Section Break",
+   "label": "Usage Charging",
+   "description": "Optional wallet charge for AI Q&A, Translation and Premium Voice (TTS) after a daily free allowance — off by default for every one of the three, so all three stay free until explicitly turned on here. A cached/already-translated result (a repeat question is never cached, but a repeat translation or the same TTS text+voice is) never counts against the free allowance or charges the wallet, charging on or off."
+  },
+  {
+   "fieldname": "ai_charge_enabled",
+   "fieldtype": "Check",
+   "label": "Charge For AI Q&A",
+   "default": "0",
+   "description": "Verse explanations (explain) are cached and never charged regardless of this setting — only the conversational Q&A (qa/qa_followup) is gated."
+  },
+  {
+   "fieldname": "ai_free_per_day",
+   "fieldtype": "Int",
+   "label": "Free Questions Per Day",
+   "default": "3"
+  },
+  {
+   "fieldname": "ai_cost",
+   "fieldtype": "Float",
+   "label": "Wallet Cost Per Extra Question",
+   "default": "1"
+  },
+  {
+   "fieldname": "column_break_translation_charge",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "translation_charge_enabled",
+   "fieldtype": "Check",
+   "label": "Charge For Translation",
+   "default": "0",
+   "description": "Only a genuine new translation (cache miss) counts or charges — every later student reading the same already-translated content is always free."
+  },
+  {
+   "fieldname": "translation_free_per_day",
+   "fieldtype": "Int",
+   "label": "Free Translations Per Day",
+   "default": "3"
+  },
+  {
+   "fieldname": "translation_cost",
+   "fieldtype": "Float",
+   "label": "Wallet Cost Per Extra Translation",
+   "default": "1"
+  },
+  {
+   "fieldname": "column_break_tts_charge",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "tts_charge_enabled",
+   "fieldtype": "Check",
+   "label": "Charge For Premium Voice (TTS)",
+   "default": "0",
+   "description": "Only a genuine new synthesis (cache miss) counts or charges — replaying already-generated audio is always free. The free on-device voice is never affected by this."
+  },
+  {
+   "fieldname": "tts_free_per_day",
+   "fieldtype": "Int",
+   "label": "Free Listens Per Day",
+   "default": "3"
+  },
+  {
+   "fieldname": "tts_cost",
+   "fieldtype": "Float",
+   "label": "Wallet Cost Per Extra Listen",
+   "default": "1"
   }
  ],
  "permissions": [

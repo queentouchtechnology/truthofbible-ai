@@ -22,6 +22,7 @@ from frappe.utils.file_manager import save_file
 
 from truth_of_bible.ai.service import check_ai_access
 from truth_of_bible.communication.auth import require_admin
+from truth_of_bible.rewards import gate
 from truth_of_bible.tts import pricing as tts_pricing
 from truth_of_bible.tts import service as tts_service
 from truth_of_bible.tts.usage import record_tts_usage
@@ -130,6 +131,12 @@ def synthesize(text: str, locale: str, task: str = "general"):
 		)
 		return {"audio_url": cache_doc.audio_file, "cached": True}
 
+	user = frappe.session.user
+	# Raises (out of free listens, can't afford the next one) before any
+	# Google call is made — nothing here is charged for work that didn't
+	# happen.
+	charge_result = gate.charge_tts(user)
+
 	try:
 		audio_bytes, voice_name = tts_service.synthesize_speech(text, locale)
 	except (tts_service.TtsProviderDisabled, tts_service.TtsProviderError) as exc:
@@ -172,9 +179,14 @@ def synthesize(text: str, locale: str, task: str = "general"):
 		task=task, language=language_code, provider=_PROVIDER_KEY, voice_type=settings.voice_type,
 		was_cache_hit=False, character_count=character_count, estimated_cost_usd=estimated_cost_usd, status="success",
 	)
+	gate.record_tts_charge(user, charge_result, cache_doc.name)
+
 	# voice_name included temporarily for on-device diagnosis of a report
 	# that Premium and Free sound identical — remove once confirmed.
-	return {"audio_url": file_doc.file_url, "cached": False, "voice_name": voice_name}
+	result = {"audio_url": file_doc.file_url, "cached": False, "voice_name": voice_name}
+	if charge_result.free_remaining_today is not None:
+		result["usage"] = charge_result._asdict()
+	return result
 
 
 # --- Admin: voice catalog / comparison -------------------------------------

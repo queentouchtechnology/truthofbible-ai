@@ -229,27 +229,40 @@ reasoning as `translate_field`.
 
 ## Rollout order
 
-1. Add the nine `TOB AI Settings` fields + migration; migrate `charge_ai`
-   off `site_config.json` onto the doctype (behavior-preserving — same
-   defaults, same semantics, just a different config source). Ships alone,
-   independently testable: AI charging keeps working exactly as before.
-2. `TOB Translation Usage Log` doctype + migration.
-3. Wire usage logging (hit/miss, no charge yet) into `translate_now`/
-   `translate_local_text` — ship this alone first and watch real volume for
-   a few days before turning any charge on, same caution the original
-   `rewards_ai_*` rollout used.
-4. Add `charge_translation`/`record_translation_charge`/`charge_tts`/
-   `record_tts_charge` to `rewards/gate.py`, plus `get_charging_settings`/
-   `set_charging_settings`; wire the charge calls into both call sites,
-   both still controlled by their own `*_charge_enabled` field (off).
-5. Mirror `get_tts_usage` as `get_translation_usage` in
-   `api/translation.py` for admin billing visibility (grouped by
-   language/source_doctype/day, same shape).
-6. Build the Flutter admin settings UI (the nine fields, get/set wired up).
-7. Turn on `translation_charge_enabled` / `tts_charge_enabled` from that
-   screen once free-tier numbers look right from step 3's real data — no
-   app release or server access needed, same immediacy `site_config.json`
-   had, now from the admin panel instead of SSH.
+1. ✅ **Built.** The nine `TOB AI Settings` fields; `charge_ai` migrated
+   off `site_config.json` onto the doctype (same defaults, same
+   free-tier-counting logic, same throw message — only the config source
+   changed). Needs `bench migrate` on deploy (new doctype fields).
+2. ✅ **Built.** `TOB Translation Usage Log` doctype.
+3. ✅ **Built.** Usage logging (hit/miss, one row per call not per field —
+   see `_log_translation_usage` in `api/translation.py`) wired into
+   `translate_now`/`translate_local_text`, charging on from day one but
+   dormant (`translation_charge_enabled` defaults to 0) — so this ships
+   with full visibility and zero behavior change until explicitly turned
+   on, rather than as two separate deploys.
+4. ✅ **Built.** `charge_translation`/`record_translation_charge` (in
+   `translation.py`) and `charge_tts`/`record_tts_charge` (in `tts.py`),
+   plus `get_charging_settings`/`set_charging_settings` in `rewards/gate.py`.
+   Every gated endpoint now attaches a `usage` block to its response once
+   its feature's charging is on (see "Showing this to users" above) —
+   `null`/absent while it's off, so no client-side change is forced by
+   deploying this.
+5. ✅ **Built.** `get_translation_usage` in `api/translation.py` — same
+   shape as `get_tts_usage` (grouped by language/source_doctype/day),
+   minus a per-request cost estimate (translation has no simple per-call
+   vendor price the way TTS's per-character Google pricing gives it).
+6. ⬜ **Not built.** Flutter admin settings UI (the nine fields, wired to
+   `get_charging_settings`/`set_charging_settings`) — until this exists,
+   turning any charge on still means a direct Frappe desk edit of the
+   `TOB AI Settings` single, which *is* now at least click-through rather
+   than a file edit, just not from the app yet.
+7. ⬜ **Not built.** The Flutter-side "Showing this to users" work (pill,
+   spend snackbar) from the section above — depends on step 6 existing
+   first, and on real response shapes from steps 3–5 to build against
+   (now available).
+8. Turn on `translation_charge_enabled` / `tts_charge_enabled` once
+   free-tier numbers look right from step 3's real logged volume — from
+   the desk today, from the admin panel once step 6 ships.
 
 ## Flutter app — no new error-handling code expected
 
