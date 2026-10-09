@@ -267,6 +267,190 @@ def get_activity_summary():
 	return {"events": rows}
 
 
+# --- insights (simple analytics over the same log) --------------------------
+
+# Events that are background noise, not something the person chose to do —
+# left out of "what they use" / top-feature rankings.
+_PASSIVE_EVENTS = ("app_session_ended", "notification_received", "login_success")
+
+
+def _session_seconds(data) -> int:
+	try:
+		value = (json.loads(data) if isinstance(data, str) else (data or {})).get("duration_seconds")
+		seconds = int(float(value or 0))
+	except Exception:
+		return 0
+	# Ignore absurd values (a phone left on overnight) — cap a session at 3h.
+	return max(0, min(seconds, 3 * 3600))
+
+
+@frappe.whitelist(methods=["GET"])
+def get_activity_overview(days=7):
+	"""Admin-only — the User Activity header: who's active today / this
+	period, time spent, a daily active-users chart (14 days) and the most
+	used features."""
+	require_admin()
+	from frappe.utils import add_days, getdate, nowdate
+
+	days = max(1, min(int(days), 90))
+	today = getdate(nowdate())
+	since = add_days(today, -(days - 1))
+	chart_since = add_days(today, -13)
+
+	active_today = frappe.db.sql(
+		"select count(distinct user) from `tabTOB User Activity Event` where date(event_time) = %s", (today,)
+	)[0][0]
+	active_period = frappe.db.sql(
+		"select count(distinct user) from `tabTOB User Activity Event` where date(event_time) >= %s", (since,)
+	)[0][0]
+	daily = frappe.db.sql(
+		"""select date(event_time) as day, count(distinct user) as users
+		from `tabTOB User Activity Event` where date(event_time) >= %s group by date(event_time)""",
+		(chart_since,), as_dict=True,
+	)
+	by_day = {str(r.day): int(r.users) for r in daily}
+	sessions = frappe.get_all(
+		"TOB User Activity Event",
+		filters={"event": "app_session_ended", "event_time": [">=", since]},
+		fields=["data"],
+	)
+	top = frappe.db.sql(
+		"""select event, count(*) as count, count(distinct user) as users
+		from `tabTOB User Activity Event`
+		where date(event_time) >= %s and event not in %s
+		group by event order by count desc limit 6""",
+		(since, _PASSIVE_EVENTS), as_dict=True,
+	)
+	return {
+		"days": days,
+		"active_today": int(active_today or 0),
+		"active_period": int(active_period or 0),
+		"total_users": int(frappe.db.sql("select count(distinct user) from `tabTOB User Activity Event`")[0][0] or 0),
+		"sessions": len(sessions),
+		"time_spent_seconds": sum(_session_seconds(s.data) for s in sessions),
+		"daily_active": [
+			{"day": str(add_days(chart_since, i)), "users": by_day.get(str(add_days(chart_since, i)), 0)} for i in range(14)
+		],
+		"top_features": [{"event": r.event, "count": int(r.count), "users": int(r.users)} for r in top],
+	}
+
+
+@frappe.whitelist(methods=["GET"])
+def get_activity_user_stats(users):
+	"""Admin-only — per-user extras for the list cards: which of the last 7
+	days they were active, time spent in those 7 days, and their most used
+	feature. `users` is a JSON list (the page of users being shown)."""
+	require_admin()
+	from frappe.utils import add_days, getdate, nowdate
+
+	if isinstance(users, str):
+		users = json.loads(users)
+	users = [u for u in (users or []) if u][:100]
+	if not users:
+		return {}
+	today = getdate(nowdate())
+	since = add_days(today, -6)
+	rows = frappe.db.sql(
+		"""select user, event, date(event_time) as day, data from `tabTOB User Activity Event`
+		where user in %s and date(event_time) >= %s""",
+		(tuple(users), since), as_dict=True,
+	)
+	out = {u: {"days": [0] * 7, "time_spent_seconds": 0, "top_event": None, "_counts": {}} for u in users}
+	for r in rows:
+		s = out[r.user]
+		idx = (getdate(r.day) - since).days
+		if 0 <= idx < 7:
+			s["days"][idx] = 1
+		if r.event == "app_session_ended":
+			s["time_spent_seconds"] += _session_seconds(r.data)
+		elif r.event not in _PASSIVE_EVENTS:
+			s["_counts"][r.event] = s["_counts"].get(r.event, 0) + 1
+	for s in out.values():
+		counts = s.pop("_counts")
+		s["top_event"] = max(counts, key=counts.get) if counts else None
+	return out
+
+
+@frappe.whitelist(methods=["GET"])
+def get_user_activity_insights(user, days=30):
+	"""Admin-only — one user's activity, summarised for the Overview tab:
+	time spent, sessions, active days, streak, first / last seen, a 14-day
+	chart (events and minutes per day), what they use (per event), and when
+	in the day they're active."""
+	require_admin()
+	from frappe.utils import add_days, getdate, nowdate
+
+	days = max(7, min(int(days), 180))
+	today = getdate(nowdate())
+	since = add_days(today, -(days - 1))
+	rows = frappe.get_all(
+		"TOB User Activity Event",
+		filters={"user": user, "event_time": [">=", since]},
+		fields=["event", "event_time", "data"],
+		order_by="event_time asc",
+		limit_page_length=20000,
+	)
+
+	per_day_events, per_day_seconds, counts = {}, {}, {}
+	parts = {"morning": 0, "afternoon": 0, "evening": 0, "night": 0}
+	sessions, seconds = 0, 0
+	for r in rows:
+		day = str(getdate(r.event_time))
+		per_day_events[day] = per_day_events.get(day, 0) + 1
+		if r.event == "app_session_ended":
+			sec = _session_seconds(r.data)
+			sessions += 1
+			seconds += sec
+			per_day_seconds[day] = per_day_seconds.get(day, 0) + sec
+			continue
+		if r.event in _PASSIVE_EVENTS:
+			continue
+		counts[r.event] = counts.get(r.event, 0) + 1
+		hour = get_datetime(r.event_time).hour
+		key = "morning" if 5 <= hour < 12 else "afternoon" if 12 <= hour < 17 else "evening" if 17 <= hour < 21 else "night"
+		parts[key] += 1
+
+	# Streak: consecutive active days ending today (or yesterday).
+	active_days = set(per_day_events)
+	streak, cursor = 0, today
+	if str(cursor) not in active_days:
+		cursor = add_days(cursor, -1)
+	while str(cursor) in active_days:
+		streak += 1
+		cursor = add_days(cursor, -1)
+
+	first_last = frappe.db.sql(
+		"select min(event_time), max(event_time), count(*) from `tabTOB User Activity Event` where user=%s", (user,)
+	)[0]
+	user_doc = frappe.db.get_value("User", user, ["full_name", "user_image", "creation"], as_dict=True) or {}
+	chart_since = add_days(today, -13)
+	return {
+		"user": user,
+		"full_name": user_doc.get("full_name"),
+		"user_image": user_doc.get("user_image"),
+		"joined": str(user_doc.get("creation") or "") or None,
+		"days": days,
+		"first_seen": str(first_last[0]) if first_last[0] else None,
+		"last_seen": str(first_last[1]) if first_last[1] else None,
+		"total_events": int(first_last[2] or 0),
+		"period_events": len(rows),
+		"sessions": sessions,
+		"time_spent_seconds": seconds,
+		"active_days": len(active_days),
+		"streak": streak,
+		"daily": [
+			{
+				"day": str(add_days(chart_since, i)),
+				"events": per_day_events.get(str(add_days(chart_since, i)), 0),
+				"seconds": per_day_seconds.get(str(add_days(chart_since, i)), 0),
+			}
+			for i in range(14)
+		],
+		"features": [{"event": e, "count": c} for e, c in sorted(counts.items(), key=lambda x: -x[1])],
+		"day_parts": parts,
+	}
+
+
 @frappe.whitelist(methods=["GET"])
 def get_event_users(event, limit=50):
 	"""Admin-only — which users performed one event, with how many times
