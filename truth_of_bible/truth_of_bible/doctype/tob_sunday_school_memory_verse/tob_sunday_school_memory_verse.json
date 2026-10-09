@@ -16,6 +16,7 @@
  "field_order": [
   "title",
   "reference",
+  "memory_part",
   "week_start",
   "course",
   "status",
@@ -45,6 +46,12 @@
    "reqd": 1,
    "in_list_view": 1,
    "description": "e.g. \"Psalm 23:1\" — must parse as \"Book Chapter:Verse\" (see verse_ref_popup.dart's parseVerseReference on the Flutter side)."
+  },
+  {
+   "fieldname": "memory_part",
+   "fieldtype": "Long Text",
+   "label": "Memory Part",
+   "description": "The part of the verse students memorise, per Bible version, as JSON {\"<version>\": {\"text\", \"start\", \"end\"}}. Set from the admin app (\"Select a part\"). Empty = the full verse."
   },
   {
    "fieldname": "week_start",

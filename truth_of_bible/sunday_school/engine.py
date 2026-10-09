@@ -151,6 +151,20 @@ def get_quiz_assignment_for_week(quiz_type: str, week_start):
 	return frappe.get_doc("TOB Sunday School Quiz Assignment", name) if name else None
 
 
+def quiz_assignments_for_week(week_start, active_only: bool) -> list:
+	"""Every quiz assigned to [week_start], any slot (slots are free text
+	and optional), oldest first. [active_only] for the live week, so a
+	since-archived swap doesn't show as this week's challenge; a past week
+	shows whatever was assigned, any status."""
+	filters = {"week_start": week_start}
+	if active_only:
+		filters["status"] = "Active"
+	return frappe.get_all(
+		"TOB Sunday School Quiz Assignment", filters=filters,
+		fields=["name", "lms_quiz", "quiz_type", "status"], order_by="creation asc",
+	)
+
+
 def assigned_lms_quiz_ids() -> set:
 	"""Every LMS Quiz ever assigned to a Sunday School slot, Active or
 	Archived — the exclusion set for the app-wide public quiz list."""

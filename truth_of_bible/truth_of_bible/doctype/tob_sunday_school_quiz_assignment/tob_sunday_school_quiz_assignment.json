@@ -32,12 +32,10 @@
   },
   {
    "fieldname": "quiz_type",
-   "fieldtype": "Select",
-   "label": "Quiz Type",
-   "options": "Weekly Bible Quiz\nFaith Leader Exam",
-   "reqd": 1,
+   "fieldtype": "Data",
+   "label": "Slot",
    "in_list_view": 1,
-   "description": "Both are the same mechanic (marks convert to points) — this only decides which Student Dashboard slot and which Points Ledger source (\"Weekly Quiz\" or \"Faith Leader Exam\") the submission counts under."
+   "description": "Optional, free-text slot name (e.g. \"Weekly Bible Quiz\", \"Faith Leader Exam\", or any new one). Scoring is the same for all: marks convert to points. A \"Faith Leader Exam\" slot counts under the Faith Leader Exam ledger source; every other slot, or none, counts as \"Weekly Quiz\"."
   },
   {
    "fieldname": "week_start",

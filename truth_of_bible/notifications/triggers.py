@@ -342,7 +342,7 @@ def _on_sunday_school_quiz_assigned(doc):
 		return
 	quiz_title = frappe.db.get_value("LMS Quiz", doc.lms_quiz, "title") or doc.lms_quiz
 	for user in _sunday_school_students():
-		handle_event("SS_NEW_QUIZ_AVAILABLE", user, {"quiz_type": doc.quiz_type, "quiz": doc.lms_quiz, "quiz_title": quiz_title})
+		handle_event("SS_NEW_QUIZ_AVAILABLE", user, {"quiz_type": doc.quiz_type or "quiz", "quiz": doc.lms_quiz, "quiz_title": quiz_title})
 
 
 def on_sunday_school_verse_updated(doc, method=None):

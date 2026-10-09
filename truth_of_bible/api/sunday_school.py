@@ -10,6 +10,8 @@ by design — nothing here reads or writes a `TOB Reward *` doctype, and
 nothing there reads or writes a `TOB Sunday School *` doctype.
 """
 
+import json
+
 import frappe
 from frappe import _
 from frappe.utils import now_datetime
@@ -141,14 +143,12 @@ def _weekly_performance(user: str, week, *, current: bool) -> dict:
 	profile = engine.get_or_create_profile(user)
 
 	quizzes = []
-	for quiz_type in ("Weekly Bible Quiz", "Faith Leader Exam"):
-		assignment = (
-			engine.get_active_quiz_assignment(quiz_type, week)
-			if current
-			else engine.get_quiz_assignment_for_week(quiz_type, week)
-		)
-		if not assignment:
+	seen = set()
+	for assignment in engine.quiz_assignments_for_week(week, active_only=current):
+		if assignment.lms_quiz in seen:
 			continue
+		seen.add(assignment.lms_quiz)
+		quiz_type = assignment.quiz_type or ""
 		quiz_info = frappe.db.get_value("LMS Quiz", assignment.lms_quiz, ["title", "total_marks"], as_dict=True)
 		if not quiz_info:
 			continue
@@ -471,6 +471,16 @@ def get_memory_verse_courses():
 	}
 
 
+def _json_or_empty(value):
+	if not value:
+		return {}
+	try:
+		data = json.loads(value)
+		return data if isinstance(data, dict) else {}
+	except ValueError:
+		return {}
+
+
 @frappe.whitelist(methods=["GET"])
 def get_course_verses(course):
 	"""Every Published verse in one course, in assigned order (oldest
@@ -482,7 +492,7 @@ def get_course_verses(course):
 
 	verses = frappe.get_all(
 		"TOB Sunday School Memory Verse", filters={"course": course, "status": "Published"},
-		fields=["name", "title", "reference", "week_start", "simple_meaning"],
+		fields=["name", "title", "reference", "week_start", "simple_meaning", "memory_part"],
 		order_by="week_start asc, creation asc",
 	)
 	if not verses:
@@ -504,6 +514,9 @@ def get_course_verses(course):
 			"reference": v.reference,
 			"week_start": str(v.week_start),
 			"simple_meaning": v.simple_meaning or "",
+			# The part to memorise per Bible version (JSON) — see the app's
+			# MemoryVersePart; empty = the full verse.
+			"memory_part": _json_or_empty(v.memory_part),
 			"status": completion.status if completion else "Not Started",
 			"rank": completion.rank if completion else None,
 		})
