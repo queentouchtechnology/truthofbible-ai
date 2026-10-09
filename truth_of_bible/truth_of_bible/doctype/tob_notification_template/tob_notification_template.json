@@ -17,6 +17,7 @@
   "event_code",
   "audience",
   "enabled",
+  "send_email",
   "category",
   "priority",
   "column_break_1",
@@ -56,6 +57,14 @@
    "default": "1",
    "in_list_view": 1,
    "description": "Disabling this makes the engine skip the event entirely (no Notification Log row, no push) without removing the trigger wiring."
+  },
+  {
+   "fieldname": "send_email",
+   "fieldtype": "Check",
+   "label": "Send Email",
+   "default": "0",
+   "in_list_view": 1,
+   "description": "Also emails the recipient (rendered into the \"TOB Notification Email\" template) whenever this event's push/in-app notification would send. Off by default for every event — an admin opts each one in from the app's Notification Templates screen or here."
   },
   {
    "fieldname": "category",

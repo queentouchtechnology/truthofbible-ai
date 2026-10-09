@@ -28,6 +28,11 @@ from frappe.utils.password import get_decrypted_password, set_encrypted_password
 APP_MEMBER_ROLES = ("LMS Student",)
 
 _OTP_TTL_MINUTES = 5
+# Content lives in Frappe (Email Template doctype, seeded by
+# install.seed_otp_email_template) so it's editable from the desk without a
+# code change. The strings below are only the fallback used if that record
+# is ever deleted.
+_OTP_EMAIL_TEMPLATE = "OTP Verification Email"
 _OTP_MAX_ATTEMPTS = 5
 _OTP_COOLDOWN_SECONDS = 30
 _RESET_TOKEN_TTL_SECONDS = 600
@@ -182,12 +187,16 @@ def _normalize_contact(contact: str, channel: str) -> str:
 
 def _send(contact: str, channel: str, otp: str) -> None:
 	if channel == "email":
-		frappe.sendmail(
-			recipients=[contact],
-			subject=_("Your verification code"),
-			message=_("Your code is <b>{0}</b>. It is valid for {1} minutes.").format(otp, _OTP_TTL_MINUTES),
-			now=True,
-		)
+		subject = _("Your verification code")
+		message = _("Your code is <b>{0}</b>. It is valid for {1} minutes.").format(otp, _OTP_TTL_MINUTES)
+		try:
+			template = frappe.get_cached_doc("Email Template", _OTP_EMAIL_TEMPLATE)
+			context = {"otp": otp, "minutes": _OTP_TTL_MINUTES}
+			subject = frappe.render_template(template.subject, context) or subject
+			message = frappe.render_template(template.response, context) or message
+		except frappe.DoesNotExistError:
+			pass
+		frappe.sendmail(recipients=[contact], subject=subject, message=message, now=True)
 		return
 
 	# WhatsApp goes through Chatwoot (credentials already in site_config.json —
