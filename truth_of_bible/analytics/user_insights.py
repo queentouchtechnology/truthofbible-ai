@@ -318,24 +318,43 @@ def get_user_ai_usage(user, start_date=None, end_date=None):
 		order_by="creation desc",
 	)
 
-	daily = defaultdict(lambda: {"tokens": 0, "calls": 0})
+	daily = defaultdict(lambda: {"tokens": 0, "calls": 0, "cost": 0.0})
 	task_tokens = Counter()
 	task_calls = Counter()
+	task_cost = defaultdict(float)
+	provider_tokens = Counter()
+	provider_calls = Counter()
+	provider_cost = defaultdict(float)
+	status_counts = Counter()
 	range_tokens = 0
 	range_cost = 0.0
 	for r in rows:
 		day = getdate(r.creation).isoformat()
+		cost = float(r.estimated_cost_usd or 0)
 		daily[day]["tokens"] += r.total_tokens or 0
 		daily[day]["calls"] += 1
+		daily[day]["cost"] += cost
 		task_tokens[r.task or "unknown"] += r.total_tokens or 0
 		task_calls[r.task or "unknown"] += 1
+		task_cost[r.task or "unknown"] += cost
+		provider_tokens[r.provider or "unknown"] += r.total_tokens or 0
+		provider_calls[r.provider or "unknown"] += 1
+		provider_cost[r.provider or "unknown"] += cost
+		status_counts[r.status or "unknown"] += 1
 		range_tokens += r.total_tokens or 0
-		range_cost += float(r.estimated_cost_usd or 0)
+		range_cost += cost
 
-	daily_series = [{"date": d, "tokens": v["tokens"], "calls": v["calls"]} for d, v in sorted(daily.items())]
+	daily_series = [
+		{"date": d, "tokens": v["tokens"], "calls": v["calls"], "cost_usd": v["cost"]}
+		for d, v in sorted(daily.items())
+	]
 	by_task = [
-		{"task": t, "tokens": task_tokens[t], "calls": task_calls[t]}
+		{"task": t, "tokens": task_tokens[t], "calls": task_calls[t], "cost_usd": task_cost[t]}
 		for t, _ in task_tokens.most_common(10)
+	]
+	by_provider = [
+		{"provider": p, "tokens": provider_tokens[p], "calls": provider_calls[p], "cost_usd": provider_cost[p]}
+		for p, _ in provider_tokens.most_common(10)
 	]
 
 	return {
@@ -345,8 +364,11 @@ def get_user_ai_usage(user, start_date=None, end_date=None):
 		"range_tokens": range_tokens,
 		"range_cost_usd": range_cost,
 		"range_calls": len(rows),
+		"range_success_calls": status_counts.get("success", 0),
+		"range_error_calls": len(rows) - status_counts.get("success", 0),
 		"daily_series": daily_series,
 		"by_task": by_task,
+		"by_provider": by_provider,
 		"recent_calls": [
 			{
 				"task": r.task,
