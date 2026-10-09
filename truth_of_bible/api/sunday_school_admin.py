@@ -129,6 +129,78 @@ def add_manual_points(user, points, title=None, week_start=None):
 	return {"awarded": awarded, "user": user, "points": points, "title": title}
 
 
+_DEFAULT_REASONS = [
+	"Bible reading",
+	"Prayer participation",
+	"Helping in class",
+	"Bringing a friend",
+	"Good behaviour",
+	"Late to class",
+]
+_AUTO_TITLES = ("Manual point adjustment", "Manual point deduction")
+
+
+@frappe.whitelist(methods=["GET"])
+def list_point_reasons():
+	"""Reasons for the Point Entry dropdown: every reason admins have used
+	before (most used first), then the starter list. A "new" reason needs
+	no saving step — it joins this list the first time points are given
+	with it."""
+	require_admin()
+	used = frappe.db.sql(
+		"""select title, count(*) as uses from `tabTOB Sunday School Points Ledger`
+		where source = 'Manual Adjustment' and ifnull(title, '') != '' and title not in %s
+		group by title order by uses desc, title asc limit 100""",
+		(_AUTO_TITLES,), as_dict=True,
+	)
+	reasons = [r.title for r in used]
+	seen = {r.lower() for r in reasons}
+	reasons += [r for r in _DEFAULT_REASONS if r.lower() not in seen]
+	return {"reasons": reasons}
+
+
+def split_points(total: int, users: list) -> list:
+	"""Splits [total] across [users] as evenly as whole points allow: each
+	gets total ÷ n, and the remainder goes one extra point each to the first
+	users (sorted, so the split is the same every time). Members whose
+	share is 0 are left out. Works for deductions (negative totals) too."""
+	users = sorted(users)
+	if not users:
+		return []
+	sign = -1 if total < 0 else 1
+	base, extra = divmod(abs(total), len(users))
+	shares = [(u, sign * (base + (1 if i < extra else 0))) for i, u in enumerate(users)]
+	return [(u, p) for u, p in shares if p]
+
+
+@frappe.whitelist(methods=["POST"])
+def add_group_points(group, points, title=None, week_start=None):
+	"""Point Entry for a whole group: [points] is the group's TOTAL, split
+	across its active members (see split_points). Each member gets their
+	own Manual Adjustment row, tagged with the group."""
+	require_admin()
+	points = int(points)
+	if points == 0:
+		frappe.throw(_("Points must not be zero."), frappe.ValidationError)
+	if not frappe.db.exists("TOB Sunday School Group", group):
+		frappe.throw(_("Group not found."), frappe.DoesNotExistError)
+	members = frappe.get_all(
+		"TOB Sunday School Profile", filters={"group": group, "status": "Active"}, pluck="user"
+	)
+	if not members:
+		frappe.throw(_("This group has no members yet."), frappe.ValidationError)
+
+	week = getdate(week_start) if week_start else engine.week_start_of()
+	title = title or ("Manual point adjustment" if points > 0 else "Manual point deduction")
+	batch = frappe.generate_hash(length=12)
+	awarded = []
+	for user, share in split_points(points, members):
+		if engine.award(user, "Manual Adjustment", title, share, week_start=week, group=group,
+				dedupe_key=f"manualgroup:{batch}:{user}"):
+			awarded.append({"user": user, "points": share})
+	return {"group": group, "points": points, "title": title, "members": awarded}
+
+
 @frappe.whitelist(methods=["GET"])
 def list_role_students(search=None):
 	"""Every user actually holding the "Sunday School Student" role (see

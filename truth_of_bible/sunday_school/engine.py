@@ -282,8 +282,13 @@ def compute_weekly_group_bonus(week_start) -> dict:
 	top_group = totals[0]["group"]
 	cfg = settings()
 	divisor = cfg.group_bonus_divisor or 2
-	members = frappe.get_all(
-		"TOB Sunday School Profile", filters={"group": top_group, "status": "Active"}, pluck="user"
+	# Members as they were THAT week (every ledger row stores the group it
+	# was earned for) — groups are re-formed weekly, so today's roster may
+	# not be the one that won.
+	members = frappe.db.sql_list(
+		"""select distinct user from `tabTOB Sunday School Points Ledger`
+		where week_start=%s and `group`=%s""",
+		(week_start, top_group),
 	)
 
 	awarded_to = []
