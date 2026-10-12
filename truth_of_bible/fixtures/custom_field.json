@@ -63,5 +63,19 @@
   "in_standard_filter": 1,
   "translatable": 0,
   "description": "Which languages the app-wide Content Language switcher and the Translate button/admin tooling offer — seeded to match every language the AI features already support (install.py::seed_language_metadata, mirroring the Flutter app's own aiLanguageOptions list) rather than a small curated subset, since content translation is now on-demand/AI-disclaimed the same way the rest of this app's AI content already is, not gated behind a reviewed allowlist."
+ },
+ {
+  "name": "LMS Quiz-tob_private_to",
+  "doctype": "Custom Field",
+  "dt": "LMS Quiz",
+  "fieldname": "tob_private_to",
+  "label": "Private To",
+  "fieldtype": "Link",
+  "options": "User",
+  "insert_after": "course",
+  "read_only": 1,
+  "in_standard_filter": 1,
+  "translatable": 0,
+  "description": "Set when a member (not an admin) generated this quiz for themselves with the AI Quiz Generator. Such a quiz is listed in the app's Quiz List only for this user (see api/quiz_visibility.py); blank means a normal, public quiz."
  }
 ]

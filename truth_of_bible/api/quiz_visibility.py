@@ -34,10 +34,17 @@ def list_public_quizzes(fields=None, filters=None, order_by=None, limit_page_len
 	if assigned:
 		all_filters.append(["name", "not in", list(assigned)])
 
+	# A member's own AI-generated quiz (tob_private_to set) is listed only
+	# for that member, never in everyone else's Quiz List.
+	or_filters = [["tob_private_to", "is", "not set"]]
+	if frappe.session.user != "Guest":
+		or_filters.append(["tob_private_to", "=", frappe.session.user])
+
 	rows = frappe.get_list(
 		"LMS Quiz",
 		fields=json.loads(fields) if fields else ["*"],
 		filters=all_filters,
+		or_filters=or_filters,
 		order_by=order_by or "creation desc",
 		# 0 means "all" (the admin Assessments screen asks for the whole list);
 		# only a missing value falls back to a page of 20.
