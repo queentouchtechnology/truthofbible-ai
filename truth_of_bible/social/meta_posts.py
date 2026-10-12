@@ -9,8 +9,10 @@ exactly which actions are available instead of failing on tap. Verified live
 (2026-09-25): listing Facebook posts works via /published_posts with
 pages_read_engagement, but reading a Facebook post's comments needs
 pages_read_user_content, and writing comments needs pages_manage_engagement.
-Instagram media deletion is supported (instagram_manage_contents, Instagram
-API with Facebook Login only; not single items inside a carousel).
+Instagram media CANNOT be deleted through the Graph API at all — there is no
+DELETE endpoint for IG media, regardless of scopes. `delete_post` rejects
+Instagram up front instead of calling Graph, and there is no
+"delete_instagram_post" capability (see CAPABILITIES below).
 
 The token comes from TOB Meta Connection (social/meta_connection.py), its
 only home; permissions come from that record's daily check.
@@ -41,7 +43,9 @@ CAPABILITIES = {
 	"list_instagram_posts": ("instagram_basic",),
 	"read_instagram_comments": ("instagram_basic", "instagram_manage_comments"),
 	"write_instagram_comments": ("instagram_basic", "instagram_manage_comments"),
-	"delete_instagram_post": ("instagram_basic", "instagram_manage_contents"),
+	# No "delete_instagram_post": Graph API has no DELETE endpoint for IG
+	# media at all — no scope unlocks it, so it's not a capability a token
+	# can ever have. `delete_post` rejects Instagram directly instead.
 }
 
 
@@ -246,7 +250,12 @@ def delete_post(platform, post_id):
 		if not str(post_id).startswith(f"{page_id}_"):
 			frappe.throw(_("That isn't a post on the Truth of Bible Page."), frappe.ValidationError)
 	else:
-		_require("delete_instagram_post")
+		# Not a permissions gap — Graph API has no delete endpoint for IG
+		# media at all, so this would always fail at Meta's end regardless
+		# of scopes. Reject up front with a clear, actionable message.
+		frappe.throw(
+			_("Instagram doesn't support deleting posts through the API — delete it from the Instagram app instead."),
+			frappe.ValidationError)
 	_graph("DELETE", str(post_id))
 	_audit(f"Deleted {platform} post {post_id}")
 	return {"deleted": True}
