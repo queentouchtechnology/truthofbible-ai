@@ -191,6 +191,24 @@ def _active_days(user: str) -> set:
 	return {getdate(r[0]) for r in rows}
 
 
+def _checkin_days(user: str) -> set:
+	"""Days the member specifically tapped "Check in" — unlike
+	`_active_days`, this never counts reading a chapter, playing a game or
+	a reading-plan day. Those legitimately extend the numeric streak (see
+	`_STREAK_REASONS`'s own comment), but the week row in `overview()` sits
+	directly under the "Check in +1" button and is titled "Daily check-in",
+	so it must track that one specific action — otherwise reading a
+	chapter alone ticks today's box while the check-in button stays fully
+	active, since the member never actually checked in.
+	"""
+	rows = frappe.db.sql(
+		"""select distinct date(creation) from `tabTOB Reward Ledger`
+		where user=%s and reason='daily_checkin' and creation >= %s""",
+		(user, add_days(_today(), -400)),
+	)
+	return {getdate(r[0]) for r in rows}
+
+
 def streak(user: str) -> int:
 	days = _active_days(user)
 	today = _today()
@@ -805,12 +823,25 @@ def overview(user: str, country: str | None = None) -> dict:
 	_expire_stale(user)
 	_sync_used(user)
 	bal = balance(user)
-	days = _active_days(user)
+	checkin_days = _checkin_days(user)
 	today = _today()
+	# Monday-anchored calendar week containing `today` — NOT a rolling
+	# trailing 7-day window. A rolling window straddles two different
+	# calendar weeks on every day except Sunday, so an early slot in the
+	# row (e.g. "Saturday") could actually be LAST week's Saturday — a day
+	# that genuinely happened and was checked in — rendered in a row that
+	# otherwise reads as "this week, in progress so far". With no date
+	# shown next to the letter, that's indistinguishable from "a day later
+	# this week is already marked done before it happened". Anchoring to
+	# Monday instead guarantees every day after `today` in the row is a
+	# real future date, which can never be in `days` (nobody can check in
+	# before the day arrives) — so it's always correctly empty, and the
+	# row cleanly resets at the start of each new week.
+	monday = add_days(today, -today.weekday())
 	week = []
-	for i in range(6, -1, -1):
-		d = add_days(today, -i)
-		week.append({"date": str(d), "label": d.strftime("%a")[0], "done": d in days, "today": d == today})
+	for i in range(7):
+		d = add_days(monday, i)
+		week.append({"date": str(d), "label": d.strftime("%a")[0], "done": d in checkin_days, "today": d == today})
 
 	def count_today(code):
 		return int(

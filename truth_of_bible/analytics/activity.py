@@ -73,6 +73,12 @@ _ALLOWED_EVENTS = {
 	# Content translation module — see api/translation.py.
 	"app_language_switched",
 	"translated_content_viewed",
+	# Fired when daily_verse_screen.dart's whole resolution chain (reading
+	# plan -> blessing-verse API -> book-id lookup) comes up empty and it
+	# falls back to a hardcoded placeholder verse — not an in-app action,
+	# but the only way to notice this is actually happening to real users
+	# instead of being silently indistinguishable from the real thing.
+	"daily_verse_fallback_used",
 }
 
 _MAX_BATCH_SIZE = 100
