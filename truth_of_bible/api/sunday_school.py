@@ -319,6 +319,45 @@ def get_dashboard():
 
 
 @frappe.whitelist(methods=["GET"])
+def get_my_quiz_assignments():
+	"""Every Active Sunday School quiz assignment, for the student's own
+	"Assigned Quizzes" screen (sunday_school_quiz_assignments_screen.dart's
+	studentView mode). TOB Sunday School Quiz Assignment grants no REST
+	access to any role but System Manager (see this module's own
+	docstring) — the admin screen reads it directly with the admin's own
+	key; a student can't, so this is that screen's student-safe
+	equivalent, same shape as the admin list (name/lms_quiz/quiz_type/
+	week_start/status/lms_quiz_title) so the app can parse both with the
+	same model."""
+	_require_login()
+	rows = frappe.get_all(
+		"TOB Sunday School Quiz Assignment",
+		filters={"status": "Active"},
+		fields=["name", "lms_quiz", "quiz_type", "week_start", "status"],
+		order_by="week_start desc",
+	)
+	if not rows:
+		return {"assignments": []}
+	titles = {
+		t.name: t.title
+		for t in frappe.get_all("LMS Quiz", filters={"name": ["in", [r.lms_quiz for r in rows]]}, fields=["name", "title"])
+	}
+	return {
+		"assignments": [
+			{
+				"name": r.name,
+				"lms_quiz": r.lms_quiz,
+				"lms_quiz_title": titles.get(r.lms_quiz),
+				"quiz_type": r.quiz_type,
+				"week_start": str(r.week_start),
+				"status": r.status,
+			}
+			for r in rows
+		]
+	}
+
+
+@frappe.whitelist(methods=["GET"])
 def get_weekly_performance(week_start=None):
 	"""Same shape as get_dashboard's weekly fields, for any week — the
 	This Week / Last Week / calendar-picked view on the Student Dashboard.
