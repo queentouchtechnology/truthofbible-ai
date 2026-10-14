@@ -21,6 +21,12 @@ via `frappe.get_site_config()["woocommerce_webhook_secret"]`). A request
 with a missing/wrong signature is rejected outright — no site_config key
 means every delivery is rejected (fails closed, not open).
 
+**Ping**: when a webhook is saved or switched on in wp-admin, WooCommerce
+first sends a "ping" — a form body `webhook_id=<n>`, with NO signature
+(by design: there's no payload to sign). It's answered with a quiet 200
+and nothing else happens (`is_ping`), so it no longer shows up in Error
+Log as a signature mismatch. Anything else unsigned is still rejected.
+
 **Customer identity**: no Frappe-side ID mapping between a WooCommerce
 customer and a Frappe User exists anywhere in this app (confirmed by a
 full repo audit before writing this file) — the Flutter client itself
@@ -45,6 +51,7 @@ import base64
 import hashlib
 import hmac
 import json
+import re
 
 import frappe
 
@@ -66,6 +73,9 @@ _STATUS_EVENTS = {
 
 @frappe.whitelist(allow_guest=True, methods=["POST"])
 def order_updated():
+	body = frappe.request.data or b""
+	if is_ping(frappe.get_request_header("X-WC-Webhook-Signature"), body, frappe.form_dict.get("webhook_id")):
+		return {"ok": True, "ping": True}  # WooCommerce checking the URL answers — nothing to do
 	if not _verify_signature():
 		frappe.throw("Invalid signature", frappe.PermissionError)
 
@@ -113,6 +123,16 @@ def _handle_order_updated(payload: dict) -> None:
 		frappe.log_error(title="Marketplace: sync_order_line_items failed", message=frappe.get_traceback())
 
 
+def is_ping(signature: str | None, body: bytes, form_webhook_id=None) -> bool:
+	"""WooCommerce's ping (webhook saved / switched on): unsigned, and nothing but `webhook_id=<n>`.
+	(Frappe may already have parsed the form, leaving the raw body empty — hence form_webhook_id.)"""
+	if signature:
+		return False
+	if re.fullmatch(rb"webhook_id=\d+", (body or b"").strip()):
+		return True
+	return not (body or b"").strip() and str(form_webhook_id or "").isdigit()
+
+
 def _verify_signature() -> bool:
 	secret = frappe.get_site_config().get("woocommerce_webhook_secret")
 	if not secret:
@@ -132,7 +152,11 @@ def _verify_signature() -> bool:
 		# woocommerce_webhook_secret looks identical to "never fired".
 		frappe.log_error(
 			title="Notification engine: shop_webhook signature mismatch",
-			message=f"X-WC-Webhook-Signature present={bool(signature)}. Check woocommerce_webhook_secret in site_config.json matches the secret set when this webhook was registered in WooCommerce.",
+			message=(
+				f"X-WC-Webhook-Signature present={bool(signature)}, topic={frappe.get_request_header('X-WC-Webhook-Topic') or '-'}, "
+				f"webhook id={frappe.get_request_header('X-WC-Webhook-ID') or '-'}. Check woocommerce_webhook_secret in site_config.json "
+				"matches the secret set when this webhook was registered in WooCommerce."
+			),
 		)
 		return False
 	return True
