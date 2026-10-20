@@ -19,6 +19,8 @@
   "post_to_facebook",
   "column_break_platforms",
   "post_to_instagram",
+  "post_to_google",
+  "google_post_url",
   "section_break_preview",
   "preview_channel",
   "slack_channel_id",
@@ -91,6 +93,20 @@
    "label": "Instagram",
    "default": "1",
    "description": "Instagram reuses the image Facebook hosts, so it only posts when Facebook is also on."
+  },
+  {
+   "fieldname": "post_to_google",
+   "fieldtype": "Check",
+   "label": "Google Business Profile (by hand)",
+   "default": "0",
+   "description": "Until Google approves its Business Profile API, the post goes to the Slack preview channel with the steps and a Mark as posted link — someone puts it on Google by hand (about 20 seconds)."
+  },
+  {
+   "fieldname": "google_post_url",
+   "fieldtype": "Data",
+   "label": "Google profile link",
+   "depends_on": "post_to_google",
+   "description": "Where the Slack message sends you to add the update — the profile's posts / Add update page (business.google.com)."
   },
   {
    "fieldname": "section_break_preview",
@@ -189,5 +205,6 @@
    "create": 1
   }
  ],
- "links": []
+ "links": [],
+ "modified": "2026-10-21 18:00:00.000000"
 }

@@ -40,7 +40,7 @@ SETTINGS = "TOB Blessing Automation Settings"
 CONTENT = "TOB Social Content"
 LOG = "TOB Automation Log"
 WORKER_ROLE = "TOB Social Worker"
-EVENTS = ("Preview Sent", "Posted", "Failed", "Skipped", "No Approved Verse", "No Approved Content")
+EVENTS = ("Preview Sent", "Posted", "Failed", "Skipped", "No Approved Verse", "No Approved Content", "Ready to Post")
 # Column names on TOB Automation Schedule; index = Python's date.weekday() (Monday = 0).
 WEEKDAYS = ("mon", "tue", "wed", "thu", "fri", "sat", "sun")
 _CONTENT_FIELDS = ["name", "content_type", "title", "image_text", "image_footer", "caption", "how_to_find",
@@ -87,6 +87,8 @@ def get_worker_config():
 		platforms.append("facebook")
 		if settings.post_to_instagram:
 			platforms.append("instagram")
+	if settings.post_to_google:
+		platforms.append("google")  # by hand from Slack until Google approves its API (google_mark_link / google_posted)
 
 	schedules = _schedules(settings)
 	for schedule in schedules:
@@ -106,6 +108,7 @@ def get_worker_config():
 		"preview_minutes_before": cint(settings.preview_minutes_before),
 		"app_link": settings.app_link or "",
 		"hashtags": settings.hashtags or "",
+		"google_post_url": settings.google_post_url or "",
 		"verses": frappe.get_all(
 			"TOB Blessing Verse",
 			filters={"social_approved": 1, "kjv_text": ["is", "set"]},
@@ -138,6 +141,11 @@ def seed_worker_secrets(slack_bot_token=None):
 def log_event(event, reference=None, blessing_verse=None, platform=None, post_id=None, message=None,
 		post_type="Blessing", social_content=None):
 	require_worker()
+	return _log_event(event, reference, blessing_verse, platform, post_id, message, post_type, social_content)
+
+
+def _log_event(event, reference=None, blessing_verse=None, platform=None, post_id=None, message=None,
+		post_type="Blessing", social_content=None):
 	if event not in EVENTS:
 		frappe.throw(_("Unknown event: {0}").format(event), frappe.ValidationError)
 	if post_type not in post_types():
@@ -170,6 +178,67 @@ def log_event(event, reference=None, blessing_verse=None, platform=None, post_id
 		post_id or message]))
 	frappe.db.set_single_value(SETTINGS, "last_result", summary[:500], update_modified=False)
 	return {"name": doc.name}
+
+
+# ---------------------------------------------------------------------------
+# Google Business Profile by hand (until Google approves the Business Profile API)
+
+def _google_key() -> bytes:
+	from frappe.utils.password import get_encryption_key
+
+	return ("tob-google-posted|" + get_encryption_key()).encode()
+
+
+def _google_sign(log_name: str) -> str:
+	import hashlib
+	import hmac
+
+	return f"{log_name}.{hmac.new(_google_key(), log_name.encode(), hashlib.sha256).hexdigest()[:32]}"
+
+
+def _google_check(token: str):
+	import hmac
+
+	name, _sep, _sig = str(token or "").partition(".")
+	return name if name and hmac.compare_digest(_google_sign(name), str(token)) else None
+
+
+@frappe.whitelist(methods=["POST"])
+def google_mark_link(reference=None, post_type="Blessing", blessing_verse=None, social_content=None):
+	"""Worker: a post is in Slack, ready to put on Google by hand → logs "Ready to Post" and returns the signed
+	"Mark as posted" link (google_posted) for that message."""
+	require_worker()
+	row = log_event("Ready to Post", reference=reference, blessing_verse=blessing_verse, platform="google",
+		post_type=post_type, social_content=social_content, message="In Slack to post by hand on Google")
+	return {"url": frappe.utils.get_url(
+		f"/api/method/truth_of_bible.social.blessing_automation.google_posted?k={_google_sign(row['name'])}")}
+
+
+@frappe.whitelist(allow_guest=True, methods=["GET"])
+def google_posted(k=None):
+	"""The "Mark as posted" link in Slack: records the Google post (once) as Posted in TOB Automation Log."""
+	from werkzeug.wrappers import Response
+
+	def page(title, text, status=200):
+		html = (f"<!doctype html><meta name=viewport content='width=device-width,initial-scale=1'><title>{title}</title>"
+			f"<body style='font-family:system-ui;max-width:520px;margin:15vh auto;padding:0 20px;text-align:center'>"
+			f"<h2>{title}</h2><p style='color:#555'>{text}</p></body>")
+		return Response(html, status=status, mimetype="text/html")
+
+	name = _google_check(k)
+	ready = frappe.db.get_value(LOG, name, ["event", "platform", "reference", "post_type", "blessing_verse",
+		"social_content", "creation"], as_dict=True) if name else None
+	if not ready or ready.event != "Ready to Post" or ready.platform != "google":
+		return page("Link not valid", "This Mark as posted link doesn't match a post. Nothing was recorded.", 400)
+	done = frappe.db.exists(LOG, {"event": "Posted", "platform": "google", "post_id": f"by-hand:{name}"})
+	if done:
+		return page("Already recorded", f"{frappe.utils.escape_html(ready.reference or 'This post')} is already marked as posted on Google.")
+	# The signed link is the proof (one per post) — no login, so no session is made for this request.
+	_log_event("Posted", reference=ready.reference, blessing_verse=ready.blessing_verse, platform="google",
+		post_id=f"by-hand:{name}", post_type=ready.post_type, social_content=ready.social_content,
+		message="Posted on Google by hand")
+	frappe.db.commit()
+	return page("Thank you", f"{frappe.utils.escape_html(ready.reference or 'The post')} is recorded as posted on Google.")
 
 
 @frappe.whitelist(methods=["POST"])
@@ -234,10 +303,10 @@ def import_content(items):
 # Admin app (Flutter) — System Manager only, the same boundary as the Desk.
 
 SETTINGS_FIELDS = (
-	"enabled", "post_time", "design", "post_to_facebook", "post_to_instagram", "preview_channel",
-	"slack_channel_id", "preview_minutes_before", "app_link", "hashtags", "timezone",
+	"enabled", "post_time", "design", "post_to_facebook", "post_to_instagram", "post_to_google", "google_post_url",
+	"preview_channel", "slack_channel_id", "preview_minutes_before", "app_link", "hashtags", "timezone",
 )
-_CHECKS = ("enabled", "post_to_facebook", "post_to_instagram")
+_CHECKS = ("enabled", "post_to_facebook", "post_to_instagram", "post_to_google")
 _VERSE_FIELDS = [
 	"name", "reference", "theme", "status", "kjv_text", "social_approved", "approved_by", "approved_on",
 	"last_posted_on",
