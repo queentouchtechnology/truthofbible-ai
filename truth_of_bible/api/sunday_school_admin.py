@@ -19,9 +19,10 @@ from truth_of_bible.sunday_school import engine
 
 @frappe.whitelist(methods=["POST"])
 def mark_attendance(week_start, entries):
-	"""entries: JSON list of {"user": ..., "attended_class": bool, "attended_quiz": bool}
-	— a full roster save for one week. Never touches completed_memory_verse
-	(engine-owned, set only via verify_verse_completion)."""
+	"""entries: JSON list of {"user": ..., "attended_class": bool, "attended_quiz": bool,
+	"completed_memory_verse": bool} — a full roster save for one week. All
+	three are marked by hand; an entry without completed_memory_verse (older
+	app versions) leaves it as it was."""
 	require_admin()
 	week = getdate(week_start)
 	if isinstance(entries, str):
@@ -35,6 +36,8 @@ def mark_attendance(week_start, entries):
 		attendance = engine.ensure_attendance(user, week)
 		attendance.attended_class = 1 if entry.get("attended_class") else 0
 		attendance.attended_quiz = 1 if entry.get("attended_quiz") else 0
+		if "completed_memory_verse" in entry:
+			attendance.completed_memory_verse = 1 if entry.get("completed_memory_verse") else 0
 		attendance.save(ignore_permissions=True)
 		engine.check_sunday_goal(user, week)
 		updated.append(user)

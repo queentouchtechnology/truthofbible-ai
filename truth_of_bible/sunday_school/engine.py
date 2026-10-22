@@ -247,10 +247,10 @@ def check_sunday_goal(user: str, week_start) -> bool:
 
 
 def verify_verse_completion(completion_name: str, verified: bool) -> dict:
-	"""Approves or rejects an "I recited it" claim. Approval marks the
-	week's memory verse done (one of the Sunday Goal's three tasks) and
-	awards no points itself — Complete Verse points are a Point Entry
-	reason now (see COMPLETE_VERSE_REASON)."""
+	"""Approves or rejects an "I recited it" claim. Awards no points and
+	no longer ticks the week's attendance Verse box — that is marked by
+	hand on the Attendance screen like Class and Quiz (mark_attendance).
+	Complete Verse points are a Point Entry reason (COMPLETE_VERSE_REASON)."""
 	completion = frappe.get_doc("TOB Sunday School Verse Completion", completion_name)
 	completion.status = "Verified" if verified else "Rejected"
 	completion.save(ignore_permissions=True)
@@ -258,14 +258,6 @@ def verify_verse_completion(completion_name: str, verified: bool) -> dict:
 
 	if not verified:
 		return {"completion": completion.name, "status": "Rejected"}
-
-	verse = frappe.get_doc("TOB Sunday School Memory Verse", completion.memory_verse)
-	attendance = ensure_attendance(completion.user, verse.week_start)
-	if not attendance.completed_memory_verse:
-		attendance.completed_memory_verse = 1
-		attendance.save(ignore_permissions=True)
-		frappe.db.commit()
-	check_sunday_goal(completion.user, verse.week_start)
 	return {"completion": completion.name, "status": "Verified"}
 
 

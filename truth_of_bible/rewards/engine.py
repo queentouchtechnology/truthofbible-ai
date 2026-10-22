@@ -54,7 +54,7 @@ RULES = {
 	"daily_checkin": {"points": 1, "title": "Daily check-in", "per_day": 1},
 	"read_chapter": {"points": 2, "title": "Read a Bible chapter", "per_day": 1, "event": "verse_opened"},
 	"complete_quiz": {"points": 3, "title": "Completed a quiz", "per_day": 3, "event": "quiz_completed"},
-	"devotional": {"points": 1, "title": "Read a devotional", "per_day": 1, "event": "devotional_viewed"},
+	"devotional": {"points": 1, "title": "Read a devotional", "per_day": 3, "event": "devotional_viewed"},
 	"share_app": {"points": 1, "title": "Shared the app", "per_day": 3},
 	# Bible games + Bible Battle (games/arcade/progress.py). XP is the
 	# games' own currency; these points are the small daily share.
@@ -856,8 +856,8 @@ def overview(user: str, country: str | None = None) -> dict:
 		 "done": count_today("read_chapter") >= 1, "kind": "auto", "progress": None},
 		{"key": "complete_quiz", "title": "Complete a quiz", "subtitle": "Up to 3 a day", "points": 3,
 		 "done": count_today("complete_quiz") >= 3, "kind": "auto", "progress": f"{count_today('complete_quiz')}/3"},
-		{"key": "devotional", "title": "Read a devotional", "subtitle": "Counts automatically", "points": 1,
-		 "done": count_today("devotional") >= 1, "kind": "auto", "progress": None},
+		{"key": "devotional", "title": "Read 3 devotionals", "subtitle": "Read 3 a day", "points": 1,
+		 "done": count_today("devotional") >= 3, "kind": "auto", "progress": f"{count_today('devotional')}/3"},
 		{"key": "play_game", "title": "Play a Bible game", "subtitle": "Up to 2 a day", "points": 2,
 		 "done": count_today("play_game") >= 2, "kind": "auto", "progress": f"{count_today('play_game')}/2"},
 		{"key": "share_app", "title": "Share the app", "subtitle": "Up to 3 a day", "points": 1,

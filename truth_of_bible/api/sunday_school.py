@@ -271,10 +271,13 @@ def _quiz_summary(user: str) -> dict:
 
 
 @frappe.whitelist(methods=["GET"])
-def get_dashboard():
+def get_dashboard(week_start=None):
+	"""week_start: the week the hero stats and This Week's Challenges are
+	for — the app sends the last Sunday class's week, since the calendar
+	week only gets its class on Sunday. Defaults to the current week."""
 	user = _require_login()
 	profile = engine.get_or_create_profile(user)
-	week = engine.week_start_of()
+	week = engine.week_start_of(week_start) if week_start else engine.week_start_of()
 
 	# Lifetime EARNED (positive rows only) — distinct from the current
 	# unredeemed balance (engine.balance()), which drops to 0 on every
@@ -286,7 +289,7 @@ def get_dashboard():
 
 	overall = get_leaderboard("overall", str(week))
 	my_rank = overall["my_rank"]
-	weekly = _weekly_performance(user, week, current=True)
+	weekly = _weekly_performance(user, week, current=week == engine.week_start_of())
 	next_up = None
 	if my_rank and my_rank > 1:
 		ahead = overall["leaderboard"][my_rank - 2]

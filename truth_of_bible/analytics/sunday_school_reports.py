@@ -41,9 +41,11 @@ def _user_brief(users) -> dict:
 
 
 @frappe.whitelist(methods=["GET"])
-def get_overview_stats():
+def get_overview_stats(week_start=None):
+	"""week_start: the week "points earned" is for — the admin app sends
+	the last Sunday class's week. Defaults to the current week."""
 	require_admin()
-	week = engine.week_start_of()
+	week = engine.week_start_of(week_start) if week_start else engine.week_start_of()
 	return {
 		"week_start": str(week),
 		"total_students": frappe.db.count("TOB Sunday School Profile", {"status": "Active"}),
