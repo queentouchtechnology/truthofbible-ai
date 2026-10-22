@@ -31,7 +31,15 @@
   "data_access_expires_at",
   "last_checked",
   "last_renewed",
-  "last_renewal_result"
+  "last_renewal_result",
+  "section_break_whatsapp",
+  "whatsapp_phone_number_id",
+  "whatsapp_access_token",
+  "whatsapp_default_country_code",
+  "column_break_whatsapp",
+  "whatsapp_otp_template",
+  "whatsapp_otp_template_category",
+  "whatsapp_otp_template_language"
  ],
  "fields": [
   {
@@ -163,6 +171,58 @@
    "fieldtype": "Small Text",
    "label": "Last Renewal Result",
    "read_only": 1
+  },
+  {
+   "fieldname": "section_break_whatsapp",
+   "fieldtype": "Section Break",
+   "label": "WhatsApp Cloud API",
+   "collapsible": 0,
+   "description": "App sign-in codes (WhatsApp OTP) go straight to Meta from here. Leave the Phone Number ID blank to keep sending them through Chatwoot."
+  },
+  {
+   "fieldname": "whatsapp_phone_number_id",
+   "fieldtype": "Data",
+   "label": "WhatsApp Phone Number ID",
+   "description": "WhatsApp Manager → API Setup: the ID under the sending number (not the number itself)."
+  },
+  {
+   "fieldname": "whatsapp_access_token",
+   "fieldtype": "Password",
+   "label": "WhatsApp Access Token",
+   "length": 1000,
+   "description": "System User token with whatsapp_business_messaging. Blank = use the Access Token above. Stored encrypted."
+  },
+  {
+   "fieldname": "whatsapp_default_country_code",
+   "fieldtype": "Data",
+   "label": "Default Country Code",
+   "default": "91",
+   "description": "Digits only. Used when a number arrives without its country code."
+  },
+  {
+   "fieldname": "column_break_whatsapp",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "whatsapp_otp_template",
+   "fieldtype": "Data",
+   "label": "OTP Template Name",
+   "default": "reference_number",
+   "description": "Approved template; its body {{1}} is the code."
+  },
+  {
+   "fieldname": "whatsapp_otp_template_category",
+   "fieldtype": "Select",
+   "label": "OTP Template Category",
+   "options": "UTILITY\nAUTHENTICATION",
+   "default": "UTILITY",
+   "description": "AUTHENTICATION templates also get the code on their Copy code button."
+  },
+  {
+   "fieldname": "whatsapp_otp_template_language",
+   "fieldtype": "Data",
+   "label": "OTP Template Language",
+   "default": "en"
   }
  ],
  "permissions": [
@@ -173,5 +233,6 @@
    "create": 1
   }
  ],
- "links": []
+ "links": [],
+ "modified": "2026-10-22 07:00:00.000000"
 }

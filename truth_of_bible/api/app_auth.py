@@ -182,7 +182,15 @@ def user_exists(identifier: str) -> dict:
 
 def _normalize_contact(contact: str, channel: str) -> str:
 	contact = (contact or "").strip()
-	return contact.lower() if channel == "email" else contact
+	if channel == "email":
+		return contact.lower()
+	# One key for send and verify, whatever the app sent ('98765…', '+91 98765…').
+	from truth_of_bible.communication.whatsapp_cloud import otp_settings, to_e164
+
+	number = to_e164(contact, otp_settings()["country_code"])
+	if contact and not number:
+		frappe.throw(_("Enter your WhatsApp number with its country code"))
+	return number or ""
 
 
 def _send(contact: str, channel: str, otp: str) -> None:
@@ -199,22 +207,22 @@ def _send(contact: str, channel: str, otp: str) -> None:
 		frappe.sendmail(recipients=[contact], subject=subject, message=message, now=True)
 		return
 
-	# WhatsApp goes through Chatwoot (credentials already in site_config.json —
-	# see communication/chatwoot.py), with the approved OTP template the old
-	# `send_otps` Server Script used.
-	from truth_of_bible.communication import chatwoot
+	# WhatsApp: straight to Meta's Cloud API when TOB Meta Connection has
+	# it set up (communication/whatsapp_cloud.py), else through Chatwoot as
+	# before — same approved template either way.
+	from truth_of_bible.communication import chatwoot, whatsapp_cloud
 
-	conf = frappe.conf
-	conversation_id, error = chatwoot.find_or_create_conversation(contact, contact)
-	ok = False
-	if conversation_id:
-		ok, _message_id, error = chatwoot.send_template_message(
-			conversation_id,
-			conf.get("whatsapp_otp_template") or "reference_number",
-			conf.get("whatsapp_otp_template_category") or "UTILITY",
-			conf.get("whatsapp_otp_template_language") or "en",
-			[otp],
+	otp_conf = whatsapp_cloud.otp_settings()
+	template, category, language = otp_conf["template"], otp_conf["category"], otp_conf["language"]
+	if whatsapp_cloud.configured():
+		ok, _message_id, error = whatsapp_cloud.send_template(
+			contact, template, language, [otp], copy_code=category.upper() == "AUTHENTICATION"
 		)
+	else:
+		conversation_id, error = chatwoot.find_or_create_conversation(contact, contact)
+		ok = False
+		if conversation_id:
+			ok, _message_id, error = chatwoot.send_template_message(conversation_id, template, category, language, [otp])
 	if not ok:
 		frappe.log_error(title="App auth: WhatsApp OTP not sent", message=str(error))
 		frappe.throw(_("Couldn't send the WhatsApp code right now. Please try again."))
