@@ -183,13 +183,24 @@ def map_books(con, table, ref, names):
 
 
 def download(modules: Path, codes):
+	"""Fetch missing web versions from the live catalogue — one at a time, with retries, because the
+	WordPress host resets bursts of requests."""
+	modules.mkdir(parents=True, exist_ok=True)
 	cat = json.load(urllib.request.urlopen(CATALOGUE_URL, timeout=60))
 	urls = {x["id"]: x["download"] for x in cat}
 	for code in codes:
 		dest = modules / f"{code}.zip"
-		if not find_module(modules, code) and code in urls:
-			print("download", code)
-			dest.write_bytes(urllib.request.urlopen(urls[code], timeout=600).read())
+		if find_module(modules, code) or code not in urls:
+			continue
+		for attempt in range(5):
+			try:
+				print("download", code)
+				dest.write_bytes(urllib.request.urlopen(urls[code], timeout=600).read())
+				break
+			except Exception as e:
+				print(f"  retry {attempt + 1}: {e}")
+				time.sleep(5 * (attempt + 1))
+		time.sleep(1)
 
 
 def _text(h: str) -> str:
@@ -227,6 +238,7 @@ def build(modules: Path, study: Path, out: Path, do_download=False):
 	catalogue = [v for v in json.loads((HERE / "catalogue.json").read_text(encoding="utf-8"))["versions"] if v["web"]]
 	if do_download:
 		download(modules, [v["code"] for v in catalogue])
+	modules.mkdir(parents=True, exist_ok=True)
 	if str(study).startswith("http"):
 		dest = modules / Path(str(study)).name
 		if not dest.exists():
