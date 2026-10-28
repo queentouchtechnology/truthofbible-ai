@@ -20,6 +20,7 @@ import io
 import json
 import re
 import sqlite3
+import tempfile
 import time
 import urllib.request
 import zipfile
@@ -102,11 +103,23 @@ def clean(text: str) -> tuple[str, str | None, int]:
 	return plain, (h if h != htmlmod.escape(plain, quote=False) else None), para
 
 
+def find_module(modules: Path, code: str) -> Path | None:
+	"""<code>.db or <code>.zip anywhere under `modules` (the server mirror keeps global/ and indian/)."""
+	for pattern in (f"{code}.db", f"{code}.zip"):
+		hit = next(iter(sorted(modules.rglob(pattern))), None)
+		if hit:
+			return hit
+	return None
+
+
 def open_module(path: Path) -> sqlite3.Connection:
 	if path.suffix == ".zip":
 		z = zipfile.ZipFile(path)
 		name = next(n for n in z.namelist() if not n.endswith("/"))
-		dest = path.with_suffix(".db")
+		# Unzip into a private cache, never next to the zip (the server mirror folder is public).
+		cache = Path(tempfile.gettempdir()) / "tob_bible_modules"
+		cache.mkdir(exist_ok=True)
+		dest = cache / (path.stem + ".db")
 		if not dest.exists() or dest.stat().st_mtime < path.stat().st_mtime:
 			dest.write_bytes(z.read(name))
 		path = dest
@@ -174,7 +187,7 @@ def download(modules: Path, codes):
 	urls = {x["id"]: x["download"] for x in cat}
 	for code in codes:
 		dest = modules / f"{code}.zip"
-		if not dest.exists() and code in urls:
+		if not find_module(modules, code) and code in urls:
 			print("download", code)
 			dest.write_bytes(urllib.request.urlopen(urls[code], timeout=600).read())
 
@@ -228,7 +241,7 @@ def build(modules: Path, study: Path, out: Path, do_download=False):
 	db = sqlite3.connect(tmp)
 	db.executescript("PRAGMA journal_mode=OFF; PRAGMA synchronous=OFF;" + SCHEMA)
 
-	kjv = open_module(next(p for p in (modules / "KJV.db", modules / "KJV.zip") if p.exists()))
+	kjv = open_module(find_module(modules, "KJV"))
 	ref = {b: shape(kjv, "KJV_verses", b) for b in range(1, 67)}
 	for b, (osis, slug, name) in enumerate(BOOKS, 1):
 		db.execute("INSERT INTO books VALUES (?,?,?,?,?,?)", (b, osis, slug, name, "OT" if b < 40 else "NT", len(ref[b])))
@@ -236,7 +249,7 @@ def build(modules: Path, study: Path, out: Path, do_download=False):
 	next_id = 1
 	for sort, v in enumerate(catalogue):
 		code = v["code"]
-		src = next((p for p in (modules / f"{code}.db", modules / f"{code}.zip") if p.exists()), None)
+		src = find_module(modules, code)
 		if not src:
 			print(f"  !! {code}: module not found, skipped")
 			continue
