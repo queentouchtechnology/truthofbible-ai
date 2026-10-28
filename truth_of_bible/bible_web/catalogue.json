@@ -1,0 +1,675 @@
+{
+ "versions": [
+  {
+   "code": "KJV",
+   "name": "King James Version (1769)",
+   "language": "English",
+   "lang": "en",
+   "dir": "ltr",
+   "license": "Public Domain (text); module GPL",
+   "web": true,
+   "note": "Strong's numbers kept for word study"
+  },
+  {
+   "code": "KJVPCE",
+   "name": "King James Version — Pure Cambridge Edition",
+   "language": "English",
+   "lang": "en",
+   "dir": "ltr",
+   "license": "Public Domain",
+   "web": true
+  },
+  {
+   "code": "KJVA",
+   "name": "King James Version with Apocrypha",
+   "language": "English",
+   "lang": "en",
+   "dir": "ltr",
+   "license": "Public Domain (text); module GPL",
+   "web": true
+  },
+  {
+   "code": "BSB",
+   "name": "Berean Standard Bible",
+   "language": "English",
+   "lang": "en",
+   "dir": "ltr",
+   "license": "CC0",
+   "web": true
+  },
+  {
+   "code": "ASV",
+   "name": "American Standard Version (1901)",
+   "language": "English",
+   "lang": "en",
+   "dir": "ltr",
+   "license": "Public Domain",
+   "web": true
+  },
+  {
+   "code": "BBE",
+   "name": "Bible in Basic English",
+   "language": "English",
+   "lang": "en",
+   "dir": "ltr",
+   "license": "Public Domain",
+   "web": true
+  },
+  {
+   "code": "NHEBJE",
+   "name": "New Heart English Bible (Jehovah Edition)",
+   "language": "English",
+   "lang": "en",
+   "dir": "ltr",
+   "license": "Public Domain",
+   "web": true
+  },
+  {
+   "code": "NHEBME",
+   "name": "New Heart English Bible (Messianic Edition)",
+   "language": "English",
+   "lang": "en",
+   "dir": "ltr",
+   "license": "Public Domain",
+   "web": true
+  },
+  {
+   "code": "OEB",
+   "name": "Open English Bible (US)",
+   "language": "English",
+   "lang": "en",
+   "dir": "ltr",
+   "license": "CC0",
+   "web": true
+  },
+  {
+   "code": "OEBcth",
+   "name": "Open English Bible (Commonwealth)",
+   "language": "English",
+   "lang": "en",
+   "dir": "ltr",
+   "license": "CC0",
+   "web": true
+  },
+  {
+   "code": "Darby",
+   "name": "Darby Bible (1889)",
+   "language": "English",
+   "lang": "en",
+   "dir": "ltr",
+   "license": "Public Domain",
+   "web": true
+  },
+  {
+   "code": "YLT",
+   "name": "Young's Literal Translation (1898)",
+   "language": "English",
+   "lang": "en",
+   "dir": "ltr",
+   "license": "Public Domain",
+   "web": true
+  },
+  {
+   "code": "Webster",
+   "name": "Webster Bible (1833)",
+   "language": "English",
+   "lang": "en",
+   "dir": "ltr",
+   "license": "Public Domain",
+   "web": true
+  },
+  {
+   "code": "RWebster",
+   "name": "Revised Webster (1833)",
+   "language": "English",
+   "lang": "en",
+   "dir": "ltr",
+   "license": "Public Domain",
+   "web": true
+  },
+  {
+   "code": "UKJV",
+   "name": "Updated King James Version",
+   "language": "English",
+   "lang": "en",
+   "dir": "ltr",
+   "license": "Public Domain",
+   "web": true
+  },
+  {
+   "code": "Rotherham",
+   "name": "Rotherham Emphasized Bible",
+   "language": "English",
+   "lang": "en",
+   "dir": "ltr",
+   "license": "Public Domain",
+   "web": true
+  },
+  {
+   "code": "Geneva1599",
+   "name": "Geneva Bible (1599)",
+   "language": "English",
+   "lang": "en",
+   "dir": "ltr",
+   "license": "Public Domain",
+   "web": true
+  },
+  {
+   "code": "Tyndale",
+   "name": "Tyndale Bible (1525/1530)",
+   "language": "English",
+   "lang": "en",
+   "dir": "ltr",
+   "license": "Public Domain",
+   "web": true
+  },
+  {
+   "code": "Wycliffe",
+   "name": "Wycliffe Bible (c.1395)",
+   "language": "English",
+   "lang": "en",
+   "dir": "ltr",
+   "license": "CC BY-SA 4.0",
+   "web": true,
+   "attribution": "Wycliffe Bible, CC BY-SA 4.0 (eBible.org)"
+  },
+  {
+   "code": "DRC",
+   "name": "Douay-Rheims, Challoner Revision",
+   "language": "English",
+   "lang": "en",
+   "dir": "ltr",
+   "license": "Public Domain",
+   "web": true
+  },
+  {
+   "code": "Noyes",
+   "name": "Noyes Translation (1869)",
+   "language": "English",
+   "lang": "en",
+   "dir": "ltr",
+   "license": "Public Domain",
+   "web": true
+  },
+  {
+   "code": "Twenty",
+   "name": "Twentieth Century New Testament",
+   "language": "English",
+   "lang": "en",
+   "dir": "ltr",
+   "license": "Public Domain",
+   "web": true
+  },
+  {
+   "code": "Haweis",
+   "name": "Haweis New Testament (1795)",
+   "language": "English",
+   "lang": "en",
+   "dir": "ltr",
+   "license": "Public Domain",
+   "web": true
+  },
+  {
+   "code": "Anderson",
+   "name": "Anderson New Testament (1864)",
+   "language": "English",
+   "lang": "en",
+   "dir": "ltr",
+   "license": "Public Domain",
+   "web": true
+  },
+  {
+   "code": "tamil",
+   "name": "Tamil Bible (Union Version)",
+   "language": "Tamil",
+   "lang": "ta",
+   "dir": "ltr",
+   "license": "Free for non-profit use",
+   "web": true,
+   "attribution": "Tamil Bible Unicode: Word of God Ministries (wordofgod.in)"
+  },
+  {
+   "code": "TAMIRV2019",
+   "name": "Indian Revised Version — Tamil (2019)",
+   "language": "Tamil",
+   "lang": "ta",
+   "dir": "ltr",
+   "license": "CC BY-SA 4.0",
+   "web": true,
+   "attribution": "Indian Revised Version (IRV) Tamil, Bridge Connectivity Solutions, CC BY-SA 4.0"
+  },
+  {
+   "code": "Mal1910",
+   "name": "Sathyavedapusthakam (1910)",
+   "language": "Malayalam",
+   "lang": "ml",
+   "dir": "ltr",
+   "license": "Public Domain",
+   "web": true
+  },
+  {
+   "code": "SpaRV",
+   "name": "Reina-Valera (1909)",
+   "language": "Spanish",
+   "lang": "es",
+   "dir": "ltr",
+   "license": "Public Domain",
+   "web": true
+  },
+  {
+   "code": "SpaRV1865",
+   "name": "Reina-Valera (1865)",
+   "language": "Spanish",
+   "lang": "es",
+   "dir": "ltr",
+   "license": "Public Domain",
+   "web": true
+  },
+  {
+   "code": "PorBLivre",
+   "name": "Bíblia Livre",
+   "language": "Portuguese",
+   "lang": "pt",
+   "dir": "ltr",
+   "license": "CC BY 3.0",
+   "web": true,
+   "attribution": "Bíblia Livre, CC BY 3.0"
+  },
+  {
+   "code": "FreCrampon",
+   "name": "Bible Crampon (1923)",
+   "language": "French",
+   "lang": "fr",
+   "dir": "ltr",
+   "license": "Public Domain",
+   "web": true
+  },
+  {
+   "code": "FreJND",
+   "name": "Bible Darby (French)",
+   "language": "French",
+   "lang": "fr",
+   "dir": "ltr",
+   "license": "Public Domain",
+   "web": true
+  },
+  {
+   "code": "FreSynodale1921",
+   "name": "Version Synodale (1921) — NT & Psaumes",
+   "language": "French",
+   "lang": "fr",
+   "dir": "ltr",
+   "license": "Public Domain",
+   "web": true
+  },
+  {
+   "code": "GerElb1905",
+   "name": "Elberfelder (1905)",
+   "language": "German",
+   "lang": "de",
+   "dir": "ltr",
+   "license": "Public Domain",
+   "web": true
+  },
+  {
+   "code": "GerMenge",
+   "name": "Menge-Bibel (1939)",
+   "language": "German",
+   "lang": "de",
+   "dir": "ltr",
+   "license": "Public Domain",
+   "web": true
+  },
+  {
+   "code": "GerTextbibel",
+   "name": "Textbibel (1906)",
+   "language": "German",
+   "lang": "de",
+   "dir": "ltr",
+   "license": "Public Domain",
+   "web": true
+  },
+  {
+   "code": "GerBoLut",
+   "name": "Luther 1545 (modern spelling)",
+   "language": "German",
+   "lang": "de",
+   "dir": "ltr",
+   "license": "Public Domain",
+   "web": true
+  },
+  {
+   "code": "DutSVV",
+   "name": "Statenvertaling",
+   "language": "Dutch",
+   "lang": "nl",
+   "dir": "ltr",
+   "license": "Public Domain",
+   "web": true
+  },
+  {
+   "code": "Swe1917",
+   "name": "Bibeln (1917)",
+   "language": "Swedish",
+   "lang": "sv",
+   "dir": "ltr",
+   "license": "Public Domain",
+   "web": true
+  },
+  {
+   "code": "FinPR",
+   "name": "Pyhä Raamattu (1933/1938)",
+   "language": "Finnish",
+   "lang": "fi",
+   "dir": "ltr",
+   "license": "Public Domain",
+   "web": true
+  },
+  {
+   "code": "CzeBKR",
+   "name": "Bible kralická",
+   "language": "Czech",
+   "lang": "cs",
+   "dir": "ltr",
+   "license": "Public Domain",
+   "web": true
+  },
+  {
+   "code": "PolGdanska",
+   "name": "Biblia Gdańska (1881)",
+   "language": "Polish",
+   "lang": "pl",
+   "dir": "ltr",
+   "license": "Public Domain",
+   "web": true
+  },
+  {
+   "code": "HunKar",
+   "name": "Károli Biblia (1908)",
+   "language": "Hungarian",
+   "lang": "hu",
+   "dir": "ltr",
+   "license": "Public Domain",
+   "web": true
+  },
+  {
+   "code": "RusSynodal",
+   "name": "Синодальный перевод",
+   "language": "Russian",
+   "lang": "ru",
+   "dir": "ltr",
+   "license": "Public Domain",
+   "web": true
+  },
+  {
+   "code": "UkrOgienko",
+   "name": "Біблія — переклад Огієнка",
+   "language": "Ukrainian",
+   "lang": "uk",
+   "dir": "ltr",
+   "license": "Public Domain",
+   "web": true
+  },
+  {
+   "code": "Esperanto",
+   "name": "Londona Biblio",
+   "language": "Esperanto",
+   "lang": "eo",
+   "dir": "ltr",
+   "license": "Public Domain",
+   "web": true
+  },
+  {
+   "code": "TagAngBiblia",
+   "name": "Ang Biblia (1905)",
+   "language": "Tagalog",
+   "lang": "tl",
+   "dir": "ltr",
+   "license": "Public Domain",
+   "web": true
+  },
+  {
+   "code": "Viet",
+   "name": "Kinh Thánh (1934)",
+   "language": "Vietnamese",
+   "lang": "vi",
+   "dir": "ltr",
+   "license": "Public Domain",
+   "web": true
+  },
+  {
+   "code": "ChiUn",
+   "name": "和合本 (繁體)",
+   "language": "Chinese",
+   "lang": "zh-Hant",
+   "dir": "ltr",
+   "license": "Public Domain",
+   "web": true
+  },
+  {
+   "code": "ChiUnL",
+   "name": "文理和合",
+   "language": "Chinese",
+   "lang": "zh-Hant",
+   "dir": "ltr",
+   "license": "Public Domain",
+   "web": true
+  },
+  {
+   "code": "JapKougo",
+   "name": "口語訳 (1955)",
+   "language": "Japanese",
+   "lang": "ja",
+   "dir": "ltr",
+   "license": "Public Domain",
+   "web": true
+  },
+  {
+   "code": "KorRV",
+   "name": "개역성경",
+   "language": "Korean",
+   "lang": "ko",
+   "dir": "ltr",
+   "license": "Public Domain",
+   "web": true
+  },
+  {
+   "code": "Vulgate",
+   "name": "Biblia Sacra Vulgata",
+   "language": "Latin",
+   "lang": "la",
+   "dir": "ltr",
+   "license": "Public Domain",
+   "web": true
+  },
+  {
+   "code": "VulgClementine",
+   "name": "Vulgata Clementina",
+   "language": "Latin",
+   "lang": "la",
+   "dir": "ltr",
+   "license": "Public Domain",
+   "web": true
+  },
+  {
+   "code": "WLC",
+   "name": "Westminster Leningrad Codex (Hebrew OT)",
+   "language": "Hebrew",
+   "lang": "he",
+   "dir": "rtl",
+   "license": "Public Domain",
+   "web": true
+  },
+  {
+   "code": "AKJV",
+   "name": "American King James Version",
+   "language": "English",
+   "lang": "en",
+   "dir": "ltr",
+   "license": "Free non-commercial",
+   "web": false
+  },
+  {
+   "code": "NHEB",
+   "name": "New Heart English Bible",
+   "language": "English",
+   "lang": "en",
+   "dir": "ltr",
+   "license": "Unknown (module)",
+   "web": false
+  },
+  {
+   "code": "Jubilee2000",
+   "name": "Jubilee Bible 2000",
+   "language": "English",
+   "lang": "en",
+   "dir": "ltr",
+   "license": "Free non-commercial",
+   "web": false
+  },
+  {
+   "code": "GerSch",
+   "name": "Schlachter (1951)",
+   "language": "German",
+   "lang": "de",
+   "dir": "ltr",
+   "license": "Free non-commercial",
+   "web": false
+  },
+  {
+   "code": "SpaRVG",
+   "name": "Reina Valera Gómez",
+   "language": "Spanish",
+   "lang": "es",
+   "dir": "ltr",
+   "license": "CC BY-NC-ND 4.0",
+   "web": false
+  },
+  {
+   "code": "Byz",
+   "name": "Byzantine Textform (2013)",
+   "language": "Greek",
+   "lang": "grc",
+   "dir": "ltr",
+   "license": "CC BY-NC-SA 4.0",
+   "web": false
+  },
+  {
+   "code": "TR",
+   "name": "Textus Receptus",
+   "language": "Greek",
+   "lang": "grc",
+   "dir": "ltr",
+   "license": "CC BY-NC-SA 4.0",
+   "web": false
+  },
+  {
+   "code": "ERVTA",
+   "name": "Easy-to-Read Version — Tamil",
+   "language": "Tamil",
+   "lang": "ta",
+   "dir": "ltr",
+   "license": "Copyrighted",
+   "web": false
+  },
+  {
+   "code": "taBCS",
+   "name": "Tamil Bible (Biblica)",
+   "language": "Tamil",
+   "lang": "ta",
+   "dir": "ltr",
+   "license": "Copyrighted",
+   "web": false
+  },
+  {
+   "code": "hindi",
+   "name": "Hindi Bible",
+   "language": "Hindi",
+   "lang": "hi",
+   "dir": "ltr",
+   "license": "Unknown — confirm before web use",
+   "web": false
+  },
+  {
+   "code": "telugu",
+   "name": "Telugu Bible",
+   "language": "Telugu",
+   "lang": "te",
+   "dir": "ltr",
+   "license": "Unknown — confirm before web use",
+   "web": false
+  },
+  {
+   "code": "malayalam",
+   "name": "Malayalam Bible",
+   "language": "Malayalam",
+   "lang": "ml",
+   "dir": "ltr",
+   "license": "Unknown — confirm before web use",
+   "web": false
+  },
+  {
+   "code": "kannada",
+   "name": "Kannada Bible",
+   "language": "Kannada",
+   "lang": "kn",
+   "dir": "ltr",
+   "license": "Unknown — confirm before web use",
+   "web": false
+  },
+  {
+   "code": "bengali",
+   "name": "Bengali Bible",
+   "language": "Bengali",
+   "lang": "bn",
+   "dir": "ltr",
+   "license": "Unknown — confirm before web use",
+   "web": false
+  },
+  {
+   "code": "gujarati",
+   "name": "Gujarati Bible",
+   "language": "Gujarati",
+   "lang": "gu",
+   "dir": "ltr",
+   "license": "Unknown — confirm before web use",
+   "web": false
+  },
+  {
+   "code": "marathi",
+   "name": "Marathi Bible",
+   "language": "Marathi",
+   "lang": "mr",
+   "dir": "ltr",
+   "license": "Unknown — confirm before web use",
+   "web": false
+  },
+  {
+   "code": "oriya",
+   "name": "Odia Bible",
+   "language": "Odia",
+   "lang": "or",
+   "dir": "ltr",
+   "license": "Unknown — confirm before web use",
+   "web": false
+  },
+  {
+   "code": "punjabi",
+   "name": "Punjabi Bible",
+   "language": "Punjabi",
+   "lang": "pa",
+   "dir": "ltr",
+   "license": "Unknown — confirm before web use",
+   "web": false
+  },
+  {
+   "code": "nepali",
+   "name": "Nepali Bible",
+   "language": "Nepali",
+   "lang": "ne",
+   "dir": "ltr",
+   "license": "Unknown — confirm before web use",
+   "web": false
+  }
+ ]
+}

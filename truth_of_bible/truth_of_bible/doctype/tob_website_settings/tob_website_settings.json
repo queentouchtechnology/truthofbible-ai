@@ -8,13 +8,17 @@
  "quick_entry": 0,
  "track_changes": 1,
  "engine": "InnoDB",
- "description": "Settings for the public truthofbible.org website, read by truth_of_bible.api.website. Contact form messages are saved as TOB Website Enquiry and emailed to the recipients below.",
+ "description": "Settings for the public truthofbible.org website, read by truth_of_bible.api.website. Contact form messages are saved as TOB Website Enquiry and emailed to the recipients below. The web Bible reads the database at Bible Database Path.",
  "field_order": [
   "enquiry_recipients",
   "column_break_1",
   "send_auto_reply",
   "auto_reply_subject",
-  "auto_reply_message"
+  "auto_reply_message",
+  "section_bible",
+  "bible_db_path",
+  "column_break_bible",
+  "bible_db_info"
  ],
  "fields": [
   {
@@ -48,6 +52,28 @@
    "depends_on": "send_auto_reply",
    "default": "<p>Dear {{ full_name }},</p><p>Thank you for reaching out to Truth of Bible Ministries. Our team has received your message and will pray with you and reply soon.</p><p><i>“I will not forget you.” — Isaiah 49:15</i></p><p>Truth of Bible Ministries</p>",
    "description": "Jinja: {{ full_name }}, {{ topic }}, {{ message }}"
+  },
+  {
+   "fieldname": "section_bible",
+   "fieldtype": "Section Break",
+   "label": "Web Bible"
+  },
+  {
+   "fieldname": "bible_db_path",
+   "fieldtype": "Data",
+   "label": "Bible Database Path",
+   "default": "private/bible/tob_bible_web.db",
+   "description": "The read-only database built by truth_of_bible/bible_web/build.py. Relative paths are inside this site's folder."
+  },
+  {
+   "fieldname": "column_break_bible",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "bible_db_info",
+   "fieldtype": "HTML",
+   "label": "About",
+   "options": "<p>Which versions appear on the website is set in <code>truth_of_bible/bible_web/catalogue.json</code> (web: true/false, with each licence). Rebuild the database after changing it.</p>"
   }
  ],
  "permissions": [
