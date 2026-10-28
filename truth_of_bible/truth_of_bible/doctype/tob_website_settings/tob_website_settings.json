@@ -1,0 +1,62 @@
+{
+ "doctype": "DocType",
+ "name": "TOB Website Settings",
+ "module": "Truth Of Bible",
+ "custom": 0,
+ "istable": 0,
+ "issingle": 1,
+ "quick_entry": 0,
+ "track_changes": 1,
+ "engine": "InnoDB",
+ "description": "Settings for the public truthofbible.org website, read by truth_of_bible.api.website. Contact form messages are saved as TOB Website Enquiry and emailed to the recipients below.",
+ "field_order": [
+  "enquiry_recipients",
+  "column_break_1",
+  "send_auto_reply",
+  "auto_reply_subject",
+  "auto_reply_message"
+ ],
+ "fields": [
+  {
+   "fieldname": "enquiry_recipients",
+   "fieldtype": "Small Text",
+   "label": "Contact Form Recipients",
+   "default": "help@truthofbible.org",
+   "description": "Email addresses that receive every contact form message, one per line or comma separated. Replying to the email replies to the sender."
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "send_auto_reply",
+   "fieldtype": "Check",
+   "label": "Send Confirmation to Sender",
+   "default": "1"
+  },
+  {
+   "fieldname": "auto_reply_subject",
+   "fieldtype": "Data",
+   "label": "Confirmation Subject",
+   "default": "We received your message — Truth of Bible",
+   "depends_on": "send_auto_reply"
+  },
+  {
+   "fieldname": "auto_reply_message",
+   "fieldtype": "Text Editor",
+   "label": "Confirmation Message",
+   "depends_on": "send_auto_reply",
+   "default": "<p>Dear {{ full_name }},</p><p>Thank you for reaching out to Truth of Bible Ministries. Our team has received your message and will pray with you and reply soon.</p><p><i>“I will not forget you.” — Isaiah 49:15</i></p><p>Truth of Bible Ministries</p>",
+   "description": "Jinja: {{ full_name }}, {{ topic }}, {{ message }}"
+  }
+ ],
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1
+  }
+ ],
+ "links": []
+}
