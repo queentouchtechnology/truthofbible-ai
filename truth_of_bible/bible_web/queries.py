@@ -36,8 +36,10 @@ def books(con, version):
 	_version(con, version)
 	return [dict(r) for r in con.execute(
 		"""SELECT n.book, n.name, n.chapters, b.slug, b.osis, b.name AS english,
-		   COALESCE(b.testament, 'Apocrypha') AS testament
-		   FROM book_names n LEFT JOIN books b ON b.book = n.book WHERE n.version=? ORDER BY n.book""",
+		   COALESCE(b.testament, 'Apocrypha') AS testament, COALESCE(g."group", 'Apocrypha') AS "group"
+		   FROM book_names n LEFT JOIN books b ON b.book = n.book
+		   LEFT JOIN Book g ON g.book_id = n.book AND g.language = 'english'
+		   WHERE n.version=? ORDER BY n.book""",
 		(version,),
 	)]
 
@@ -88,6 +90,23 @@ def passage(con, version, book, chapter, start, end=None):
 	return [dict(r) for r in con.execute(
 		"SELECT verse, text, html FROM verses WHERE version=? AND book=? AND chapter=? AND verse BETWEEN ? AND ? ORDER BY verse",
 		(version, book, chapter, start, end),
+	)]
+
+
+def verse_counts(con, version, book):
+	"""Verses per chapter of one book (for the verse wheel)."""
+	return [n for (n,) in con.execute(
+		"SELECT MAX(verse) FROM verses WHERE version=? AND book=? GROUP BY chapter ORDER BY chapter", (version, book)
+	)]
+
+
+def verse_all(con, book, chapter, verse):
+	"""One verse in every version (the app's "Compare versions" sheet)."""
+	return [dict(r) for r in con.execute(
+		"""SELECT v.version AS code, s.name, s.language, s.lang, s.dir, v.text, v.html
+		   FROM verses v JOIN versions s ON s.code = v.version
+		   WHERE v.book=? AND v.chapter=? AND v.verse=? ORDER BY s.sort""",
+		(book, chapter, verse),
 	)]
 
 
@@ -184,11 +203,14 @@ def _abbrevs(con):
 	for b, osis, slug, name in con.execute("SELECT book, osis, slug, name FROM books"):
 		for k in (osis, slug, name, name.replace(" ", "")):
 			m[k.lower().replace(" ", "").replace("-", "")] = b
+	for b, name in con.execute("SELECT book_id, book_name FROM Book WHERE book_id <= 66"):  # English + Tamil names
+		if name:
+			m[name.strip().lower().replace(" ", "")] = b
 	m.update({"psalm": 19, "song": 22, "songofsongs": 22, "joh": 43, "jn": 43, "ro": 45, "php": 50, "phm": 57})
 	return m
 
 
-_REF = re.compile(r"((?:[1-3]\s?)?[A-Za-z][A-Za-z ]*?)\s*(\d+)(?::(\d+)(?:[-–](\d+))?)?")
+_REF = re.compile(r"((?:[1-3]\s?)?[^\W\d_][^\d:]*?)\.?\s*(\d+)(?:[:.](\d+)(?:[-–](\d+))?)?")
 
 
 def parse_refs(con, text):
@@ -298,3 +320,112 @@ def devotional(con, month, day):
 		"SELECT session_type, title, verse_text, bible_reference, content FROM devotional_entries WHERE month=? AND day=? ORDER BY session_type DESC",
 		(month, day),
 	)]
+
+
+# ------------------------------------------------------------------ unified search (like the app's search bar)
+
+try:  # package import inside Frappe; plain import when run from this folder (tools, benchmarks)
+	from . import rank as R  # noqa: E402
+except ImportError:
+	import rank as R  # noqa: E402
+
+_DOCS = {}
+
+
+def _local_docs(con):
+	"""Rankable docs from the database (built once per connection): books, topics, dictionary words."""
+	key = id(con)
+	if key not in _DOCS:
+		docs = []
+		tamil = dict(con.execute("SELECT book_id, trim(book_name) FROM Book WHERE language='tamil'"))
+		group = dict(con.execute("SELECT book_id, \"group\" FROM Book WHERE language='english'"))
+		for b, slug, name, chapters in con.execute("SELECT book, slug, name, chapters FROM books"):
+			docs.append(R.Doc("Books", name, f"{chapters} chapters · {group.get(b, '')}", [tamil.get(b, ""), slug],
+				{"book": b, "slug": slug}))
+		for tid, title in con.execute("SELECT id, title FROM nave_topics"):
+			docs.append(R.Doc("Topics", title.title(), "Nave's Topical Bible", (), {"source": "nave", "id": tid}))
+		for tid, title in con.execute("SELECT id, title FROM torrey_topics"):
+			docs.append(R.Doc("Topics", title.title(), "Torrey's Topical Textbook", (), {"source": "torrey", "id": tid}))
+		for (word,) in con.execute("SELECT word FROM easton_dictionary"):
+			docs.append(R.Doc("Dictionary", word, "Easton's Bible Dictionary", (), {"word": word}))
+		_DOCS.clear()
+		_DOCS[key] = docs
+	return _DOCS[key]
+
+
+def _fts_rows(con, sql, match, limit):
+	try:
+		return con.execute(sql, (match, limit)).fetchall()
+	except sqlite3.OperationalError:  # e.g. a query made only of punctuation
+		return []
+
+
+def unified(con, q, version="KJV", entities=None, per_group=6):
+	"""Everything that matches q, grouped like the app: a reference to jump to, ranked entities
+	(books, topics, dictionary, plus characters/places/events/themes passed in by the caller),
+	Strong's, commentary, devotionals and the best verses. `entities` is {type: [Doc, ...]}."""
+	q = (q or "").strip()[:120]
+	out = {"query": q, "reference": None, "groups": [], "verses": {"total": 0, "results": []}, "did_you_mean": None}
+	if not q:
+		return out
+	v = _version(con, version)
+
+	refs = parse_refs(con, q) if re.search(r"\d", q) else []
+	if refs and re.fullmatch(r"\s*\S.*?\s*\d+([:.]\d+([-–]\d+)?)?\s*", q):
+		r = refs[0]
+		names = dict(con.execute("SELECT book, name FROM book_names WHERE version=?", (version,)))
+		if r["book"] in names:
+			out["reference"] = {**r, "label": f"{names[r['book']]} {r['chapter']}" + (f":{r['verse']}" + (f"–{r['end']}" if r.get("end") else "") if r.get("verse") else ""),
+				"preview": " ".join(x["text"] for x in passage(con, version, r["book"], r["chapter"], r.get("verse") or 1, (r.get("end") or r.get("verse") or 3)))[:400]}
+
+	docs = list(_local_docs(con))
+	for typ, items in (entities or {}).items():
+		docs.extend(items)
+	ranked = R.search(docs, q, limit=400)
+	order = ["Books", "Characters", "Places", "Events", "Themes", "Topics", "Dictionary"]
+	grouped = {}
+	for score, d in ranked:
+		grouped.setdefault(d.type, [])
+		if len(grouped[d.type]) < per_group:
+			grouped[d.type].append({"title": d.title, "subtitle": d.subtitle, "score": round(score, 1), **(d.data or {})})
+	totals = {}
+	for _, d in ranked:
+		totals[d.type] = totals.get(d.type, 0) + 1
+	for typ in order + [t for t in grouped if t not in order]:
+		if typ in grouped:
+			out["groups"].append({"type": typ, "total": totals[typ], "items": grouped[typ]})
+
+	# Strong's: by number (G26, H7225) or by meaning / original word.
+	code = q.upper().replace(" ", "")
+	if re.fullmatch(r"[HG]\d{1,5}", code):
+		s = strongs(con, code)
+		strongs_items = [{"code": code, "title": code, "subtitle": R.normalize(re.sub("<[^>]+>", " ", s["data"]))[:140] if s else ""}] if s else []
+	else:
+		match = _fts_query(q)
+		strongs_items = [
+			{"code": c, "title": f"{o} ({t})" if o else c, "subtitle": f"{c} · " + d[:140]}
+			for c, o, t, d in _fts_rows(con, "SELECT code, original, translit, definition FROM strongs_fts WHERE strongs_fts MATCH ? ORDER BY bm25(strongs_fts, 0, 8, 8, 1) LIMIT ?", match, 5)
+		] if match else []
+	if strongs_items:
+		out["groups"].append({"type": "Word study", "total": len(strongs_items), "items": strongs_items})
+
+	match = _fts_query(q)
+	if match:
+		bnames = dict(con.execute("SELECT book, name FROM books"))
+		com = _fts_rows(con, "SELECT book, chapter, fromverse, toverse, snippet(commentary_fts, 0, '<mark>', '</mark>', '…', 18) FROM commentary_fts WHERE commentary_fts MATCH ? ORDER BY rank LIMIT ?", match, 5)
+		if com:
+			out["groups"].append({"type": "Commentary", "total": len(com), "items": [
+				{"title": f"{bnames.get(b, b)} {c}:{f}" + (f"–{t}" if t and t != f else ""), "subtitle": "Matthew Henry", "snippet": s, "book": b, "chapter": c, "verse": f}
+				for b, c, f, t, s in com]})
+		dev = _fts_rows(con, "SELECT title, reference, month, day, session, snippet(devotional_fts, 3, '<mark>', '</mark>', '…', 16) FROM devotional_fts WHERE devotional_fts MATCH ? ORDER BY rank LIMIT ?", match, 4)
+		if dev:
+			out["groups"].append({"type": "Devotionals", "total": len(dev), "items": [
+				{"title": t, "subtitle": f"Spurgeon · {r}", "snippet": s, "month": m, "day": d, "session": se} for t, r, m, d, se, s in dev]})
+
+	if not out["reference"]:
+		v_res = search(con, q, version)
+		out["verses"] = {"total": v_res["total"], "results": v_res["results"][:8]}
+	strong = any(g["type"] in ("Word study", "Commentary", "Devotionals") or g["items"][0].get("score", 0) >= 16 for g in out["groups"])
+	if not out["verses"]["total"] and not out["reference"] and not strong:
+		out["did_you_mean"] = R.suggest(docs, q)
+	return out

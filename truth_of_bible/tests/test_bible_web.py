@@ -48,3 +48,31 @@ class BookNameTest(unittest.TestCase):
 		self.assertEqual(canon_by_name("Psalms "), 19)
 		self.assertIsNone(canon_by_name("I Maccabees"))
 		self.assertIsNone(canon_by_name("ஆதியாகமம்"))
+
+
+class RankTest(unittest.TestCase):
+	def setUp(self):
+		from truth_of_bible.bible_web.rank import Doc
+		self.docs = [Doc("Characters", t) for t in ("Moses", "Abraham", "Jerusalem", "John the Baptist", "Mount Moriah")]
+
+	def titles(self, q):
+		from truth_of_bible.bible_web.rank import search
+		return [d.title for _, d in search(self.docs, q)]
+
+	def test_exact_then_prefix(self):
+		self.assertEqual(self.titles("mos")[0], "Moses")
+		self.assertEqual(self.titles("moses"), ["Moses"])
+
+	def test_typos_on_longer_words_only(self):
+		self.assertEqual(self.titles("abrahm"), ["Abraham"])
+		self.assertEqual(self.titles("jerusalm"), ["Jerusalem"])
+		self.assertEqual(self.titles("jahn"), [])  # 4 letters: no typo allowed, as in the app
+
+	def test_every_word_must_match(self):
+		self.assertEqual(self.titles("john baptist"), ["John the Baptist"])
+		self.assertEqual(self.titles("john moses"), [])
+
+	def test_did_you_mean(self):
+		from truth_of_bible.bible_web.rank import suggest
+		self.assertEqual(suggest(self.docs, "abrahm"), "abraham")
+		self.assertIsNone(suggest(self.docs, "moses"))

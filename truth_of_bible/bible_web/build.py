@@ -179,11 +179,50 @@ def download(modules: Path, codes):
 			dest.write_bytes(urllib.request.urlopen(urls[code], timeout=600).read())
 
 
+def _text(h: str) -> str:
+	return re.sub(r"\s+", " ", htmlmod.unescape(re.sub(r"<[^>]+>", " ", h or ""))).strip()
+
+
+def index_study(db):
+	"""Full-text indexes behind the unified search: commentary, Easton, Strong's, devotionals."""
+	tok = "tokenize=\"unicode61 remove_diacritics 2\""
+	db.executescript(f"""
+		CREATE VIRTUAL TABLE commentary_fts USING fts5(text, book UNINDEXED, chapter UNINDEXED, fromverse UNINDEXED, toverse UNINDEXED, {tok});
+		CREATE VIRTUAL TABLE easton_fts USING fts5(word, text, {tok});
+		CREATE VIRTUAL TABLE strongs_fts USING fts5(code UNINDEXED, original, translit, definition, {tok});
+		CREATE VIRTUAL TABLE devotional_fts USING fts5(title, verse_text, reference, content, month UNINDEXED, day UNINDEXED, session UNINDEXED, {tok});
+	""")
+	db.executemany(
+		"INSERT INTO commentary_fts VALUES (?,?,?,?,?)",
+		((_text(d), b, c, f, t) for b, c, f, t, d in db.execute("SELECT book, chapter, fromverse, toverse, data FROM mh_commentary WHERE chapter > 0").fetchall()),
+	)
+	db.execute("INSERT INTO easton_fts SELECT word, data FROM easton_dictionary")
+	rows = []
+	for code, data in db.execute("SELECT word, data FROM dictionary WHERE word GLOB '[HG][0-9]*'").fetchall():
+		orig = re.search(r"Original:\s*<strong>(.*?)</strong>", data or "")
+		tr = re.search(r"Transliteration:\s*<strong>(.*?)</strong>", data or "")
+		rows.append((code, _text(orig.group(1)) if orig else "", _text(tr.group(1)) if tr else "", _text(data)))
+	db.executemany("INSERT INTO strongs_fts VALUES (?,?,?,?)", rows)
+	db.execute(
+		"INSERT INTO devotional_fts SELECT title, verse_text, bible_reference, content, month, day, session_type FROM devotional_entries"
+	)
+	db.commit()
+
+
 def build(modules: Path, study: Path, out: Path, do_download=False):
 	t0 = time.time()
 	catalogue = [v for v in json.loads((HERE / "catalogue.json").read_text(encoding="utf-8"))["versions"] if v["web"]]
 	if do_download:
 		download(modules, [v["code"] for v in catalogue])
+	if str(study).startswith("http"):
+		dest = modules / Path(str(study)).name
+		if not dest.exists():
+			dest.write_bytes(urllib.request.urlopen(str(study), timeout=600).read())
+		study = dest
+	sdb = open_module(Path(study))
+	# The app's own Tamil book names: module names are abbreviated (IRV "யோவா") or carry stray markup.
+	tamil_names = {b: n.strip() for b, n in sdb.execute("SELECT book_id, book_name FROM Book WHERE language='tamil'")}
+
 	tmp = out.with_suffix(".building")
 	tmp.unlink(missing_ok=True)
 	db = sqlite3.connect(tmp)
@@ -232,7 +271,9 @@ def build(modules: Path, study: Path, out: Path, do_download=False):
 		for b in ids:
 			chapters = len(shape(con, table, b))
 			name = names.get(b) or ""
-			if mapping[b] <= 66 and (not name or canon_by_name(name)):
+			if v["lang"] == "ta" and mapping[b] in tamil_names:
+				name = tamil_names[mapping[b]]
+			elif mapping[b] <= 66 and (not name or canon_by_name(name)):
 				name = BOOKS[mapping[b] - 1][2]  # English-named module: use the standard spelling
 			db.execute("INSERT INTO book_names VALUES (?,?,?,?)", (code, mapping[b], name or f"Book {b}", chapters))
 		db.execute(
@@ -261,12 +302,6 @@ def build(modules: Path, study: Path, out: Path, do_download=False):
 	db.commit()
 
 	print("copying study data…")
-	if str(study).startswith("http"):
-		dest = modules / Path(str(study)).name
-		if not dest.exists():
-			dest.write_bytes(urllib.request.urlopen(str(study), timeout=600).read())
-		study = dest
-	sdb = open_module(Path(study))
 	for (name, sql) in sdb.execute("SELECT name, sql FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'"):
 		db.execute(sql)
 		cols = len(sdb.execute(f'SELECT * FROM "{name}" LIMIT 0').description)
@@ -282,6 +317,7 @@ def build(modules: Path, study: Path, out: Path, do_download=False):
 		INSERT INTO topics_fts SELECT title, 'nave', id FROM nave_topics;
 		INSERT INTO topics_fts SELECT title, 'torrey', id FROM torrey_topics;
 	""")
+	index_study(db)
 	db.executemany("INSERT INTO meta VALUES (?,?)", [("built_at", time.strftime("%Y-%m-%d %H:%M:%S")), ("schema", "1")])
 	db.commit()
 	db.execute("ANALYZE")

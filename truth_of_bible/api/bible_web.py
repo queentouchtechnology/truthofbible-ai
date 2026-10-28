@@ -131,3 +131,57 @@ def devotional(month, day):
 @frappe.whitelist(allow_guest=True, methods=["GET"])
 def parse_refs(text: str):
 	return _call(Q.parse_refs, text)
+
+
+def _entities():
+	"""Published characters, places, events and themes (the app's own lists), as rankable docs.
+	Cached for 10 minutes; editors' changes show up after that."""
+	from truth_of_bible.api import bible_characters, bible_events, bible_places, bible_themes
+	from truth_of_bible.bible_web.rank import Doc
+
+	def load():
+		return {
+			"Characters": [
+				{"title": c["title"], "subtitle": c["role"], "keywords": [c["testament"] or ""], "data": {"id": c["character"], "passages": c["relevant_passages"]}}
+				for c in bible_characters.list_characters()["characters"]
+			],
+			"Places": [
+				{"title": p["title"], "subtitle": p["region"] or p["category"] or "", "keywords": [p["description"][:200]],
+				 "data": {"id": p["place"], "passages": p["relevant_passages"] or ([p["primary_verse_ref"]] if p["primary_verse_ref"] else []), "description": p["description"], "photo": p["photo_url"], "facts": p["facts"]}}
+				for p in bible_places.list_places()["places"]
+			],
+			"Events": [
+				{"title": e["title"], "subtitle": e.get("era") or "", "keywords": [e.get("description", "")[:200]], "data": {"id": e.get("event"), "passages": e.get("relevant_passages", []), "description": e.get("description", "")}}
+				for e in bible_events.list_events()["events"]
+			],
+			"Themes": [
+				{"title": t["title"], "subtitle": (t.get("description") or "")[:120], "keywords": [], "data": {"id": t.get("theme"), "passages": t.get("relevant_passages", []), "description": t.get("description", "")}}
+				for t in bible_themes.list_themes()["themes"]
+			],
+		}
+
+	raw = frappe.cache().get_value("tob_web_bible_entities", generator=load, expires=600)
+	return {typ: [Doc(typ, x["title"], x["subtitle"], x["keywords"], x["data"]) for x in items] for typ, items in raw.items()}
+
+
+@frappe.whitelist(allow_guest=True, methods=["GET"])
+@rate_limit(limit=120, seconds=60)
+def unified(q: str, version: str = "KJV"):
+	"""One search across everything, like the app's search bar: reference, ranked entities, Strong's,
+	commentary, devotionals and verses."""
+	try:
+		entities = _entities()
+	except Exception:
+		frappe.log_error(title="Web Bible: entity lists for search failed", message=frappe.get_traceback())
+		entities = {}
+	return _call(Q.unified, q, version, entities)
+
+
+@frappe.whitelist(allow_guest=True, methods=["GET"])
+def verse_counts(version: str, book):
+	return _call(Q.verse_counts, version, _int(book, "book"))
+
+
+@frappe.whitelist(allow_guest=True, methods=["GET"])
+def verse_all(book, chapter, verse):
+	return _call(Q.verse_all, _int(book, "book"), _int(chapter, "chapter"), _int(verse, "verse"))
