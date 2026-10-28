@@ -160,7 +160,11 @@ def _entities():
 			],
 		}
 
-	raw = frappe.cache().get_value("tob_web_bible_entities", generator=load, expires=600)
+	cache = frappe.cache()
+	raw = cache.get_value("tob_web_bible_entities")
+	if raw is None:
+		raw = load()
+		cache.set_value("tob_web_bible_entities", raw, expires_in_sec=600)
 	return {typ: [Doc(typ, x["title"], x["subtitle"], x["keywords"], x["data"]) for x in items] for typ, items in raw.items()}
 
 
