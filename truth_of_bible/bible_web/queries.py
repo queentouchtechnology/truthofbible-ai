@@ -331,8 +331,10 @@ def devotional(con, month, day):
 
 try:  # package import inside Frappe; plain import when run from this folder (tools, benchmarks)
 	from . import rank as R  # noqa: E402
+	from . import translit as T  # noqa: E402
 except ImportError:
 	import rank as R  # noqa: E402
+	import translit as T  # noqa: E402
 
 _DOCS = {}
 
@@ -363,6 +365,44 @@ def _fts_rows(con, sql, match, limit):
 		return con.execute(sql, (match, limit)).fetchall()
 	except sqlite3.OperationalError:  # e.g. a query made only of punctuation
 		return []
+
+
+_VOCAB = {}
+
+
+def _tamil_vocab(con):
+	"""Tamil words of the Tamil Bibles with counts (built once per connection, ~0.6 s)."""
+	key = id(con)
+	if key not in _VOCAB:
+		counts = {}
+		for (text,) in con.execute("SELECT text FROM verses WHERE version IN ('tamil', 'TAMIRV2019')"):
+			for w in re.findall(r"[஀-௿]+", text):
+				counts[w] = counts.get(w, 0) + 1
+		_VOCAB[key] = T.Vocab(counts)
+	return _VOCAB[key]
+
+
+def tanglish(con, q):
+	"""Tamil typed in English letters -> Tamil words ("anbu" -> "அன்பு"), or None."""
+	if not T.is_tanglish(q) or len(q.split()) > 6:
+		return None
+	words = []
+	for w in q.split():
+		found = T.to_tamil(w, _tamil_vocab(con), limit=1)
+		if not found:
+			return None
+		words.append(found[0])
+	return " ".join(words)
+
+
+def tamil_suggest(con, q, limit=6):
+	"""Tamil words for the last word being typed in English letters, with the earlier words kept:
+	"yesu anb" -> ["yesu அன்பு", ...] (each item is {"word", "query"})."""
+	q = (q or "").strip()[:120]
+	if not q or not T.is_tanglish(q):
+		return []
+	*head, last = q.split()
+	return [{"word": w, "query": " ".join(head + [w])} for w in T.suggest(last, _tamil_vocab(con), limit)]
 
 
 def unified(con, q, version="KJV", entities=None, per_group=6):
@@ -430,7 +470,17 @@ def unified(con, q, version="KJV", entities=None, per_group=6):
 	if not out["reference"]:
 		v_res = search(con, q, version)
 		out["verses"] = {"total": v_res["total"], "results": v_res["results"][:8]}
+		# Few hits for Latin letters: perhaps Tamil typed in English ("anbu"), so search the Tamil Bible too.
+		if v_res["total"] < 3:
+			tq = tanglish(con, q)
+			if tq:
+				tv = version if v["lang"] == "ta" else "tamil"
+				t_res = search(con, tq, tv)
+				if t_res["total"] == 0:  # the best spelling may be a word's beginning: தாவீத -> தாவீது
+					t_res = search(con, tq + "*", tv)
+				if t_res["total"]:
+					out["tamil"] = {"query": tq, "version": tv, "total": t_res["total"], "results": t_res["results"][:8]}
 	strong = any(g["type"] in ("Word study", "Commentary", "Devotionals") or g["items"][0].get("score", 0) >= 16 for g in out["groups"])
-	if not out["verses"]["total"] and not out["reference"] and not strong:
+	if not out["verses"]["total"] and not out["reference"] and not strong and not out.get("tamil"):
 		out["did_you_mean"] = R.suggest(docs, q)
 	return out

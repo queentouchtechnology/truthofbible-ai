@@ -76,3 +76,28 @@ class RankTest(unittest.TestCase):
 		from truth_of_bible.bible_web.rank import suggest
 		self.assertEqual(suggest(self.docs, "abrahm"), "abraham")
 		self.assertIsNone(suggest(self.docs, "moses"))
+
+
+class TanglishTest(unittest.TestCase):
+	"""Tamil typed in English letters, against a small made-up vocabulary."""
+
+	@classmethod
+	def setUpClass(cls):
+		from truth_of_bible.bible_web.translit import Vocab
+		cls.vocab = Vocab({"அன்பு": 50, "அன்புகூர்ந்து": 20, "அனுப்பினான்": 30, "இயேசு": 90, "கர்த்தர்": 200, "தேவன்": 120, "ஆபிரகாம்": 40})
+
+	def test_spellings(self):
+		from truth_of_bible.bible_web.translit import to_tamil
+		for latin, tamil in [("anbu", "அன்பு"), ("yesu", "இயேசு"), ("karthar", "கர்த்தர்"), ("devan", "தேவன்"), ("abraham", "ஆபிரகாம்")]:
+			self.assertEqual(to_tamil(latin, self.vocab)[0], tamil, latin)
+
+	def test_only_latin_is_tanglish(self):
+		from truth_of_bible.bible_web.translit import is_tanglish
+		self.assertTrue(is_tanglish("yesu kristhu"))
+		self.assertFalse(is_tanglish("John 3"))
+		self.assertFalse(is_tanglish("அன்பு"))
+
+	def test_suggest_while_typing(self):
+		from truth_of_bible.bible_web.translit import suggest
+		self.assertEqual(suggest("anb", self.vocab), ["அன்பு", "அனுப்பினான்", "அன்புகூர்ந்து"])  # most common first
+		self.assertEqual(suggest("zzz", self.vocab), [])

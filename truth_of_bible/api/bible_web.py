@@ -183,6 +183,13 @@ def unified(q: str, version: str = "KJV"):
 
 
 @frappe.whitelist(allow_guest=True, methods=["GET"])
+@rate_limit(limit=300, seconds=60)
+def tamil_suggest(q: str):
+	"""Tamil word suggestions while typing Tamil in English letters ("anb" -> அன்பு)."""
+	return _call(Q.tamil_suggest, q)
+
+
+@frappe.whitelist(allow_guest=True, methods=["GET"])
 def verse_counts(version: str, book):
 	return _call(Q.verse_counts, version, _int(book, "book"))
 
