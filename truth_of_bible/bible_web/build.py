@@ -26,8 +26,18 @@ import urllib.request
 import zipfile
 from pathlib import Path
 
+try:
+	from . import ebible, translit
+	from .queries import PLAIN_LANGS, strip_marks
+except ImportError:
+	import ebible
+	import translit
+	from queries import PLAIN_LANGS, strip_marks
+
 HERE = Path(__file__).resolve().parent
 CATALOGUE_URL = "https://truthofbible.org/wp-content/uploads/bible/databases.json"
+# eBible conversions live in a private cache, never in the modules folder (the server's is the public mirror).
+EBIBLE_CACHE = Path(tempfile.gettempdir()) / "tob_bible_ebible"
 STUDY_URL = "https://media.truthofbible.org/bible/study/bible_tamil.db.zip"  # same file the app bundles
 
 # (osis, url slug, English name) for books 1–66.
@@ -233,11 +243,39 @@ def index_study(db):
 	db.commit()
 
 
+def index_vocab(db):
+	"""Word counts per Indian language, for search typed in English letters (translit.SqlVocab)."""
+	db.execute("CREATE TABLE vocab(lang TEXT, word TEXT, n INT, PRIMARY KEY(lang, word)) WITHOUT ROWID")
+	for lang, script in translit.SCRIPTS.items():
+		counts = {}
+		letters = re.compile(script.letters)
+		for (text,) in db.execute("SELECT v.text FROM verses v JOIN versions x ON x.code = v.version WHERE x.lang = ?", (lang,)):
+			for w in letters.findall(text):
+				counts[w] = counts.get(w, 0) + 1
+		db.executemany("INSERT INTO vocab VALUES (?,?,?)", ((lang, w, n) for w, n in counts.items()))
+		if counts:
+			print(f"  vocab {lang}: {len(counts)} words")
+	db.commit()
+
+
+def index_plain(db):
+	"""Hebrew as people type it, without vowel points and accents: שלום finds שָׁלוֹם."""
+	db.execute("CREATE VIRTUAL TABLE verses_plain USING fts5(text, tokenize='unicode61')")
+	rows = db.execute(
+		f"SELECT v.id, v.text FROM verses v JOIN versions x ON x.code = v.version WHERE x.lang IN ({','.join('?' * len(PLAIN_LANGS))})",
+		tuple(PLAIN_LANGS)).fetchall()
+	db.executemany("INSERT INTO verses_plain(rowid, text) VALUES (?, ?)", ((i, strip_marks(t)) for i, t in rows))
+	db.commit()
+
+
 def build(modules: Path, study: Path, out: Path, do_download=False):
 	t0 = time.time()
 	catalogue = [v for v in json.loads((HERE / "catalogue.json").read_text(encoding="utf-8"))["versions"] if v["web"]]
 	if do_download:
-		download(modules, [v["code"] for v in catalogue])
+		download(modules, [v["code"] for v in catalogue if not v.get("ebible")])
+	for v in catalogue:  # versions that are not app modules come straight from eBible.org
+		if v.get("ebible") and not find_module(modules, v["code"]) and not (EBIBLE_CACHE / f"{v['code']}.db").exists():
+			ebible.convert(v["ebible"], v["code"], EBIBLE_CACHE)
 	modules.mkdir(parents=True, exist_ok=True)
 	if str(study).startswith("http"):
 		dest = modules / Path(str(study)).name
@@ -261,7 +299,7 @@ def build(modules: Path, study: Path, out: Path, do_download=False):
 	next_id = 1
 	for sort, v in enumerate(catalogue):
 		code = v["code"]
-		src = find_module(modules, code)
+		src = find_module(modules, code) or (EBIBLE_CACHE / f"{code}.db" if (EBIBLE_CACHE / f"{code}.db").exists() else None)
 		if not src:
 			print(f"  !! {code}: module not found, skipped")
 			continue
@@ -325,6 +363,8 @@ def build(modules: Path, study: Path, out: Path, do_download=False):
 	db.execute(f"INSERT INTO verses_fts(rowid, text) SELECT id, text FROM verses WHERE version NOT IN ({q})", cjk)
 	db.execute(f"INSERT INTO verses_tri(rowid, text) SELECT id, text FROM verses WHERE version IN ({q})", cjk)
 	db.commit()
+	index_plain(db)
+	index_vocab(db)
 
 	print("copying study data…")
 	for (name, sql) in sdb.execute("SELECT name, sql FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'"):

@@ -3,6 +3,7 @@ truth_of_bible/api/bible_web.py is a thin wrapper, and these can be tested or ti
 
 import re
 import sqlite3
+import unicodedata
 from functools import lru_cache
 
 PAGE = 30
@@ -129,7 +130,13 @@ def compare(con, codes, book, chapter):
 
 
 # Languages whose words take suffixes (அன்பு, அன்பை, அன்பின்…): every word matches as a prefix.
-PREFIX_LANGS = {"ta", "ml", "te", "kn", "hi", "bn", "gu", "mr", "or", "pa", "ne", "fi", "hu"}
+PREFIX_LANGS = {"ta", "ml", "te", "kn", "hi", "bn", "gu", "mr", "or", "pa", "ne", "as", "ur", "fi", "hu", "ko"}
+# Searched without vowel points and accents (verses_plain): nobody types them.
+PLAIN_LANGS = {"he"}
+
+
+def strip_marks(s: str) -> str:
+	return "".join(c for c in unicodedata.normalize("NFD", s) if unicodedata.category(c) != "Mn")
 
 
 def _fts_query(q: str, prefix=False) -> str:
@@ -162,6 +169,9 @@ def search(con, q, version, scope="all", page=1, sort="relevance"):
 		book_clause = f" AND v.book = {int(scope)}"
 	offset = (max(1, int(page)) - 1) * PAGE
 	cjk = v["lang"] in ("zh-Hant", "zh-Hans", "zh", "ja")
+	plain = v["lang"] in PLAIN_LANGS and "verses_plain" in _tables(con)
+	if plain:
+		q = strip_marks(q)
 	term = q.replace('"', "")
 
 	if cjk and len(term) < 3:  # trigram index needs 3+ characters
@@ -172,7 +182,7 @@ def search(con, q, version, scope="all", page=1, sort="relevance"):
 			(term, term, *args, term),
 		).fetchall()
 	else:
-		table = "verses_tri" if cjk else "verses_fts"
+		table = "verses_tri" if cjk else "verses_plain" if plain else "verses_fts"
 		match = f'"{term}"' if cjk else _fts_query(q, prefix=v["lang"] in PREFIX_LANGS)
 		if not match:
 			return {"total": 0, "results": []}
@@ -184,15 +194,25 @@ def search(con, q, version, scope="all", page=1, sort="relevance"):
 		order = "v.id" if sort == "bible" or cjk else (
 			"CASE WHEN instr(lower(v.text), ?) > 0 THEN 0 ELSE 1 END, bm25(" + table + "), v.id")
 		rows = con.execute(
-			f"SELECT v.book, v.chapter, v.verse, highlight({table}, 0, '<mark>', '</mark>') AS hit {base} ORDER BY {order} LIMIT {PAGE} OFFSET {offset}",
+			f"SELECT v.book, v.chapter, v.verse, highlight({table}, 0, '<mark>', '</mark>') AS hit{', v.text AS pointed' if plain else ''} {base} ORDER BY {order} LIMIT {PAGE} OFFSET {offset}",
 			(match, *args) if order == "v.id" else (match, *args, phrase),
 		).fetchall()
 
 	names = {r["book"]: r["name"] for r in con.execute("SELECT book, name FROM book_names WHERE version=?", (version,))}
 	return {
 		"total": total, "page": int(page), "pages": (total + PAGE - 1) // PAGE,
-		"results": [{**dict(r), "book_name": names.get(r["book"])} for r in rows],
+		"results": [_repoint({**dict(r), "book_name": names.get(r["book"])}) for r in rows],
 	}
+
+
+def _repoint(r):
+	"""A Hebrew hit was found in the text without points: put its marks back on the pointed words."""
+	pointed = r.pop("pointed", None)
+	if pointed:
+		words, hits = pointed.split(" "), r["hit"].split(" ")
+		if len(words) == len(hits):
+			r["hit"] = " ".join(f"<mark>{w}</mark>" if "<mark>" in h else w for w, h in zip(words, hits))
+	return r
 
 
 # ------------------------------------------------------------------ references
@@ -370,42 +390,107 @@ def _fts_rows(con, sql, match, limit):
 _VOCAB = {}
 
 
-def _tamil_vocab(con):
-	"""Tamil words of the Tamil Bibles with counts (built once per connection, ~0.6 s)."""
-	key = id(con)
+@lru_cache(maxsize=8)
+def _tables(con):
+	return {n for (n,) in con.execute("SELECT name FROM sqlite_master")}
+
+
+def _vocab(con, lang):
+	"""Words of one language's Bibles: the database's vocab table, or (older databases) built in memory."""
+	if "vocab" in _tables(con):
+		return T.SqlVocab(con, lang)
+	key = (id(con), lang)
 	if key not in _VOCAB:
+		letters = re.compile(T.SCRIPTS[lang].letters)
 		counts = {}
-		for (text,) in con.execute("SELECT text FROM verses WHERE version IN ('tamil', 'TAMIRV2019')"):
-			for w in re.findall(r"[஀-௿]+", text):
+		for (text,) in con.execute("SELECT v.text FROM verses v JOIN versions x ON x.code = v.version WHERE x.lang = ?", (lang,)):
+			for w in letters.findall(text):
 				counts[w] = counts.get(w, 0) + 1
 		_VOCAB[key] = T.Vocab(counts)
 	return _VOCAB[key]
 
 
-def tanglish(con, q):
-	"""Tamil typed in English letters -> Tamil words ("anbu" -> "அன்பு"), or None."""
-	if not T.is_tanglish(q) or len(q.split()) > 6:
+@lru_cache(maxsize=8)
+def _indian(con):
+	"""Indian languages with a Bible here -> the version to search in each (the first in the list)."""
+	out = {}
+	for code, lang in con.execute("SELECT code, lang FROM versions ORDER BY sort"):
+		if lang in T.SCRIPTS and lang not in out:
+			out[lang] = code
+	return out
+
+
+# Which language leads when English letters spell real words in several (prem: Hindi, Nepali, Marathi…):
+# the site's own Tamil readers and Hindi, the widest-read, weigh double.
+LANG_WEIGHT = {"ta": 2.0, "hi": 2.0}
+
+
+def _langs(con, version, lang=""):
+	"""Which languages English letters may stand for: the version's own, a preferred one, then the rest."""
+	v = _version(con, version) if version else None
+	if v and v["lang"] in T.SCRIPTS:
+		return [v["lang"]]
+	langs = list(_indian(con))
+	if lang in langs:
+		langs.remove(lang)
+		langs.insert(0, lang)
+	return langs
+
+
+def romanized(con, q, lang):
+	"""An Indian language typed in English letters, in its own script ("anbu" -> "அன்பு"), or None."""
+	if not T.is_tanglish(q) or len(q.split()) > 6 or lang not in T.SCRIPTS:
 		return None
 	words = []
 	for w in q.split():
-		found = T.to_tamil(w, _tamil_vocab(con), limit=1)
+		found = T.transliterate(w, _vocab(con, lang), T.SCRIPTS[lang], limit=1)
 		if not found:
 			return None
 		words.append(found[0])
 	return " ".join(words)
 
 
-def tamil_suggest(con, q, limit=6):
-	"""Tamil words for the last word being typed in English letters, with the earlier words kept:
-	"yesu anb" -> ["yesu அன்பு", ...] (each item is {"word", "query"})."""
+def tanglish(con, q):
+	return romanized(con, q, "ta")
+
+
+def native_suggest(con, q, version="", lang="", limit=6):
+	"""Words for the last word being typed in English letters, in the likeliest Indian language, with the
+	earlier words kept: "yesu anb" -> [{"word": "அன்பு", "query": "yesu அன்பு", "lang": "ta"}, ...]."""
 	q = (q or "").strip()[:120]
 	if not q or not T.is_tanglish(q):
 		return []
 	*head, last = q.split()
-	return [{"word": w, "query": " ".join(head + [w])} for w in T.suggest(last, _tamil_vocab(con), limit)]
+	best, best_score = None, 0
+	for i, lg in enumerate(_langs(con, version, lang)):
+		vocab = _vocab(con, lg)
+		words = T.suggest(last, vocab, limit, T.SCRIPTS[lg])
+		if not words:
+			continue
+		if i == 0 and lg == lang:  # the language the reader picked last time wins while it has words
+			best = (lg, words)
+			break
+		score = vocab.count(words[0]) / _tokens(con, lg) * LANG_WEIGHT.get(lg, 1)
+		if score > best_score:
+			best, best_score = (lg, words), score
+	if not best:
+		return []
+	lg, words = best
+	return [{"word": w, "query": " ".join(head + [w]), "lang": lg, "language": T.SCRIPTS[lg].language} for w in words]
 
 
-def unified(con, q, version="KJV", entities=None, per_group=6):
+def tamil_suggest(con, q, limit=6):
+	return native_suggest(con, q, lang="ta", limit=limit)
+
+
+@lru_cache(maxsize=32)
+def _tokens(con, lang):
+	if "vocab" in _tables(con):
+		return con.execute("SELECT sum(n) FROM vocab WHERE lang=?", (lang,)).fetchone()[0] or 1
+	return sum(_vocab(con, lang).counts.values()) or 1
+
+
+def unified(con, q, version="KJV", entities=None, per_group=6, native_lang=""):
 	"""Everything that matches q, grouped like the app: a reference to jump to, ranked entities
 	(books, topics, dictionary, plus characters/places/events/themes passed in by the caller),
 	Strong's, commentary, devotionals and the best verses. `entities` is {type: [Doc, ...]}."""
@@ -470,17 +555,25 @@ def unified(con, q, version="KJV", entities=None, per_group=6):
 	if not out["reference"]:
 		v_res = search(con, q, version)
 		out["verses"] = {"total": v_res["total"], "results": v_res["results"][:8]}
-		# Few hits for Latin letters: perhaps Tamil typed in English ("anbu"), so search the Tamil Bible too.
-		if v_res["total"] < 3:
-			tq = tanglish(con, q)
-			if tq:
-				tv = version if v["lang"] == "ta" else "tamil"
-				t_res = search(con, tq, tv)
-				if t_res["total"] == 0:  # the best spelling may be a word's beginning: தாவீத -> தாவீது
-					t_res = search(con, tq + "*", tv)
-				if t_res["total"]:
-					out["tamil"] = {"query": tq, "version": tv, "total": t_res["total"], "results": t_res["results"][:8]}
+		# Few hits for English letters: perhaps an Indian language typed in English ("anbu", "prem"), so
+		# search those Bibles too; the language with the most verses leads, the others are offered.
+		if v_res["total"] < 3 and T.is_tanglish(q):
+			found = []
+			for lang in _langs(con, version, native_lang):
+				nq = romanized(con, q, lang)
+				if not nq:
+					continue
+				nv = version if v["lang"] == lang else _indian(con)[lang]
+				res = search(con, nq, nv)
+				if res["total"] == 0:  # the best spelling may be a word's beginning: தாவீத -> தாவீது
+					res = search(con, nq + "*", nv)
+				if res["total"]:
+					found.append({"query": nq, "version": nv, "lang": lang, "language": T.SCRIPTS[lang].language, "total": res["total"], "results": res["results"][:8]})
+			if found:
+				found.sort(key=lambda f: (f["lang"] != native_lang, -f["total"] * LANG_WEIGHT.get(f["lang"], 1)))
+				out["native"] = found[0]
+				out["native_more"] = [{k: f[k] for k in ("query", "version", "lang", "language", "total")} for f in found[1:6]]
 	strong = any(g["type"] in ("Word study", "Commentary", "Devotionals") or g["items"][0].get("score", 0) >= 16 for g in out["groups"])
-	if not out["verses"]["total"] and not out["reference"] and not strong and not out.get("tamil"):
+	if not out["verses"]["total"] and not out["reference"] and not strong and not out.get("native"):
 		out["did_you_mean"] = R.suggest(docs, q)
 	return out

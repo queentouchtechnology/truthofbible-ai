@@ -248,6 +248,138 @@
    "web": true
   },
   {
+   "code": "MALIRV",
+   "name": "Indian Revised Version — Malayalam (2019)",
+   "language": "Malayalam",
+   "lang": "ml",
+   "dir": "ltr",
+   "license": "CC BY-SA 4.0",
+   "web": true,
+   "attribution": "Indian Revised Version (Malayalam), Bridge Connectivity Solutions, CC BY-SA 4.0, via eBible.org. Inline cross-reference notes removed.",
+   "ebible": "mal"
+  },
+  {
+   "code": "HINIRV",
+   "name": "Indian Revised Version — Hindi (2019)",
+   "language": "Hindi",
+   "lang": "hi",
+   "dir": "ltr",
+   "license": "CC BY-SA 4.0",
+   "web": true,
+   "attribution": "Indian Revised Version (Hindi), Bridge Connectivity Solutions, CC BY-SA 4.0, via eBible.org. Inline cross-reference notes removed.",
+   "ebible": "hin2017"
+  },
+  {
+   "code": "TELIRV",
+   "name": "Indian Revised Version — Telugu (2019)",
+   "language": "Telugu",
+   "lang": "te",
+   "dir": "ltr",
+   "license": "CC BY-SA 4.0",
+   "web": true,
+   "attribution": "Indian Revised Version (Telugu), Bridge Connectivity Solutions, CC BY-SA 4.0, via eBible.org. Inline cross-reference notes removed.",
+   "ebible": "tel2017"
+  },
+  {
+   "code": "KANIRV",
+   "name": "Indian Revised Version — Kannada (2019)",
+   "language": "Kannada",
+   "lang": "kn",
+   "dir": "ltr",
+   "license": "CC BY-SA 4.0",
+   "web": true,
+   "attribution": "Indian Revised Version (Kannada), Bridge Connectivity Solutions, CC BY-SA 4.0, via eBible.org. Inline cross-reference notes removed.",
+   "ebible": "kanirv"
+  },
+  {
+   "code": "BENIRV",
+   "name": "Indian Revised Version — Bengali (2019)",
+   "language": "Bengali",
+   "lang": "bn",
+   "dir": "ltr",
+   "license": "CC BY-SA 4.0",
+   "web": true,
+   "attribution": "Indian Revised Version (Bengali), Bridge Connectivity Solutions, CC BY-SA 4.0, via eBible.org. Inline cross-reference notes removed.",
+   "ebible": "benirv"
+  },
+  {
+   "code": "GUJIRV",
+   "name": "Indian Revised Version — Gujarati (2019)",
+   "language": "Gujarati",
+   "lang": "gu",
+   "dir": "ltr",
+   "license": "CC BY-SA 4.0",
+   "web": true,
+   "attribution": "Indian Revised Version (Gujarati), Bridge Connectivity Solutions, CC BY-SA 4.0, via eBible.org. Inline cross-reference notes removed.",
+   "ebible": "guj2017"
+  },
+  {
+   "code": "MARIRV",
+   "name": "Indian Revised Version — Marathi (2019)",
+   "language": "Marathi",
+   "lang": "mr",
+   "dir": "ltr",
+   "license": "CC BY-SA 4.0",
+   "web": true,
+   "attribution": "Indian Revised Version (Marathi), Bridge Connectivity Solutions, CC BY-SA 4.0, via eBible.org. Inline cross-reference notes removed.",
+   "ebible": "mar"
+  },
+  {
+   "code": "ORYIRV",
+   "name": "Indian Revised Version — Odia (2021)",
+   "language": "Odia",
+   "lang": "or",
+   "dir": "ltr",
+   "license": "CC BY-SA 4.0",
+   "web": true,
+   "attribution": "Indian Revised Version (Odia), Bridge Connectivity Solutions, CC BY-SA 4.0, via eBible.org. Inline cross-reference notes removed.",
+   "ebible": "ory"
+  },
+  {
+   "code": "PANIRV",
+   "name": "Indian Revised Version — Punjabi (2019)",
+   "language": "Punjabi",
+   "lang": "pa",
+   "dir": "ltr",
+   "license": "CC BY-SA 4.0",
+   "web": true,
+   "attribution": "Indian Revised Version (Punjabi), Bridge Connectivity Solutions, CC BY-SA 4.0, via eBible.org. Inline cross-reference notes removed.",
+   "ebible": "pan"
+  },
+  {
+   "code": "ASMIRV",
+   "name": "Indian Revised Version — Assamese (2018)",
+   "language": "Assamese",
+   "lang": "as",
+   "dir": "ltr",
+   "license": "CC BY-SA 4.0",
+   "web": true,
+   "attribution": "Indian Revised Version (Assamese), Bridge Connectivity Solutions, CC BY-SA 4.0, via eBible.org. Inline cross-reference notes removed.",
+   "ebible": "asmfb"
+  },
+  {
+   "code": "URDIRV",
+   "name": "Indian Revised Version — Urdu, Devanagari script (2019)",
+   "language": "Urdu",
+   "lang": "ur",
+   "dir": "ltr",
+   "license": "CC BY-SA 4.0",
+   "web": true,
+   "attribution": "Indian Revised Version (Urdu), Bridge Connectivity Solutions, CC BY-SA 4.0, via eBible.org. Inline cross-reference notes removed.",
+   "ebible": "urd"
+  },
+  {
+   "code": "NPIULB",
+   "name": "Unlocked Literal Bible — Nepali (2019)",
+   "language": "Nepali",
+   "lang": "ne",
+   "dir": "ltr",
+   "license": "CC BY-SA 4.0",
+   "web": true,
+   "attribution": "Unlocked Literal Bible (Nepali), Door43 World Missions Community, CC BY-SA 4.0, via eBible.org. Inline cross-reference notes removed.",
+   "ebible": "npiulb"
+  },
+  {
    "code": "SpaRV",
    "name": "Reina-Valera (1909)",
    "language": "Spanish",

@@ -171,7 +171,7 @@ def _entities():
 
 @frappe.whitelist(allow_guest=True, methods=["GET"])
 @rate_limit(limit=120, seconds=60)
-def unified(q: str, version: str = "KJV"):
+def unified(q: str, version: str = "KJV", lang: str = ""):
 	"""One search across everything, like the app's search bar: reference, ranked entities, Strong's,
 	commentary, devotionals and verses."""
 	try:
@@ -179,14 +179,14 @@ def unified(q: str, version: str = "KJV"):
 	except Exception:
 		frappe.log_error(title="Web Bible: entity lists for search failed", message=frappe.get_traceback())
 		entities = {}
-	return _call(Q.unified, q, version, entities)
+	return _call(Q.unified, q, version, entities, 6, lang)
 
 
 @frappe.whitelist(allow_guest=True, methods=["GET"])
 @rate_limit(limit=300, seconds=60)
-def tamil_suggest(q: str):
-	"""Tamil word suggestions while typing Tamil in English letters ("anb" -> அன்பு)."""
-	return _call(Q.tamil_suggest, q)
+def native_suggest(q: str, version: str = "", lang: str = ""):
+	"""Word suggestions while typing an Indian language in English letters ("anb" -> அன்பு, "pre" -> प्रेम)."""
+	return _call(Q.native_suggest, q, version, lang)
 
 
 @frappe.whitelist(allow_guest=True, methods=["GET"])

@@ -11,13 +11,22 @@ from pathlib import Path
 PD, CC0 = "Public Domain", "CC0"
 
 
-def v(code, name, language, lang, license=PD, web=True, dir="ltr", note=None, attribution=None):
+def v(code, name, language, lang, license=PD, web=True, dir="ltr", note=None, attribution=None, ebible=None):
 	d = {"code": code, "name": name, "language": language, "lang": lang, "dir": dir, "license": license, "web": web}
 	if note:
 		d["note"] = note
 	if attribution:
 		d["attribution"] = attribution
+	if ebible:
+		d["ebible"] = ebible  # not an app module: build.py fetches it from eBible.org (see ebible.py)
 	return d
+
+
+def irv(code, ebible, language, lang, dir="ltr", year="2019", by="Bridge Connectivity Solutions", script=""):
+	"""Indian Revised Version (and like-licensed) Bibles from eBible.org, CC BY-SA 4.0."""
+	title = "Indian Revised Version" if by.startswith("Bridge") else "Unlocked Literal Bible"
+	return v(code, f"{title} — {language}{script} ({year})", language, lang, "CC BY-SA 4.0", dir=dir, ebible=ebible,
+		attribution=f"{title} ({language}), {by}, CC BY-SA 4.0, via eBible.org. Inline cross-reference notes removed.")
 
 
 VERSIONS = [
@@ -50,6 +59,18 @@ VERSIONS = [
 	v("TAMIRV2019", "Indian Revised Version — Tamil (2019)", "Tamil", "ta", "CC BY-SA 4.0",
 	  attribution="Indian Revised Version (IRV) Tamil, Bridge Connectivity Solutions, CC BY-SA 4.0"),
 	v("Mal1910", "Sathyavedapusthakam (1910)", "Malayalam", "ml"),
+	irv("MALIRV", "mal", "Malayalam", "ml"),
+	irv("HINIRV", "hin2017", "Hindi", "hi"),
+	irv("TELIRV", "tel2017", "Telugu", "te"),
+	irv("KANIRV", "kanirv", "Kannada", "kn"),
+	irv("BENIRV", "benirv", "Bengali", "bn"),
+	irv("GUJIRV", "guj2017", "Gujarati", "gu"),
+	irv("MARIRV", "mar", "Marathi", "mr"),
+	irv("ORYIRV", "ory", "Odia", "or", year="2021"),
+	irv("PANIRV", "pan", "Punjabi", "pa"),
+	irv("ASMIRV", "asmfb", "Assamese", "as", year="2018"),
+	irv("URDIRV", "urd", "Urdu", "ur", script=", Devanagari script"),  # eBible's Urdu IRV is printed in Devanagari
+	irv("NPIULB", "npiulb", "Nepali", "ne", by="Door43 World Missions Community"),
 	v("SpaRV", "Reina-Valera (1909)", "Spanish", "es"),
 	v("SpaRV1865", "Reina-Valera (1865)", "Spanish", "es"),
 	v("PorBLivre", "Bíblia Livre", "Portuguese", "pt", "CC BY 3.0", attribution="Bíblia Livre, CC BY 3.0"),
@@ -89,6 +110,9 @@ VERSIONS = [
 	v("ERVTA", "Easy-to-Read Version — Tamil", "Tamil", "ta", "Copyrighted", web=False),
 	v("taBCS", "Tamil Bible (Biblica)", "Tamil", "ta", "Copyrighted", web=False),
 ] + [
+	# The app's Indian modules (checked 2026-10-29): Bengali, Gujarati, Marathi, Odia, Punjabi and Nepali are
+	# the Easy-to-Read Version (copyrighted); Malayalam is the 1910 text (Mal1910 above); Hindi, Telugu and
+	# Kannada are the Bible Society old versions. The IRV above covers these languages on the web.
 	v(code, name, language, lang, "Unknown — confirm before web use", web=False)
 	for code, name, language, lang in (
 		("hindi", "Hindi Bible", "Hindi", "hi"),
