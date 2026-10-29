@@ -82,8 +82,9 @@ def compare(versions: str, book, chapter):
 
 @frappe.whitelist(allow_guest=True, methods=["GET"])
 @rate_limit(limit=120, seconds=60)
-def search(q: str, version: str = "KJV", scope: str = "all", page=1):
-	return _call(Q.search, q, version, scope, _int(page, "page"))
+def search(q: str, version: str = "KJV", scope: str = "all", page=1, sort: str = "relevance"):
+	"""sort: relevance (exact phrase first, then best match) or bible (canonical order)."""
+	return _call(Q.search, q, version, scope, _int(page, "page"), "bible" if sort == "bible" else "relevance")
 
 
 @frappe.whitelist(allow_guest=True, methods=["GET"])

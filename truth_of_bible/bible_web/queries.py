@@ -146,7 +146,7 @@ def _fts_query(q: str, prefix=False) -> str:
 	return " ".join(parts)
 
 
-def search(con, q, version, scope="all", page=1):
+def search(con, q, version, scope="all", page=1, sort="relevance"):
 	"""Full-text search in one version. scope: all | ot | nt | <book number>."""
 	v = _version(con, version)
 	q = (q or "").strip()[:200]
@@ -178,9 +178,14 @@ def search(con, q, version, scope="all", page=1):
 			return {"total": 0, "results": []}
 		base = f"FROM {table} f JOIN verses v ON v.id = f.rowid WHERE {table} MATCH ? AND f.{' AND f.'.join(where)}{book_clause}"
 		total = con.execute(f"SELECT COUNT(*) {base}", (match, *args)).fetchone()[0]
+		# Relevance, like a search engine: verses containing the words as one exact phrase first, then
+		# FTS5's bm25 score (where the words weigh most), then Bible order. sort="bible" keeps Bible order.
+		phrase = re.sub(r'["*]', "", q).strip().lower()
+		order = "v.id" if sort == "bible" or cjk else (
+			"CASE WHEN instr(lower(v.text), ?) > 0 THEN 0 ELSE 1 END, bm25(" + table + "), v.id")
 		rows = con.execute(
-			f"SELECT v.book, v.chapter, v.verse, highlight({table}, 0, '<mark>', '</mark>') AS hit {base} ORDER BY v.id LIMIT {PAGE} OFFSET {offset}",
-			(match, *args),
+			f"SELECT v.book, v.chapter, v.verse, highlight({table}, 0, '<mark>', '</mark>') AS hit {base} ORDER BY {order} LIMIT {PAGE} OFFSET {offset}",
+			(match, *args) if order == "v.id" else (match, *args, phrase),
 		).fetchall()
 
 	names = {r["book"]: r["name"] for r in con.execute("SELECT book, name FROM book_names WHERE version=?", (version,))}
