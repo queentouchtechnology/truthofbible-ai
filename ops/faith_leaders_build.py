@@ -27,6 +27,47 @@ BOOK_ALIASES = {"Psalm": "Psalms"}
 # part=None quotes the whole verse(s); otherwise it must be an exact fragment of them.
 LESSONS = [
     ("1. Hannah", "Lesson from Hannah", [
+        ("key2", "Luke 1:45", None),
+        ("h2", "What does “blessed is she that believed” mean?"),
+        ("p", "When we believe, we don't wait to see the answer first. We trust God's word even while nothing has changed yet. That is why Elizabeth called Mary blessed — she believed before she saw."),
+        ("p", "In the same way, God calls us to believe Him while we are still waiting, not only after the answer comes."),
+        ("h3", "One who believes like this:"),
+        ("ul", ["trusts God even when the answer is delayed", "takes the pain to God, not to people", "keeps the promise made to God"]),
+        ("p", "So “blessed is she that believed” means: blessed is the one who trusts God before seeing what He will do."),
+        ("h2", "Example: Hannah – a woman who believed before she saw"),
+        ("p", "A great example of this is Hannah."),
+        ("q", "1 Samuel 1:6", None),
+        ("p", "Why was she so troubled?"),
+        ("p", "She had no child, and Peninnah, her husband's other wife, mocked her for it — not once, but year after year. Hannah wept and would not eat. (📖 1 Samuel 1:7)"),
+        ("p", "Yet she did not fight back, and she did not complain against God."),
+        ("p", "So what did she do with her pain?"),
+        ("h3", "1️⃣ She took her pain to God"),
+        ("q", "1 Samuel 1:10", None),
+        ("p", "She did not pour out her heart to people; she went to the house of the Lord and poured it out before God. She even made a vow: if God gave her a son, she would give him back to the Lord. (📖 1 Samuel 1:11)"),
+        ("p", "This is faith. She trusted God before she saw anything change."),
+        ("h3", "2️⃣ She stayed gentle when she was misunderstood"),
+        ("p", "Eli the priest saw her lips moving without a sound and thought she was drunk. (📖 1 Samuel 1:13–14)"),
+        ("p", "How would we have answered? Hannah did not argue and did not get angry. She answered gently:"),
+        ("q", "1 Samuel 1:15", "I am a woman of a sorrowful spirit"),
+        ("q", "Proverbs 15:1", "A soft answer turneth away wrath"),
+        ("h3", "3️⃣ She received peace before the answer"),
+        ("q", "1 Samuel 1:18", "and her countenance was no more sad"),
+        ("p", "Nothing had changed yet — she still had no child. But her face changed, because she had left her burden with God. God often gives peace before He gives the answer. (📖 Philippians 4:7)"),
+        ("h3", "What was the result?"),
+        ("p", "God remembered Hannah."),
+        ("q", "1 Samuel 1:20", None),
+        ("p", "And Hannah kept her promise. When the boy was old enough, she brought him to the house of the Lord:"),
+        ("q", "1 Samuel 1:28", "Therefore also I have lent him to the LORD; as long as he liveth he shall be lent to the LORD"),
+        ("p", "It was not easy — she had waited so long. But she chose obedience over her feelings, and every year she made him a little coat and brought it to him. (📖 1 Samuel 2:19)"),
+        ("p", "God did not forget her faithfulness."),
+        ("q", "1 Samuel 2:21", None),
+        ("p", "The woman who was once mocked for having no child now had six children — and her firstborn, Samuel, became the prophet who led all Israel."),
+        ("h3", "What do we learn?"),
+        ("ul", ["One who believes takes the pain to God first", "stays gentle when misunderstood", "receives God's peace before the answer comes", "keeps the promise made to God"]),
+        ("p", "God honours those who honour Him."),
+        ("mem", "1 Samuel 2:30", "for them that honour me I will honour"),
+    ]),
+    ("1. Hannah (previous)", "unused", [
         ("key", "Luke 1:45", None),
         ("h3", "What does “blessed is she that believed” mean?"),
         ("p", "Faith does not wait to see the answer before it trusts God. It believes first. Long before Mary, a woman named Hannah lived this way."),
@@ -538,6 +579,11 @@ def build(bible, spec):
         if kind == "key":
             add("header", {"text": item[1], "level": 2})
             add("header", {"text": bible.quote(item[1], item[2]), "level": 2})
+        elif kind == "key2":  # as in the Tamil lessons: “reference” heading, the verse as a paragraph
+            add("header", {"text": f"“{item[1]}”", "level": 2})
+            add("paragraph", {"text": bible.quote(item[1], item[2])})
+        elif kind == "q":  # reference and quotation on one line: 📖 Ref “…”
+            add("paragraph", {"text": f"📖 {item[1]} {bible.quote(item[1], item[2])}"})
         elif kind == "rq":
             add("paragraph", {"text": f"📖 <b>{item[1]}</b>"})
             add("paragraph", {"text": bible.quote(item[1], item[2])})
