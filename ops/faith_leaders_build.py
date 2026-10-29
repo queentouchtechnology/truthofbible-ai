@@ -548,7 +548,9 @@ def build(bible, spec):
         elif kind == "p":
             add("paragraph", {"text": item[1]})
         elif kind == "ul":
-            add("list", {"style": "unordered", "items": [{"content": t, "items": []} for t in item[1]]})
+            # One 👉 line per point, as in the teaching notes, rather than a bulleted list block.
+            for t in item[1]:
+                add("paragraph", {"text": f"👉 {t}"})
         elif kind == "mem":
             add("header", {"text": "📖 Memory Verse", "level": 2})
             add("paragraph", {"text": bible.quote(item[1], item[2])})

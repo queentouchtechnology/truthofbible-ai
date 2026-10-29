@@ -31,10 +31,14 @@ def main(path, apply):
         chapter = frappe.get_doc("Course Chapter", ref.chapter)
         drop = [r.lesson for r in chapter.lessons if is_generated(frappe, r.lesson)]
         item = built.get(chapter.title)
-        have = item and frappe.db.exists("Course Lesson", {"chapter": chapter.name, "title": item["title"]})
-        print(f"{chapter.title}: remove {len(drop)}" + (f", add “{item['title']}”" if item and not have else ""))
-        if not apply:
+        have = item and frappe.db.get_value("Course Lesson", {"chapter": chapter.name, "title": item["title"],
+                                                              "creation": [">=", GENERATED_SINCE]})
+        print(f"{chapter.title}: remove {len(drop)}" + (f", add “{item['title']}”" if item and not have else "")
+              + (f", update “{item['title']}”" if have else ""))
+        if not apply or (not item and not drop):
             continue
+        if have:  # a lesson this tooling built earlier: refresh its content in place
+            frappe.db.set_value("Course Lesson", have, "content", item["content"])
         new = None
         if item and not have:
             new = frappe.get_doc({"doctype": "Course Lesson", "title": item["title"], "chapter": chapter.name,
