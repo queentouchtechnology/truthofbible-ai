@@ -1,9 +1,9 @@
-"""Faith Leaders (chapters 1-15): add the three lessons every Life of Jesus chapter has -
+"""Faith Leaders (chapters 1-24): add the three lessons every Life of Jesus chapter has -
 "Read: <passage>", "Short Lesson (Adults)" and "Brief Lesson (All Ages)" - in the same Editor.js shape.
 
 The new lessons go first in each chapter; the chapter's existing lessons (videos, Tamil stories, memory
-verses, questions) stay after them. Chapters 16-24 are never touched. Safe to re-run: a chapter that
-already has a "Short Lesson (Adults)" is skipped.
+verses, questions) are never edited or deleted and stay after them. Safe to re-run: a chapter that
+already has a "Short Lesson (Adults)" is skipped (1-15 were added first, 16-24 afterwards).
 
 Run inside the Frappe container:
     cd /home/frappe/frappe-bench/sites && ../env/bin/python faith_leaders_lessons.py          # dry run
@@ -17,7 +17,7 @@ import time
 
 COURSE = "faith-leaders-learning-faith-through-bible-heroes"
 SITE = "learn.truthofbible.org"
-LAST_CHAPTER = 15
+LAST_CHAPTER = 24
 
 # (chapter title, passage, watch-for, background note, short-lesson paragraphs, brief-lesson sentences)
 LESSONS = [
@@ -185,6 +185,106 @@ LESSONS = [
      ["Judah once helped sell his brother Joseph, which was very wrong.",
       "Years later he changed, and when his little brother Benjamin was in trouble, Judah offered to take his place.",
       "God made Judah's family the family of King David and of Jesus."]),
+
+    # 16-24: written from the chapters' own Tamil lessons, which stay in place after these three.
+    ("16. Nehemiah", "Nehemiah 1:1-2:8",
+     "Nehemiah serving as the king's cupbearer in Shushan; the news that Jerusalem's walls were broken down; his weeping, fasting and praying “day and night”; the king noticing his sad face — he had never been sad in his presence before; and his request, “send me unto Judah.”",
+     "This week's verse is Matthew 25:13 — “Watch therefore, for ye know neither the day nor the hour.” Nehemiah rebuilds the wall in 2:17–6:15, serves as governor for twelve years (5:14), and feeds a hundred and fifty at his table (5:17).",
+     ["Jesus told his disciples, “Watch therefore, for ye know neither the day nor the hour.” To watch is more than staying physically awake. A person who is awake works, notices what is happening around them, and responds. To be spiritually awake is to pray, to keep a clear mind, to serve one master, and to keep God's purposes in front of our own comfort.",
+      "Nehemiah is a picture of that kind of wakefulness. He had a secure, respected job as the king's cupbearer, and he did it faithfully — so faithfully that he could say he had never been sad in the king's presence. Life was comfortable. Then a report came that Jerusalem's walls were broken down and its people were in great trouble and reproach.",
+      "That news woke something in him. He wept, fasted and prayed for days, confessing the sins of his people and asking God for favour. When the king noticed his sad face, Nehemiah prayed silently and then asked boldly: “Send me unto Judah… that I may build it.” He put God's work ahead of his own position and ease.",
+      "God honoured that. The walls he had grieved over were rebuilt, and the cupbearer became governor of Judah for twelve years, with a hundred and fifty people eating at his table. “He is thy life, and the length of thy days” (Deuteronomy 30:20). God lifts up and gives meaning to the lives of those who stay awake to him."],
+     ["Nehemiah had a good job serving the king, far away from Jerusalem.",
+      "When he heard that Jerusalem's walls were broken, he cried, prayed and asked the king to let him go and help.",
+      "God helped Nehemiah rebuild the walls, and he became the leader of his people."]),
+
+    ("17. Ezekiel", "Ezekiel 3:16-27",
+     "God making Ezekiel “a watchman unto the house of Israel”; the responsibility to warn both the wicked and the righteous; Ezekiel's tongue held silent; and God's rule, “when I speak with thee, I will open thy mouth.”",
+     "This week's verse is Matthew 25:29 — “unto every one that hath shall be given.” Ezekiel was among the captives by the river Chebar (1:1). His hard signs are in 4:4–6 (390 and 40 days), 5:1–3 (shaving his head and beard) and 24:15–18 (the death of his wife); 14:22–23 shows the comfort that followed.",
+     ["Jesus ended the parable of the talents with a surprising line: “Unto every one that hath shall be given, and he shall have abundance: but from him that hath not shall be taken away even that which he hath.” The one who “has” isn't the person with the most money or talent. It's the servant who was faithful and responsible with what he was given — “thou hast been faithful over a few things.” The one who “has not” is the servant who said, in effect, “What do I have? I can't do anything,” and hid it.",
+      "Ezekiel shows what faithfulness looks like when circumstances are hard. He wasn't serving in comfort; he was a captive in Babylon. There God made him a watchman over Israel, with one rule: speak only what I tell you. And the assignments were heavy. He lay on one side for 390 days and on the other for 40, bearing a picture of his people's sin. He shaved his head and beard — a sign of shame in that culture — to show what was coming on Jerusalem.",
+      "The hardest came in chapter 24. God told him that “the desire of thine eyes” — his wife — would be taken, and that he was not to mourn openly, as a sign to the people. That evening she died, and Ezekiel writes, “I did in the morning as I was commanded.” He didn't complain, didn't try to escape, and didn't demand to know why.",
+      "In the end the people were comforted, and they understood that God had not done “without cause” all that he did (Ezekiel 14:22–23). Faithfulness in hard seasons isn't wasted. To the faithful servant Jesus says, “Enter thou into the joy of thy lord” — and God promises a covenant of peace and his presence among his people for ever (Ezekiel 37:26)."],
+     ["God made Ezekiel a watchman, to tell the people God's message.",
+      "Ezekiel had to do some very hard things, even when he was sad, but he always obeyed God.",
+      "Because Ezekiel was faithful, the people were comforted and learned that God is always fair."]),
+
+    ("18. Mordecai", "Esther 3:1-15",
+     "Haman promoted above all the princes; Mordecai refusing to bow; Haman's anger turning against all the Jews; the lot cast and the decree sent to every province; and the city of Shushan left “perplexed.”",
+     "This week's verses are Galatians 5:14–16 — love your neighbour as yourself, and “walk in the Spirit.” Mordecai's grief and his message to Esther follow in 4:1–8; Esther's call to fast is in 4:16, and Mordecai does “according to all that Esther had commanded him” (4:17).",
+     ["“Thou shalt love thy neighbour as thyself.” We know how we want to be treated: we want people to tell us the truth, to be fair with us, not to plot harm against us, not to deceive us, and to live at peace with us. Loving others means giving them the same — speaking truth, judging fairly, refusing to imagine evil against them in our hearts (Zechariah 8:16–17), and making peace.",
+      "Paul warns what happens otherwise: “If ye bite and devour one another, take heed that ye be not consumed one of another.” A life without love ends in destruction. The way out is to “walk in the Spirit” — to listen to the Holy Spirit and follow where he leads, rather than our own desires. His fruit is “in all goodness and righteousness and truth,” and he usually speaks to us through Scripture and through words that agree with it (John 6:63). Sometimes his leading will look different from what seems right to us, and then we have to give way to it.",
+      "Mordecai's story shows the turn. He refused to bow to Haman, the king's favourite, and Scripture doesn't tell us whether he sought God's guidance first. What followed was a decree to destroy all the Jews. Mordecai tore his clothes, put on sackcloth and ashes, and cried out loudly — he saw the destruction that had begun.",
+      "Then he urged Esther to go to the king. Esther answered with a call to seek God first: “Go, gather together all the Jews… and fast ye for me.” Mordecai listened and did all that she asked. The destruction was stopped, the Jews were saved, and God's plan went forward. When we let go of the lust of the eyes, the lust of the flesh and the pride of life (1 John 2:16) and make room for the Spirit's leading, we are kept from destruction and receive God's blessing."],
+     ["Mordecai would not bow to proud Haman, and Haman became very angry with all the Jews.",
+      "Mordecai was very sad, and Queen Esther asked everyone to pray and fast first.",
+      "Mordecai listened, they turned to God together, and God saved His people."]),
+
+    ("19. Noah", "Genesis 6:1-22",
+     "the sons of God drawn by beauty and the mighty “men of renown”; the wickedness of every imagination of the heart; “But Noah found grace in the eyes of the Lord”; “Noah walked with God”; and Noah doing all that God commanded.",
+     "This week's verse is John 6:35 — “I am the bread of life: he that cometh to me shall never hunger.” Noah's family is kept safe through the flood (chapters 7–8); God blesses them in 9:1, and Noah lives three hundred and fifty years after the flood (9:28). See also Revelation 22:17 and Ephesians 5:14.",
+     ["“I am the bread of life: he that cometh to me shall never hunger; and he that believeth on me shall never thirst.” Jesus isn't talking about the body's hunger and thirst. He means the inner craving for the things of this world — its attractions, and the satisfaction we keep looking for in them. The one who receives Jesus stops searching the world for what only he can give.",
+      "Think of a full stomach. Your favourite food can be right in front of you, but if you have already eaten well, you don't want it. In the same way, when our minds and hearts are full of Jesus and God's word, the world's attractions lose their pull. That is why Jesus invites, “Come unto me” — and Revelation 22:17 says, “let him that is athirst come. And whosoever will, let him take the water of life freely.”",
+      "Noah lived surrounded by a world that had turned from God. People were drawn by beauty, proud of their strength and reputation, and followed their own desires; “every imagination of the thoughts of his heart was only evil continually.” While everyone else looked at the world, Noah looked to God. While others followed the flesh, Noah obeyed God's word. Scripture sums him up in four words: “Noah walked with God.”",
+      "God kept Noah and his family safe through the destruction, blessed them, and gave Noah three hundred and fifty more years of life. So ask yourself: what am I full of — God's word, or the world's desires? “Awake thou that sleepest… and Christ shall give thee light” (Ephesians 5:14)."],
+     ["Everyone around Noah had stopped loving God, but Noah kept walking with God.",
+      "God told Noah to build a big ark, and Noah obeyed everything God said.",
+      "God kept Noah's family safe in the flood and blessed them with a long life."]),
+
+    ("20. The Shunammite Woman", "2 Kings 4:8-37",
+     "the woman who made a small room for Elisha; the promised son; the boy's sudden death in the field; her words “It shall be well”; her ride to Mount Carmel without stopping; her refusal to leave Elisha — “I will not leave thee”; and the child sneezing seven times and opening his eyes.",
+     "This week's verse is Luke 19:10 — “the Son of man is come to seek and to save that which was lost.” Deuteronomy 4:25–31 explains who must seek the Lord, and how: “if thou seek him with all thy heart and with all thy soul.”",
+     ["Jesus came “to seek and to save that which was lost.” In Scripture we see two kinds of people: some the Lord goes out to find, and some who must go and seek the Lord. Moses warned Israel that people who corrupted themselves, provoked God and drifted far from him through sin would have to turn back and seek him.",
+      "And seeking God is not a casual effort. “If from thence thou shalt seek the Lord thy God, thou shalt find him, if thou seek him with all thy heart and with all thy soul.” Those who seek him that way find that he will not forsake them, will not destroy them, and will not forget his covenant.",
+      "The Shunammite woman shows what that kind of seeking looks like. When her only son died in her arms, she laid him on the prophet's bed and set out at once for Elisha. She told her servant to drive hard and not slow down. She didn't stop to explain her grief to everyone she met; to her husband and to Gehazi she simply said, “It is well.” Her one aim was to reach the man of God.",
+      "When Elisha tried to send his servant ahead with his staff, she refused: “As the Lord liveth… I will not leave thee.” She wouldn't accept a substitute. The staff did nothing; Elisha himself came, prayed, and the boy came back to life. Seek God first, don't take your problem to everyone else, don't look for other answers in his place — and hold on to him with all your heart and soul."],
+     ["A kind woman's son became very sick and died.",
+      "She didn't give up; she went straight to God's prophet Elisha and would not leave without him.",
+      "Elisha came and prayed, and God brought her son back to life."]),
+
+    ("21. Samuel", "1 Samuel 3:1-21",
+     "the word of the Lord being rare in those days; the boy Samuel hearing his name in the night; Eli's advice, “Speak, Lord; for thy servant heareth”; the hard message for Eli's house; and God letting none of Samuel's words fall to the ground.",
+     "This week's verses are John 5:14 and John 8:12 — “he that followeth me shall not walk in darkness, but shall have the light of life.” After the ark is lost (chapter 4), Samuel goes largely unsought for about twenty years (7:2) until the people come asking him to pray (7:8; 9:11). Isaiah 65:1 and 9:2–5 describe what God does for such people.",
+     ["Jesus told the man he had healed, “Sin no more, lest a worse thing come unto thee,” and he promised, “He that followeth me shall not walk in darkness, but shall have the light of life.” That light of life is God's reward for those who follow him and trust him alone. Whatever their situation, Isaiah 9 says God multiplies them, increases their joy, and breaks the yoke of war.",
+      "Samuel is a picture of that. As a boy he heard God call his name, and answered, “Speak; for thy servant heareth.” God was with him and let none of his words fall to the ground, and all Israel knew he was a prophet of the Lord. But when Israel faced the Philistines, they put their trust in carrying the ark into battle, and there is no record that they sought Samuel's counsel. The battle was lost, the ark was taken, Eli and his sons died, and “the glory is departed from Israel.”",
+      "For about twenty years afterwards Samuel was largely overlooked. Yet God had a promise for people like him: “I am sought of them that asked not for me; I am found of them that sought me not” (Isaiah 65:1). In time the whole nation came looking for him. They asked him, “Cease not to cry unto the Lord our God for us,” and even strangers searching for lost donkeys asked, “Is the seer here?”",
+      "Through Samuel's prayer and counsel God turned the tide: the cities the Philistines had taken were restored, and there was peace. The one who had been forgotten was honoured, sought after, filled with joy and given peaceful days. When we keep following God in the hidden years, he brings us into the light in his time."],
+     ["Samuel was a boy who listened to God and said, “Speak, Lord, I am listening.”",
+      "For many years people forgot about him, but Samuel kept following God.",
+      "Later the whole nation came to Samuel for help, and God gave them peace through his prayers."]),
+
+    ("22. Joseph", "Genesis 39:1-23",
+     "Joseph sold to Potiphar; the Lord making all he did prosper; everything in the house placed in his hand; the daily pressure from Potiphar's wife; his answer, “how then can I do this great wickedness, and sin against God?”; his flight; and the Lord being with him even in prison.",
+     "This week's verse is Psalm 147:3 — “He healeth the broken in heart, and bindeth up their wounds.” Joseph's early years are in Genesis 37:2–11; Isaiah 57:15 and 1 Corinthians 6:17–20 describe the God who lives with the contrite and the call to flee impurity.",
+     ["“He healeth the broken in heart, and bindeth up their wounds.” Some wounds in life — disappointment, rejection, betrayal, loneliness — people cannot heal. Only the Spirit of the Lord can heal them completely. He does it by dwelling in us: God says he lives “with him also that is of a contrite and humble spirit, to revive the spirit of the humble, and to revive the heart of the contrite ones” (Isaiah 57:15). When he dwells in us, the broken heart comes alive, wounds begin to close, and his peace fills our life.",
+      "For the Spirit to dwell in us, we are to be joined to the Lord: “he that is joined unto the Lord is one spirit” (1 Corinthians 6:17). That means living by his will, choosing what pleases him and keeping our lives holy — fleeing impurity rather than wrestling with it, and glorifying God “in your body, and in your spirit.” And keeping that up takes a firm decision that doesn't change when circumstances or people change.",
+      "Joseph made that decision young. At seventeen, while his brothers did wrong, he didn't join them. When he shared the dreams God gave him, his father rebuked him and his brothers hated him, but he didn't deny what God had shown him. Later, in Potiphar's house, he had authority, trust and freedom — “there is none greater in this house than I” — and no one watching. When Potiphar's wife pressed him day after day, he said, “How then can I do this great wickedness, and sin against God?” and ran. It wasn't fear of his master; it was the fear of God.",
+      "Because Joseph stayed joined to the Lord, God was with him through betrayal, slavery and prison, healed his broken heart, turned it all to blessing, and in the end made him a great leader. A life joined to the Lord is the life in which God heals a broken heart and lifts us up."],
+     ["Joseph's brothers were jealous and sold him far away, and his heart was hurt.",
+      "Even when no one was watching, Joseph chose to obey God and ran away from doing wrong.",
+      "God was with Joseph, healed his heart, and made him a great leader in Egypt."]),
+
+    ("23. Deborah", "Judges 4:1-16",
+     "Deborah judging Israel under the palm tree; God's command to Barak and the promise to deliver Sisera into his hand; Barak's condition, “If thou wilt go with me, then I will go”; Deborah's answer that the honour would go to a woman; and her call, “Up; for this is the day.”",
+     "This week's verse is Mark 9:23 — “If thou canst believe, all things are possible to him that believeth.” Before Deborah, God used ordinary people: Ehud (Judges 3:15–30) and Shamgar with an ox goad (3:31). After Deborah's victory, “the land had rest forty years” (5:31).",
+     ["Jesus said these words to a father whose son had suffered “of a child” — since childhood. He had brought the boy to the disciples, and “they could not.” People who had succeeded at many things had tried and failed. So the father's question was natural: can this really change? And Jesus answered, “If thou canst believe, all things are possible to him that believeth.” Don't decide that God can't, just because people couldn't. The father cried out, “Lord, I believe; help thou mine unbelief.”",
+      "In the time of the judges, God kept using ordinary people to do extraordinary things. Ehud was left-handed — something people saw as a weakness — yet he went alone into the private room of Eglon, the king who had oppressed Israel for eighteen years, and came out again past the guards. The land had rest for eighty years. Shamgar had no great weapon, only an ox goad, and with it he struck down six hundred Philistines.",
+      "Then God told Barak to go out against Sisera, promising to deliver him into his hand. Barak came from a people who “jeoparded their lives unto the death,” yet he couldn't believe the word God had given him. “If thou wilt go with me, then I will go: but if thou wilt not go with me, then I will not go.” Where Barak couldn't believe, Deborah did. She looked not at her own strength but at God's word: “Up; for this is the day in which the Lord hath delivered Sisera into thine hand.”",
+      "God brought the victory, and Israel had rest for forty years. Faith isn't telling ourselves that the impossible is possible. It's looking straight at what seems impossible and saying, “My God can.” What others can't believe, you can — and God works through those who do."],
+     ["God told Barak to fight Israel's enemy, but Barak was afraid to go alone.",
+      "Deborah believed what God had said and bravely went with him.",
+      "God gave Israel the victory, and the land had peace for forty years."]),
+
+    ("24. Jehoshaphat", "2 Chronicles 20:1-22",
+     "a great army coming against Judah; Jehoshaphat proclaiming a fast and praying before all the people; his confession, “we have no might against this great company… but our eyes are upon thee”; the answer, “the battle is not yours, but God's”; and the singers going out ahead of the army.",
+     "This week's verses are John 11:25 and 11:42 — “I knew that thou hearest me always.” God had already made the kingdoms around Judah afraid to fight Jehoshaphat (17:10), and he answered Jehoshaphat's cry in battle (18:31). The moral verse is 19:7: “there is no iniquity with the Lord our God, nor respect of persons, nor taking of gifts.”",
+     ["“I am the resurrection, and the life: he that believeth in me, though he were dead, yet shall he live.” This doesn't mean believers never die in this world — they do. The deeper truth is that God is able to hear and act at any moment, in any situation. At Lazarus's tomb Jesus prayed, “I knew that thou hearest me always.”",
+      "Jehoshaphat's life shows God hearing him in very different moments. First, God acted before he even asked: “the fear of the Lord fell upon all the kingdoms… so that they made no war against Jehoshaphat.” He never went to those kings asking for peace; God gave him peaceful years. God knows what we need before we ask.",
+      "Later, in a battle alongside Ahab, the enemy chariot commanders surrounded Jehoshaphat, thinking he was the king of Israel. There was no way out. He cried out, “and the Lord helped him; and God moved them to depart from him,” and he came home safely. However bad our situation, our cry reaches God's ear.",
+      "Then a vast army came against Judah, and Jehoshaphat didn't trust his own strength. He prayed, “We have no might against this great company… neither know we what to do: but our eyes are upon thee.” God answered, “The battle is not yours, but God's.” They went out singing, and God fought for them. There is no moment when God cannot hear — so in every situation, let us call on him."],
+     ["When a huge army came against King Jehoshaphat, he was afraid and didn't know what to do.",
+      "He gathered everyone to pray and said, “God, our eyes are on You.”",
+      "God said, “The battle is Mine,” and He won the battle for them while they sang."]),
 ]
 
 
@@ -241,12 +341,15 @@ def main(apply):
         new = [frappe.get_doc({"doctype": "Course Lesson", "title": t, "chapter": name, "course": COURSE,
                                "content": _content(b), "include_in_preview": 0}).insert(ignore_permissions=True).name
                for t, b in planned]
+        # Keep the existing link rows themselves (only their position changes) and put the new ones first.
         chapter.reload()
-        present = [r.lesson for r in chapter.lessons]
-        keep = [l for l in existing if l in present] + [l for l in present if l not in new and l not in existing]
-        chapter.set("lessons", [])
-        for lesson in new + keep:
+        old_rows = [r for r in chapter.lessons if r.lesson not in new]
+        chapter.lessons = []
+        for lesson in new:
             chapter.append("lessons", {"lesson": lesson})
+        chapter.lessons.extend(old_rows)
+        for i, row in enumerate(chapter.lessons, 1):
+            row.idx = i
         chapter.save(ignore_permissions=True)
         frappe.db.commit()
     frappe.destroy()
