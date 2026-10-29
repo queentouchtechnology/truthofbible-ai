@@ -312,7 +312,8 @@ def lessons_for(passage, watch, note, short, brief):
             _p(f"Before this lesson, take a few minutes to read {passage} in your own Bible (tap the reference "
                f"above to preview it instantly). As you read, watch for: {watch}"),
             _h("Background", 3), _p(note)]),
-        ("Short Lesson (Adults)", [_h("Short Lesson")] + [_p(t) for t in short]),
+        # The short (adult) lessons were dropped on request; faith_leaders_refs.py adds the references
+        # to the brief lesson instead.
         ("Brief Lesson (All Ages)", [_h("Brief Lesson")] + [_p(t) for t in brief]),
     ]
 
@@ -331,7 +332,7 @@ def main(apply):
             continue
         chapter = frappe.get_doc("Course Chapter", name)
         existing = [r.lesson for r in chapter.lessons]
-        if any(frappe.db.get_value("Course Lesson", l, "title") == "Short Lesson (Adults)" for l in existing):
+        if any(frappe.db.get_value("Course Lesson", l, "title") == "Brief Lesson (All Ages)" for l in existing):
             print(f"SKIP {title}: already has the three lessons")
             continue
         planned = lessons_for(passage, watch, note, short, brief)
