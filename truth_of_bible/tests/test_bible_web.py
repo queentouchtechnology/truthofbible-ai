@@ -115,6 +115,16 @@ class TanglishTest(unittest.TestCase):
 		self.assertEqual(suggest("kedu", vocab)[0], "கேடு")
 
 
+class ScriptTest(unittest.TestCase):
+	def test_script_of(self):
+		from truth_of_bible.bible_web.queries import script_of
+		self.assertEqual(script_of("God so loved"), "latin")
+		self.assertEqual(script_of("கெடுத்தால்"), 0x0B80 >> 7)
+		self.assertEqual(script_of("प्रेम"), 0x0900 >> 7)
+		self.assertNotEqual(script_of("கெடுத்தால்"), script_of("പ്രേമം"))
+		self.assertIsNone(script_of("3:16"))
+
+
 class IndianScriptsTest(unittest.TestCase):
 	"""English letters for the other Indian languages, against tiny made-up vocabularies."""
 

@@ -437,6 +437,41 @@ def _langs(con, version, lang=""):
 	return langs
 
 
+def script_of(text):
+	"""The writing system most of text's letters are in: "latin", or the number of its 128-code-point
+	Unicode block (Tamil, Hebrew, Cyrillic… each have their own); None without letters."""
+	counts = {}
+	for ch in text:
+		if ch.isalpha():
+			o = ord(ch)
+			k = "latin" if o < 0x370 else o >> 7
+			counts[k] = counts.get(k, 0) + 1
+	return max(counts, key=counts.get) if counts else None
+
+
+@lru_cache(maxsize=512)
+def _version_script(con, code):
+	v = _version(con, code)
+	rows = con.execute("SELECT text FROM verses WHERE id BETWEEN ? AND ?", (v["first_id"], v["first_id"] + 9)).fetchall()
+	return script_of(" ".join(t for (t,) in rows))
+
+
+def version_for_script(con, q, version):
+	"""The first version (in list order) written in q's script when q isn't in version's own script
+	(கெடுத்தால் while reading KJV), else None. English letters while reading a non-Latin version go to the
+	KJV (after the Tanglish reading found nothing). Chinese, Japanese and Korean are left alone: their
+	characters spread over many blocks."""
+	s = script_of(q)
+	if s is None or s == _version_script(con, version) or (s != "latin" and s << 7 >= 0x2E80):
+		return None
+	if s == "latin":
+		return "KJV" if con.execute("SELECT 1 FROM versions WHERE code='KJV'").fetchone() else None
+	for (code,) in con.execute("SELECT code FROM versions ORDER BY sort"):
+		if _version_script(con, code) == s:
+			return code
+	return None
+
+
 def romanized(con, q, lang):
 	"""An Indian language typed in English letters, in its own script ("anbu" -> "அன்பு"), or None."""
 	if not T.is_tanglish(q) or len(q.split()) > 6 or lang not in T.SCRIPTS:
@@ -573,6 +608,14 @@ def unified(con, q, version="KJV", entities=None, per_group=6, native_lang=""):
 				found.sort(key=lambda f: (f["lang"] != native_lang, -f["total"] * LANG_WEIGHT.get(f["lang"], 1)))
 				out["native"] = found[0]
 				out["native_more"] = [{k: f[k] for k in ("query", "version", "lang", "language", "total")} for f in found[1:6]]
+		# Words in another script than this version's (கெடுத்தால் while reading KJV, "love" while reading
+		# Tamil): search a version written in that script, shown like the Tanglish results above.
+		if v_res["total"] < 3 and not out.get("native") and (alt := version_for_script(con, q, version)):
+			res = search(con, q, alt)
+			if res["total"]:
+				a = _version(con, alt)
+				out["native"] = {"query": q, "version": alt, "lang": a["lang"], "language": a["language"],
+					"total": res["total"], "results": res["results"][:8]}
 	strong = any(g["type"] in ("Word study", "Commentary", "Devotionals") or g["items"][0].get("score", 0) >= 16 for g in out["groups"])
 	if not out["verses"]["total"] and not out["reference"] and not strong and not out.get("native"):
 		out["did_you_mean"] = R.suggest(docs, q)
