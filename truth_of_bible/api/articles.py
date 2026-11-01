@@ -29,6 +29,7 @@ def submit_draft(
 	image_b64: str = "",
 	image_alt: str = "",
 	questions: str = "",
+	image_prompt: str = "",
 ) -> dict:
 	"""A new article from the autopilot. A slug already in use (here or live on the site) gets the date added."""
 	frappe.only_for("System Manager")
@@ -46,6 +47,7 @@ def submit_draft(
 			"html": html,
 			"kind": kind,
 			"image_alt": image_alt[:240],
+			"image_prompt": image_prompt.strip(),
 			"questions": "\n".join(q.strip() for q in questions if q.strip()),
 		}
 	).insert()

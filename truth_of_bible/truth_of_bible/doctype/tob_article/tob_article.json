@@ -32,6 +32,7 @@
   "cover_image",
   "column_break_2",
   "image_alt",
+  "image_prompt",
   "section_body",
   "html",
   "section_more",
@@ -136,6 +137,12 @@
    "fieldtype": "Data",
    "label": "Image Description",
    "description": "Read aloud by screen readers and used by search engines."
+  },
+  {
+   "fieldname": "image_prompt",
+   "fieldtype": "Small Text",
+   "label": "Cover Image Prompt",
+   "description": "What the image generator was asked for. Copy it to make a new cover by hand."
   },
   {
    "fieldname": "section_body",
