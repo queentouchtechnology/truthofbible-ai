@@ -280,6 +280,29 @@ def _with_text(con, refs, version):
 	return out
 
 
+def nearby_meaning(con, hits, version, sources=8, limit=6):
+	"""Verses close in meaning to the best search hits that don't contain the words: the verses the
+	top [sources] hits cross-reference, ranked by how many of them point there and how early in their
+	lists (earlier = stronger), the hits themselves left out. Text in [version]."""
+	seen = {(h["book"], h["chapter"], h["verse"]) for h in hits}
+	score, first = {}, {}
+	for h in hits[:sources]:
+		rows = con.execute(
+			"SELECT to_book, to_chapter, to_verse_start, to_verse_end FROM cross_references "
+			"WHERE from_book=? AND from_chapter=? AND from_verse=? ORDER BY id LIMIT 20",
+			(h["book"], h["chapter"], h["verse"]),
+		).fetchall()
+		for rank, (b, c, s, e) in enumerate(rows):
+			if (b, c, s) in seen:
+				continue
+			score[(b, c, s)] = score.get((b, c, s), 0) + 1 / (rank + 1)
+			first.setdefault((b, c, s), (e if e != s else None, len(first)))
+	best = sorted(score, key=lambda k: (-score[k], first[k][1]))[:limit]
+	names = {r[0]: r[1] for r in con.execute("SELECT book, name FROM book_names WHERE version=?", (version,))}
+	refs = [{"book": b, "chapter": c, "verse": s, "end": first[(b, c, s)][0]} for b, c, s in best]
+	return [{**r, "book_name": names.get(r["book"])} for r in _with_text(con, refs, version) if r["text"]]
+
+
 def cross_references(con, book, chapter, verse, version="KJV", limit=60):
 	refs = [
 		{"book": r[0], "chapter": r[1], "verse": r[2], "end": r[3] if r[3] != r[2] else None}
@@ -616,6 +639,10 @@ def unified(con, q, version="KJV", entities=None, per_group=6, native_lang=""):
 				a = _version(con, alt)
 				out["native"] = {"query": q, "version": alt, "lang": a["lang"], "language": a["language"],
 					"total": res["total"], "results": res["results"][:8]}
+		shown = out["native"] if out.get("native") else out["verses"]
+		related = nearby_meaning(con, shown["results"], shown.get("version", version))
+		if related:
+			out["related"] = {"version": shown.get("version", version), "results": related}
 	strong = any(g["type"] in ("Word study", "Commentary", "Devotionals") or g["items"][0].get("score", 0) >= 16 for g in out["groups"])
 	if not out["verses"]["total"] and not out["reference"] and not strong and not out.get("native"):
 		out["did_you_mean"] = R.suggest(docs, q)

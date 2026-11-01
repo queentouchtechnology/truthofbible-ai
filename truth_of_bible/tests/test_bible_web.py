@@ -125,6 +125,27 @@ class ScriptTest(unittest.TestCase):
 		self.assertIsNone(script_of("3:16"))
 
 
+class NearbyMeaningTest(unittest.TestCase):
+	def test_ranked_by_how_many_hits_point_there(self):
+		import sqlite3
+		from truth_of_bible.bible_web.queries import nearby_meaning
+		con = sqlite3.connect(":memory:")
+		con.executescript("""
+			CREATE TABLE cross_references (id INTEGER PRIMARY KEY, from_book, from_chapter, from_verse, to_book, to_chapter, to_verse_start, to_verse_end);
+			CREATE TABLE verses (version, book, chapter, verse, text);
+			CREATE TABLE book_names (version, book, name);
+			INSERT INTO book_names VALUES ('V', 1, 'Genesis'), ('V', 43, 'John');
+			INSERT INTO verses VALUES ('V', 43, 3, 16, 'For God so loved'), ('V', 1, 1, 1, 'In the beginning'), ('V', 1, 2, 2, 'And on the seventh day');
+			INSERT INTO cross_references (from_book, from_chapter, from_verse, to_book, to_chapter, to_verse_start, to_verse_end) VALUES
+				(1, 1, 5, 1, 2, 2, 2), (1, 1, 5, 43, 3, 16, 16),
+				(1, 1, 6, 43, 3, 16, 16), (1, 1, 6, 1, 1, 7, 7);
+		""")
+		hits = [{"book": 1, "chapter": 1, "verse": 5}, {"book": 1, "chapter": 1, "verse": 6}, {"book": 1, "chapter": 1, "verse": 7}]
+		out = nearby_meaning(con, hits, "V")
+		self.assertEqual([(r["book_name"], r["chapter"], r["verse"]) for r in out], [("John", 3, 16), ("Genesis", 2, 2)])
+		self.assertEqual(out[0]["text"], "For God so loved")
+
+
 class IndianScriptsTest(unittest.TestCase):
 	"""English letters for the other Indian languages, against tiny made-up vocabularies."""
 
