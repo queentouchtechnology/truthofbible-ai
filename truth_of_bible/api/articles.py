@@ -6,13 +6,14 @@ the push runs the site's GitHub Actions deploy, which also sends the new URL to 
 The repository, branch and token are in TOB Website Settings → Articles."""
 
 import base64
+import io
 import json
-import os
 from zoneinfo import ZoneInfo
 
 import frappe
 import requests
 from frappe import _
+from PIL import Image, ImageOps
 from frappe.utils import get_system_timezone, now_datetime
 
 SITE = "https://truthofbible.org"
@@ -110,9 +111,8 @@ def publish(name: str) -> dict:
 	files = {}
 	image = None
 	if doc.cover_image:
-		content = frappe.get_doc("File", {"file_url": doc.cover_image}).get_content()
-		image = doc.slug + (os.path.splitext(doc.cover_image)[1].lower() or ".png")
-		files[image] = content
+		image = doc.slug + ".jpg"
+		files[image] = _cover(frappe.get_doc("File", {"file_url": doc.cover_image}).get_content())
 	files[doc.slug + ".json"] = (json.dumps(article_json(doc, when, image), ensure_ascii=False, indent=2) + "\n").encode()
 	_commit(s.articles_repo, s.articles_branch or "master", token, files,
 	        ("Publish article: " if first else "Update article: ") + doc.title)
@@ -157,6 +157,16 @@ def article_json(doc, when, image: str | None) -> dict:
 	if doc.seo_description:
 		a["seoDescription"] = doc.seo_description
 	return a
+
+
+def _cover(content: bytes) -> bytes:
+	"""Covers go into git: a 1600px-wide JPEG (~200 KB) instead of a 2 MB PNG. The site makes its own WebP sizes from it."""
+	img = Image.open(io.BytesIO(content))
+	img = ImageOps.exif_transpose(img).convert("RGB")
+	img.thumbnail((1600, 1600))
+	out = io.BytesIO()
+	img.save(out, "JPEG", quality=85, optimize=True, progressive=True)
+	return out.getvalue()
 
 
 def _live(slug: str) -> bool:
