@@ -4,6 +4,7 @@ truth_of_bible.bible_web.queries; the data is the SQLite file built by bible_web
 TOB Website Settings → Bible Database Path. Everything here is guest-accessible and GET-only, so
 nginx can cache the responses."""
 
+import hashlib
 import os
 import threading
 
@@ -11,6 +12,7 @@ import frappe
 from frappe import _
 from frappe.rate_limiter import rate_limit
 
+from truth_of_bible.bible_web import ai_search as A
 from truth_of_bible.bible_web import queries as Q
 
 _lock = threading.Lock()
@@ -197,3 +199,42 @@ def verse_counts(version: str, book):
 @frappe.whitelist(allow_guest=True, methods=["GET"])
 def verse_all(book, chapter, verse):
 	return _call(Q.verse_all, _int(book, "book"), _int(chapter, "chapter"), _int(verse, "verse"))
+
+
+@frappe.whitelist(allow_guest=True, methods=["GET"])
+@rate_limit(limit=20, seconds=3600)
+def ai_search(q: str, version: str = "KJV"):
+	"""Verses by meaning, picked by AI ("verse about not worrying", "kavalai padathe"); see
+	bible_web.ai_search. One AI call per search, kept for a week and shared by every version."""
+	empty = {"topic": "", "version": version, "results": []}
+	norm = A.normalize(q)
+	if len(norm) < 3:
+		return empty
+	key = "bible_ai_search:" + hashlib.sha1(norm.encode()).hexdigest()
+	answer = frappe.cache().get_value(key)
+	if answer is None:
+		try:
+			answer = A.ask(norm, _ai_text)
+		except Exception:
+			# An error status, not a 200: nginx caches this API's 200s for a day.
+			frappe.log_error(title="Bible AI search failed", message=frappe.get_traceback())
+			frappe.throw(_("AI search is unavailable right now."), frappe.ValidationError)
+		frappe.cache().set_value(key, answer, expires_in_sec=7 * 86400)
+	return _call(A.resolve, answer, version)
+
+
+def _ai_text(system: str, user: str) -> str:
+	"""One DeepSeek (or whatever TOB AI Model routes to) call: the bible_search model if one is set,
+	else the Bible Q&A one."""
+	from truth_of_bible.ai import service
+	from truth_of_bible.ai.core.request import AiMessage, AiRequest
+	from truth_of_bible.ai.core.routing import resolve_routing
+
+	task = "bible_search" if frappe.db.exists("TOB AI Model", {"default_for_task": "bible_search"}) else "bible_qa"
+	provider, model = resolve_routing(task)
+	response = service.generate(AiRequest(
+		task="bible_search",
+		messages=[AiMessage(role="system", content=system), AiMessage(role="user", content=user)],
+		provider=provider, model=model, temperature=0.2, max_output_tokens=700, structured_output=True,
+	))
+	return response.content

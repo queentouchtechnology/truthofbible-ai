@@ -146,6 +146,45 @@ class NearbyMeaningTest(unittest.TestCase):
 		self.assertEqual(out[0]["text"], "For God so loved")
 
 
+class AiSearchTest(unittest.TestCase):
+	"""The AI only names references; text comes from our database and made-up references are dropped."""
+
+	def test_answer_parsed_and_resolved(self):
+		import sqlite3
+		from truth_of_bible.bible_web import ai_search as A
+		reply = 'Here you go:\n```json\n{"topic": "Do not worry", "verses": [' \
+			'{"ref": "Philippians 4:6-7", "why": "Pray instead of worrying"},' \
+			'{"ref": "Hezekiah 3:16", "why": "made up"},' \
+			'{"ref": "Matthew 6:34", "why": "One day at a time"}]}\n```'
+		answer = A.ask("  Verse about NOT worrying?? ", lambda system, user: reply)
+		self.assertEqual(answer["topic"], "Do not worry")
+		self.assertEqual(len(answer["verses"]), 3)
+		con = sqlite3.connect(":memory:")
+		con.row_factory = sqlite3.Row
+		con.executescript("""
+			CREATE TABLE verses (version, book, chapter, verse, text);
+			CREATE TABLE book_names (version, book, name, abbrev);
+			INSERT INTO book_names VALUES ('V', 50, 'Philippians', 'Phil'), ('V', 40, 'Matthew', 'Matt');
+			INSERT INTO verses VALUES ('V', 50, 4, 6, 'Be careful for nothing'), ('V', 50, 4, 7, 'And the peace of God'),
+				('V', 40, 6, 34, 'Take therefore no thought for the morrow');
+		""")
+		from unittest import mock
+		with mock.patch.object(A.Q, "_abbrevs", return_value={"philippians": 50, "matthew": 40}):
+			out = A.resolve(con, answer, "V")
+		self.assertEqual([(r["book_name"], r["chapter"], r["verse"], r["end"]) for r in out["results"]],
+			[("Philippians", 4, 6, 7), ("Matthew", 6, 34, None)])
+		self.assertEqual(out["results"][0]["text"], "Be careful for nothing And the peace of God")
+		self.assertEqual(out["results"][1]["why"], "One day at a time")
+
+	def test_unreadable_reply_gives_nothing(self):
+		from truth_of_bible.bible_web import ai_search as A
+		self.assertEqual(A.ask("hello", lambda s, u: "sorry, no idea"), {"topic": "", "verses": []})
+
+	def test_cache_key_ignores_case_and_punctuation(self):
+		from truth_of_bible.bible_web.ai_search import normalize
+		self.assertEqual(normalize("  Do NOT worry?! "), normalize("do not worry"))
+
+
 class IndianScriptsTest(unittest.TestCase):
 	"""English letters for the other Indian languages, against tiny made-up vocabularies."""
 
