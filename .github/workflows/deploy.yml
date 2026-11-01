@@ -1,0 +1,81 @@
+# Deploy the truth_of_bible Frappe app to learn.truthofbible.org (and the truthofbible.org Bible API)
+# on every push to main. ops/ scripts and docs don't deploy.
+#
+# Repository settings (Settings → Secrets and variables → Actions):
+#   secret   DEPLOY_SSH_KEY      private key allowed to log in to the server (dedicated CI key)
+#   variable DEPLOY_SERVER       e.g. root@185.217.127.94
+#   variable DEPLOY_KNOWN_HOSTS  the server's host key line (ssh-keyscan -t ed25519 185.217.127.94)
+name: Backend deploy
+
+on:
+  push:
+    branches: [main]
+    paths-ignore: ["ops/**", "docs/**", "**/*.md"]
+  workflow_dispatch:
+
+concurrency:
+  group: backend-deploy
+  cancel-in-progress: false   # never cut a migrate short; the next push waits its turn
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Bible search tests (no bench needed)
+        run: |
+          python - <<'EOF'
+          import sys, types, unittest
+          sys.path.insert(0, ".")
+          sys.modules.setdefault("frappe", types.ModuleType("frappe"))  # these modules are pure Python
+          r = unittest.TextTestRunner(verbosity=1).run(unittest.defaultTestLoader.loadTestsFromName("truth_of_bible.tests.test_bible_web"))
+          sys.exit(0 if r.wasSuccessful() else 1)
+          EOF
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment:
+      name: production
+      url: https://learn.truthofbible.org
+    steps:
+      - name: SSH key
+        env:
+          KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          KNOWN_HOSTS: ${{ vars.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$KEY" > ~/.ssh/deploy_key && chmod 600 ~/.ssh/deploy_key
+          printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+
+      - name: Pull, migrate, reload
+        env:
+          SERVER: ${{ vars.DEPLOY_SERVER }}
+          SHA: ${{ github.sha }}
+        run: |
+          ssh -i ~/.ssh/deploy_key -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o ServerAliveInterval=15 "$SERVER" "set -e
+            docker exec docker-frappe-1 sh -c '
+              set -e
+              cd /home/frappe/frappe-bench/apps/truth_of_bible
+              git pull --ff-only upstream main
+              test \"\$(git rev-parse HEAD)\" = \"$SHA\" || echo \"note: server is at \$(git rev-parse --short HEAD), a newer push will follow\"
+              cd /home/frappe/frappe-bench
+              bench --site learn.truthofbible.org migrate
+              kill -HUP \$(cat config/gunicorn.pid)
+              echo workers reloaded
+            '
+            docker exec tob-web sh -c 'find /var/cache/nginx/tob_bible -type f -delete; echo bible API cache cleared'"
+
+      - name: Check the API answers
+        run: curl -fsS "https://truthofbible.org/api/method/truth_of_bible.api.bible_web.versions" | head -c 200
+
+      - name: Remove the key
+        if: always()
+        run: rm -f ~/.ssh/deploy_key
