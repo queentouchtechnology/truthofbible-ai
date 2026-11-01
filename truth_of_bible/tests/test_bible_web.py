@@ -155,10 +155,11 @@ class AiSearchTest(unittest.TestCase):
 		reply = 'Here you go:\n```json\n{"topic": "Do not worry", "verses": [' \
 			'{"ref": "Philippians 4:6-7", "why": "Pray instead of worrying"},' \
 			'{"ref": "Hezekiah 3:16", "why": "made up"},' \
-			'{"ref": "Matthew 6:34", "why": "One day at a time"}]}\n```'
+			'{"ref": "Matthew 6:34", "why": "One day at a time"},' \
+			'{"ref": "Philippians 4:7", "why": "inside the passage above"}]}\n```'
 		answer = A.ask("  Verse about NOT worrying?? ", lambda system, user: reply)
 		self.assertEqual(answer["topic"], "Do not worry")
-		self.assertEqual(len(answer["verses"]), 3)
+		self.assertEqual(len(answer["verses"]), 4)
 		con = sqlite3.connect(":memory:")
 		con.row_factory = sqlite3.Row
 		con.executescript("""

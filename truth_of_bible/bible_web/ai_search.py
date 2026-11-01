@@ -53,12 +53,12 @@ def resolve(con, answer: dict, version: str) -> dict:
 			continue
 		r = refs[0]
 		r["end"] = min(r["end"], r["verse"] + 2) if r["end"] and r["end"] > r["verse"] else None
-		key = (r["book"], r["chapter"], r["verse"])
-		if key in seen:
+		span = {(r["book"], r["chapter"], n) for n in range(r["verse"], (r["end"] or r["verse"]) + 1)}
+		if span & seen:  # John 11:33-35 after John 11:35: the same passage twice
 			continue
 		hit = Q._with_text(con, [r], version)[0]
 		if not hit["text"]:  # no such verse (or not in this version)
 			continue
-		seen.add(key)
+		seen |= span
 		out.append({**hit, "book_name": names.get(r["book"]), "why": v["why"]})
 	return {"topic": answer["topic"], "version": version, "results": out}
