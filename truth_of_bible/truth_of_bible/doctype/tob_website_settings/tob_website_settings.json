@@ -23,6 +23,7 @@
   "articles_repo",
   "articles_branch",
   "github_token",
+  "articles_review_email",
   "column_break_articles",
   "community_webhook_url",
   "community_webhook_header",
@@ -106,6 +107,13 @@
    "fieldtype": "Password",
    "label": "GitHub Token",
    "description": "Fine-grained token for this repository only, with Contents: Read and write."
+  },
+  {
+   "fieldname": "articles_review_email",
+   "fieldtype": "Small Text",
+   "label": "Review Emails",
+   "default": "truthofbible22@gmail.com",
+   "description": "Emailed a review link for each new article the autopilot writes. One per line or comma separated."
   },
   {
    "fieldname": "column_break_articles",

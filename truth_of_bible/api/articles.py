@@ -62,7 +62,30 @@ def submit_draft(
 			}
 		).insert()
 		doc.db_set("cover_image", f.file_url)
-	return {"name": doc.name, "slug": doc.slug, "review": frappe.utils.get_url(f"/app/tob-article/{doc.name}")}
+	review = frappe.utils.get_url(f"/app/tob-article/{doc.name}")
+	frappe.enqueue(_email_review, name=doc.name, review=review, enqueue_after_commit=True)
+	return {"name": doc.name, "slug": doc.slug, "review": review}
+
+
+def _email_review(name: str, review: str) -> None:
+	"""Review link to TOB Website Settings → Review Emails (unset on a site migrated before the field existed → the admin)."""
+	emails = frappe.db.get_single_value("TOB Website Settings", "articles_review_email")
+	if emails is None:
+		emails = "truthofbible22@gmail.com"
+	recipients = [e.strip() for e in emails.replace(",", "\n").splitlines() if e.strip()]
+	if not recipients:
+		return
+	doc = frappe.get_doc("TOB Article", name)
+	frappe.sendmail(
+		recipients=recipients,
+		subject=f"New article to review: {doc.title}",
+		message=f"<p>A new article is waiting for your approval:</p><h3>{frappe.utils.escape_html(doc.title)}</h3>"
+		f"<p><i>{frappe.utils.escape_html(doc.excerpt)}</i></p>"
+		f'<p><a href="{review}">Open it in the desk</a> — read it, check the verse text on the cover image, then tap '
+		f"<b>Publish</b> or <b>Reject</b>.</p>",
+		reference_doctype="TOB Article",
+		reference_name=name,
+	)
 
 
 @frappe.whitelist(methods=["POST"])
