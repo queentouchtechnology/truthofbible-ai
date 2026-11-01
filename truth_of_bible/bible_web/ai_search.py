@@ -12,7 +12,8 @@ from truth_of_bible.bible_web import queries as Q
 PROMPT = """You find Bible verses for a search typed on a Bible website.
 The search may be English, Tamil, Tanglish (Tamil typed in English letters, e.g. "kavalai padathe"),
 Hindi or another language, and may be a topic, a feeling, a situation, a question, or a half-remembered
-verse.
+verse. A single word or phrase: first work out what it means (Tamil கெடுத்தால் = "if one destroys /
+defiles", not "letter"), then find verses where that meaning is central, ideally ones using the word.
 
 Reply with JSON only, in exactly this shape:
 {"topic": "<3 to 6 word English title>", "verses": [{"ref": "<reference>", "why": "<why it fits>"}]}

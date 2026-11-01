@@ -210,7 +210,7 @@ def ai_search(q: str, version: str = "KJV"):
 	norm = A.normalize(q)
 	if len(norm) < 3:
 		return empty
-	key = "bible_ai_search:" + hashlib.sha1(norm.encode()).hexdigest()
+	key = "bible_ai_search:v2:" + hashlib.sha1(norm.encode()).hexdigest()  # v2: prompt reads single words by meaning
 	answer = frappe.cache().get_value(key)
 	if answer is None:
 		try:
