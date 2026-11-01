@@ -18,7 +18,15 @@
   "section_bible",
   "bible_db_path",
   "column_break_bible",
-  "bible_db_info"
+  "bible_db_info",
+  "section_articles",
+  "articles_repo",
+  "articles_branch",
+  "github_token",
+  "column_break_articles",
+  "community_webhook_url",
+  "community_webhook_header",
+  "community_webhook_secret"
  ],
  "fields": [
   {
@@ -74,6 +82,52 @@
    "fieldtype": "HTML",
    "label": "About",
    "options": "<p>Which versions appear on the website is set in <code>truth_of_bible/bible_web/catalogue.json</code> (web: true/false, with each licence). Rebuild the database after changing it.</p>"
+  },
+  {
+   "fieldname": "section_articles",
+   "fieldtype": "Section Break",
+   "label": "Articles",
+   "description": "TOB Article → Publish commits content/articles/<slug>.json and the cover image to this repository; the push rebuilds the site."
+  },
+  {
+   "fieldname": "articles_repo",
+   "fieldtype": "Data",
+   "label": "GitHub Repository",
+   "default": "queentouchtechnology/truthofbible-site"
+  },
+  {
+   "fieldname": "articles_branch",
+   "fieldtype": "Data",
+   "label": "Branch",
+   "default": "master"
+  },
+  {
+   "fieldname": "github_token",
+   "fieldtype": "Password",
+   "label": "GitHub Token",
+   "description": "Fine-grained token for this repository only, with Contents: Read and write."
+  },
+  {
+   "fieldname": "column_break_articles",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "community_webhook_url",
+   "fieldtype": "Data",
+   "label": "Community Discussion Webhook",
+   "description": "Optional: n8n /webhook/tob-community-discussion — opens a discussion for each newly published article."
+  },
+  {
+   "fieldname": "community_webhook_header",
+   "fieldtype": "Data",
+   "label": "Webhook Header Name",
+   "depends_on": "community_webhook_url"
+  },
+  {
+   "fieldname": "community_webhook_secret",
+   "fieldtype": "Password",
+   "label": "Webhook Header Value",
+   "depends_on": "community_webhook_url"
   }
  ],
  "permissions": [

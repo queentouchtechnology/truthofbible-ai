@@ -1,0 +1,199 @@
+{
+ "doctype": "DocType",
+ "name": "TOB Article",
+ "module": "Truth Of Bible",
+ "custom": 0,
+ "istable": 0,
+ "issingle": 0,
+ "quick_entry": 0,
+ "track_changes": 1,
+ "autoname": "format:ART-{YYYY}-{####}",
+ "naming_rule": "Expression",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "engine": "InnoDB",
+ "title_field": "title",
+ "show_title_field_in_link": 1,
+ "image_field": "cover_image",
+ "description": "An article for truthofbible.org. The n8n article autopilot writes it here as Pending; Publish commits it to the website repository (content/articles/) and the site rebuilds in about 5–10 minutes. Edit anything before publishing.",
+ "field_order": [
+  "title",
+  "slug",
+  "excerpt",
+  "column_break_1",
+  "status",
+  "kind",
+  "url",
+  "published_on",
+  "published_by",
+  "section_preview",
+  "preview",
+  "section_cover",
+  "cover_image",
+  "column_break_2",
+  "image_alt",
+  "section_body",
+  "html",
+  "section_more",
+  "seo_description",
+  "questions",
+  "column_break_3",
+  "words",
+  "rejection_reason"
+ ],
+ "fields": [
+  {
+   "fieldname": "title",
+   "fieldtype": "Data",
+   "label": "Title",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "slug",
+   "fieldtype": "Data",
+   "label": "Slug",
+   "reqd": 1,
+   "unique": 1,
+   "description": "The address: truthofbible.org/<slug>/ — lowercase letters, numbers and hyphens. Can't be changed after publishing."
+  },
+  {
+   "fieldname": "excerpt",
+   "fieldtype": "Small Text",
+   "label": "Excerpt",
+   "reqd": 1,
+   "description": "One or two sentences for the blog list and search results."
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Pending\nPublished\nRejected",
+   "default": "Pending",
+   "read_only": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "kind",
+   "fieldtype": "Data",
+   "label": "Kind",
+   "read_only": 1,
+   "description": "theme = encouragement verse (Tuesday), course = Faith Leaders story (Friday)"
+  },
+  {
+   "fieldname": "url",
+   "fieldtype": "Data",
+   "label": "Live URL",
+   "options": "URL",
+   "read_only": 1
+  },
+  {
+   "fieldname": "published_on",
+   "fieldtype": "Datetime",
+   "label": "Published On",
+   "read_only": 1
+  },
+  {
+   "fieldname": "published_by",
+   "fieldtype": "Link",
+   "label": "Published By",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_preview",
+   "fieldtype": "Section Break",
+   "label": "Preview"
+  },
+  {
+   "fieldname": "preview",
+   "fieldtype": "HTML",
+   "label": "Preview"
+  },
+  {
+   "fieldname": "section_cover",
+   "fieldtype": "Section Break",
+   "label": "Cover Image",
+   "collapsible": 1
+  },
+  {
+   "fieldname": "cover_image",
+   "fieldtype": "Attach Image",
+   "label": "Cover Image",
+   "description": "Check the verse text on the image before publishing."
+  },
+  {
+   "fieldname": "column_break_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "image_alt",
+   "fieldtype": "Data",
+   "label": "Image Description",
+   "description": "Read aloud by screen readers and used by search engines."
+  },
+  {
+   "fieldname": "section_body",
+   "fieldtype": "Section Break",
+   "label": "Article HTML",
+   "collapsible": 1
+  },
+  {
+   "fieldname": "html",
+   "fieldtype": "Code",
+   "label": "HTML",
+   "options": "HTML",
+   "reqd": 1
+  },
+  {
+   "fieldname": "section_more",
+   "fieldtype": "Section Break",
+   "label": "More",
+   "collapsible": 1
+  },
+  {
+   "fieldname": "seo_description",
+   "fieldtype": "Small Text",
+   "label": "Search Description",
+   "description": "Optional; the excerpt is used when empty."
+  },
+  {
+   "fieldname": "questions",
+   "fieldtype": "Small Text",
+   "label": "Discussion Questions",
+   "description": "One per line. Opened as a community discussion after publishing."
+  },
+  {
+   "fieldname": "column_break_3",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "words",
+   "fieldtype": "Int",
+   "label": "Words",
+   "read_only": 1
+  },
+  {
+   "fieldname": "rejection_reason",
+   "fieldtype": "Small Text",
+   "label": "Rejection Reason",
+   "read_only": 1,
+   "depends_on": "eval:doc.status=='Rejected'"
+  }
+ ],
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1
+  }
+ ],
+ "links": []
+}
