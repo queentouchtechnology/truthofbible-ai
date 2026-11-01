@@ -38,6 +38,8 @@ TAMIL = Script(
 		("a", "அ", ""), ("a", "ஆ", "ா"), ("i", "இ", "ி"), ("i", "ஈ", "ீ"), ("u", "உ", "ு"), ("u", "ஊ", "ூ"),
 		("e", "எ", "ெ"), ("e", "ஏ", "ே"), ("o", "ஒ", "ொ"), ("o", "ஓ", "ோ"),
 		("y", "இ", "ி"),  # word-final y: "kanny" style spellings
+		# phonetic-keyboard spellings: kea -> கே, keaduthal -> கெடுதல், meypparey -> மேய்ப்பரே, poa -> போ
+		("ea", "ஏ", "ே"), ("ea", "எ", "ெ"), ("ey", "ஏ", "ே"), ("oa", "ஓ", "ோ"),
 	],
 	consonants=[
 		("ksh", "க்ஷ"), ("ng", "ங"), ("nj", "ஞ"), ("ny", "ஞ"), ("zh", "ழ"), ("sh", "ஷ"), ("ch", "ச"), ("th", "த"),
@@ -46,6 +48,7 @@ TAMIL = Script(
 		("t", "ற"), ("d", "ட"), ("d", "த"), ("n", "ன"), ("n", "ந"), ("n", "ண"), ("p", "ப"), ("b", "ப"),
 		("m", "ம"), ("y", "ய"), ("r", "ர"), ("r", "ற"), ("l", "ல"), ("l", "ள"), ("v", "வ"), ("w", "வ"),
 		("h", "ஹ"), ("h", "க"), ("f", "ஃப"), ("q", "க"), ("x", "க்ஸ"), ("z", "ஜ"),
+		("i", "ய"),  # i closing a syllable: meipparae -> மேய்ப்பரே, theivam -> தெய்வம்
 	],
 	virama="்",
 	inserted=("ி", "ு"),  # abraham -> ஆபிரகாம்
@@ -260,9 +263,13 @@ def to_tamil(word: str, vocab, limit=3) -> list[str]:
 
 
 def suggest(word: str, vocab, limit=6, script: Script = TAMIL) -> list[str]:
-	"""Whole words for what has been typed so far, like a phonetic keyboard: "anb" -> அன்பு, ..."""
-	words = {}
+	"""Whole words for what has been typed so far, like a phonetic keyboard: "anb" -> அன்பு, ...
+	Words spelled exactly as typed come first ("kedu" -> கேடு, கெடு before கேதுரு), then the
+	commonest words that start that way."""
+	words, exact = {}, set()
 	for c in transliterate(word, vocab, script, limit=4):
+		if vocab.count(c):
+			exact.add(c)
 		for w in ([c] if vocab.count(c) else []) + vocab.completions(c, 4):
 			words[w] = vocab.count(w)
-	return sorted(words, key=lambda w: -words[w])[:limit]
+	return sorted(words, key=lambda w: (w not in exact, -words[w]))[:limit]

@@ -102,6 +102,18 @@ class TanglishTest(unittest.TestCase):
 		self.assertEqual(suggest("anb", self.vocab), ["அன்பு", "அனுப்பினான்", "அன்புகூர்ந்து"])  # most common first
 		self.assertEqual(suggest("zzz", self.vocab), [])
 
+	def test_phonetic_keyboard_spellings(self):
+		from truth_of_bible.bible_web.translit import Vocab, to_tamil
+		vocab = Vocab({"கெடுதல்": 5, "மேய்ப்பரே": 3, "தெய்வம்": 8, "போனான்": 40})
+		for latin, tamil in [("keaduthal", "கெடுதல்"), ("meipparae", "மேய்ப்பரே"), ("meypparey", "மேய்ப்பரே"),
+				("theivam", "தெய்வம்"), ("poanaan", "போனான்")]:
+			self.assertEqual(to_tamil(latin, vocab)[0], tamil, latin)
+
+	def test_word_typed_in_full_comes_before_longer_ones(self):
+		from truth_of_bible.bible_web.translit import Vocab, suggest
+		vocab = Vocab({"கேடு": 10, "கேதுரு": 60, "கேதுருமரங்கள்": 30})
+		self.assertEqual(suggest("kedu", vocab)[0], "கேடு")
+
 
 class IndianScriptsTest(unittest.TestCase):
 	"""English letters for the other Indian languages, against tiny made-up vocabularies."""
