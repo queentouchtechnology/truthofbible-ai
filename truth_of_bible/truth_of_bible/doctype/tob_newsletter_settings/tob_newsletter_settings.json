@@ -11,6 +11,7 @@
  "engine": "InnoDB",
  "field_order": [
   "enabled",
+  "frequency",
   "send_weekday",
   "send_hour",
   "column_break_1",
@@ -28,16 +29,25 @@
   {
    "fieldname": "enabled",
    "fieldtype": "Check",
-   "label": "Send the Weekly Newsletter",
+   "label": "Send the Newsletter",
    "default": "0",
    "description": "Off by default. Nothing is sent while this is off."
+  },
+  {
+   "fieldname": "frequency",
+   "fieldtype": "Select",
+   "label": "Send Every",
+   "options": "Daily\nWeekly",
+   "default": "Daily",
+   "description": "Daily: one topic each day. Weekly: one topic on the chosen day."
   },
   {
    "fieldname": "send_weekday",
    "fieldtype": "Select",
    "label": "Day",
    "options": "Monday\nTuesday\nWednesday\nThursday\nFriday\nSaturday\nSunday",
-   "default": "Sunday"
+   "default": "Sunday",
+   "depends_on": "eval:doc.frequency === 'Weekly'"
   },
   {
    "fieldname": "send_hour",
@@ -117,5 +127,5 @@
   }
  ],
  "links": [],
- "modified": "2026-11-02 10:00:00.000000"
+ "modified": "2026-11-02 11:00:00.000000"
 }

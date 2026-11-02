@@ -37,11 +37,19 @@ def send_email(
 	html_content: str,
 	text_content: str = "",
 	now: bool = False,
+	unsubscribe_url: str | None = None,
 ) -> tuple[bool, str | None, str | None]:
 	"""`now` sends straight away instead of through the Email Queue (Frappe route only) — for test sends,
-	so a broken mail server shows up as an error right then."""
+	so a broken mail server shows up as an error right then.
+
+	`unsubscribe_url` becomes the List-Unsubscribe / one-click headers Gmail and Yahoo expect on bulk mail
+	(without them it's far more likely to land in spam). Brevo route only: Frappe prefixes "X-" to every
+	custom header (email_body.add_headers), so it can't send these."""
 	if via != VIA_FRAPPE:
-		return brevo.send_email(to_email, to_name, subject, html_content, text_content)
+		headers = None
+		if unsubscribe_url:
+			headers = {"List-Unsubscribe": f"<{unsubscribe_url}>", "List-Unsubscribe-Post": "List-Unsubscribe=One-Click"}
+		return brevo.send_email(to_email, to_name, subject, html_content, text_content, headers=headers)
 	if not to_email:
 		return False, None, "This recipient has no email address."
 	sender = None

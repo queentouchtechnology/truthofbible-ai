@@ -474,9 +474,15 @@ def _process_recipient(doc, recipient_name: str):
 		if _already_sent(doc.name, user, "EMAIL"):
 			recipient.email_status = "SENT"
 		else:
+			unsubscribe = None
+			if "{{unsubscribe_url}}" in (doc.email_body_html or ""):
+				from truth_of_bible.communication.newsletter import unsubscribe_url
+
+				unsubscribe = unsubscribe_url(user)
 			ok, message_id, err = mailer.send_email(
 				via=doc.email_via,
 				email_account=doc.email_account,
+				unsubscribe_url=unsubscribe,
 				to_email=user_row.get("email"),
 				to_name=recipient.user_name,
 				subject=_render_merge_tags(doc.email_subject or "", merge_values),

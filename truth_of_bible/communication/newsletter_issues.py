@@ -1,160 +1,132 @@
-"""The first newsletter series, "7 Daily Activities to Stay Close to God" — seeded once into TOB Newsletter
-Issue (newsletter.seed_issues) and edited in the desk from then on. Verses are KJV, checked against
-truthofbible.org/bible/kjv/. `app_route` is one of the app's deep-link routes (lib/src/config/deep_link_routes.dart)."""
+"""The newsletter messages — seeded once into TOB Newsletter Issue (newsletter.seed) and edited in the desk from
+then on. One topic per message, each standing on its own: a call to wake up to God, written for someone who may
+be far from Him, ending with the part of the app that helps them take the step (Bible reading, prayer, worship
+songs, the daily verse, the Holy Spirit, obeying God's Word, loving others).
 
-ACTIVITIES = [
-	("📖", "Bible Reading", "Read God's Word every day.", "Psalm 119:105"),
-	("🙏", "Personal Prayer", "Talk with God sincerely every day.", "1 Thessalonians 5:17"),
-	("🎵", "Worship & Praise", "Praise God through songs and thanksgiving.", "Psalm 100:2"),
-	("❤️", "Meditate on God's Word", "Think deeply about Scripture and apply it to your life.", "Joshua 1:8"),
-	("🕊️", "Walk in the Holy Spirit", "Allow the Holy Spirit to guide your thoughts, words and actions.", "Galatians 5:16"),
-	("✝️", "Obey God's Word", "Put God's teachings into practice.", "John 14:15"),
-	("🤝", "Love & Serve Others", "Forgive, help, encourage and show kindness to others.", "Galatians 5:13"),
-]
-
-_LIST = "<ol>" + "".join(f"<li><b>{e} {name}</b> – {what} <i>({ref})</i></li>" for e, name, what, ref in ACTIVITIES) + "</ol>"
+Verses are KJV, checked against truthofbible.org/bible/kjv/. `app_route` is one of the app's deep-link routes
+(lib/src/config/deep_link_routes.dart)."""
 
 ISSUES = [
 	{
-		"title": "7 Daily Activities to Stay Close to God",
-		"subject": "7 simple ways to stay close to God every day",
-		"preheader": "A short series for the next few weeks — one step at a time.",
-		"verse_ref": "John 15:4",
-		"verse_text": "Abide in me, and I in you.",
-		"body_html": "<p>Over the next few weeks we'll walk through seven simple daily habits that help us stay close "
-		"to God — one each week, with a verse and one small step to try.</p>" + _LIST + "<p>The goal isn't to tick "
-		"off spiritual activities. It's to grow a closer relationship with Jesus Christ, every day.</p>",
-		"action": "Choose one of the seven and do it every day this week. Next week we start with the first.",
-		"app_route": "/dashboard",
-		"app_button": "Open the app",
-		"push_title": "7 daily ways to stay close to God",
-		"push_body": "A new weekly series starts today. \"Abide in me, and I in you.\" — John 15:4",
-	},
-	{
-		"title": "📖 Bible Reading — a lamp for the next step",
-		"subject": "Read God's Word every day 📖",
-		"preheader": "Activity 1 of 7: Bible Reading.",
-		"verse_ref": "Psalm 119:105",
-		"verse_text": "Thy word is a lamp unto my feet, and a light unto my path.",
-		"body_html": "<p>A lamp doesn't light up the whole road at once — just the next few steps. That's how God's Word "
-		"works in our lives. A few verses each day give us light for today: comfort, direction and truth.</p>"
-		"<p>You don't need to read a lot. You need to read often. Little and daily beats long and rare.</p>",
-		"action": "Read one chapter each day this week. Not sure where to start? Begin with the Gospel of John.",
+		"title": "📖 Is your soul hungry?",
+		"subject": "You feed your body every day. What about your soul?",
+		"preheader": "There is a bread that gives real life.",
+		"verse_ref": "Matthew 4:4",
+		"verse_text": "But he answered and said, It is written, Man shall not live by bread alone, but by every word "
+		"that proceedeth out of the mouth of God.",
+		"body_html": "<p>We never forget to eat. Yet many of us go days, months, even years without feeding our souls, "
+		"and we wonder why we feel empty, restless and tired inside.</p><p>Jesus said we don't live by bread alone. "
+		"God's Word is food for the soul. It brings a dead heart back to life, gives light in the dark, and shows us "
+		"the way home to the Father.</p><p>If you've been feeling empty, it may not be your life that's wrong. Your "
+		"soul may simply be hungry for God.</p>",
+		"action": "Open the Bible today and read one chapter. Start with the Gospel of John: it was written so that "
+		"you might believe and have life.",
 		"app_route": "/readingPlans",
-		"app_button": "Choose a reading plan",
-		"push_title": "📖 Activity 1: Read God's Word daily",
-		"push_body": "\"Thy word is a lamp unto my feet.\" Pick a reading plan and read one chapter today.",
+		"app_button": "Start reading the Bible",
+		"push_title": "📖 Is your soul hungry?",
+		"push_body": "\"Man shall not live by bread alone, but by every word… of God.\" Read one chapter today.",
 	},
 	{
-		"title": "🙏 Personal Prayer — talk with God today",
-		"subject": "Talk with God sincerely every day 🙏",
-		"preheader": "Activity 2 of 7: Personal Prayer.",
-		"verse_ref": "1 Thessalonians 5:17",
-		"verse_text": "Pray without ceasing.",
-		"body_html": "<p>Prayer is simply talking with God — honestly, as you are. He isn't waiting for perfect words; "
-		"He wants your heart.</p><p>\"Pray without ceasing\" doesn't mean saying words all day. It means living "
-		"close enough to God that you can turn to Him at any moment.</p>",
-		"action": "Set a time — morning or before sleep — and talk to God for five minutes. Tell Him what's on your "
-		"heart, and thank Him for one thing.",
+		"title": "🙏 God is waiting to hear from you",
+		"subject": "When did you last talk to God?",
+		"preheader": "He promised to answer.",
+		"verse_ref": "Jeremiah 33:3",
+		"verse_text": "Call unto me, and I will answer thee, and shew thee great and mighty things, which thou knowest "
+		"not.",
+		"body_html": "<p>Maybe it's been a long time. Maybe you've never really prayed. Maybe you feel you've gone too "
+		"far from God for Him to listen.</p><p>But God isn't far away. He is calling: <i>\"Call unto me, and I will "
+		"answer thee.\"</i> You don't need special words. Tell Him the truth: your fears, your failures, your "
+		"questions. He already knows, and He still wants to hear it from you.</p><p>Prayer is where a sleeping "
+		"heart begins to wake up.</p>",
+		"action": "Find a quiet place today and talk to God for five minutes, honestly, as you are.",
 		"app_route": "/prayer",
-		"app_button": "Pray in the app",
-		"push_title": "🙏 Activity 2: Talk with God today",
-		"push_body": "\"Pray without ceasing.\" Take five quiet minutes with God today.",
+		"app_button": "Pray now",
+		"push_title": "🙏 God is waiting to hear from you",
+		"push_body": "\"Call unto me, and I will answer thee.\" Talk to Him today, just as you are.",
 	},
 	{
-		"title": "🎵 Worship & Praise — come before Him with singing",
-		"subject": "Praise God through songs and thanksgiving 🎵",
-		"preheader": "Activity 3 of 7: Worship & Praise.",
-		"verse_ref": "Psalm 100:2",
-		"verse_text": "Serve the LORD with gladness: come before his presence with singing.",
-		"body_html": "<p>Worship turns our eyes from our problems to the God who is bigger than all of them. A song of "
-		"praise or a simple \"thank You, Lord\" can change the whole feeling of a day.</p><p>Thanksgiving is worship "
-		"too — every good thing we name is a reason to praise Him.</p>",
-		"action": "Start or end each day with one song of praise, and name three things you're thankful for.",
+		"title": "🎵 You still have breath, so praise Him",
+		"subject": "Every breath you take is a gift from God",
+		"preheader": "Worship lifts your eyes above your troubles.",
+		"verse_ref": "Psalm 150:6",
+		"verse_text": "Let every thing that hath breath praise the LORD. Praise ye the LORD.",
+		"body_html": "<p>You woke up today. You are breathing. That alone is a gift from the God who made you and "
+		"still holds your life in His hands.</p><p>The world teaches us to complain. God invites us to praise. When "
+		"we worship, our eyes are lifted from our problems to the One who is bigger than all of them, and a cold "
+		"heart begins to feel His warmth again.</p><p>If you have breath, you have a reason to praise Him.</p>",
+		"action": "Sing one song of praise to God today, and thank Him for three things.",
 		"app_route": "/dashboard",
-		"app_button": "Open the app",
-		"push_title": "🎵 Activity 3: Praise God today",
-		"push_body": "\"Come before his presence with singing.\" One song and three thank-yous today.",
+		"app_button": "Sing along in the app",
+		"push_title": "🎵 You still have breath",
+		"push_body": "\"Let every thing that hath breath praise the LORD.\" Sing one song to Him today.",
 	},
 	{
-		"title": "❤️ Meditate on God's Word — let it sink in",
-		"subject": "Think deeply about Scripture ❤️",
-		"preheader": "Activity 4 of 7: Meditate on God's Word.",
-		"verse_ref": "Joshua 1:8",
-		"verse_text": "This book of the law shall not depart out of thy mouth; but thou shalt meditate therein day and "
-		"night, that thou mayest observe to do according to all that is written therein: for then thou shalt make "
-		"thy way prosperous, and then thou shalt have good success.",
-		"body_html": "<p>Reading takes God's Word in; meditating lets it sink deep. To meditate is to slow down, think "
-		"about a verse, and let it shape how we live.</p><p>One verse carried through the day can do more than many "
-		"chapters read quickly and forgotten.</p>",
-		"action": "Take today's verse, read it slowly three times, and ask: What does this show me about God? What "
-		"should I do?",
+		"title": "❤️ Hide His Word in your heart",
+		"subject": "One verse can change your whole day",
+		"preheader": "Let God's Word stay with you.",
+		"verse_ref": "Psalm 119:11",
+		"verse_text": "Thy word have I hid in mine heart, that I might not sin against thee.",
+		"body_html": "<p>Our minds are full all day: news, worries, noise. What we keep thinking about slowly shapes "
+		"who we become.</p><p>God invites us to keep His Word in our hearts. One verse, carried through the day and "
+		"thought about again and again, can guard us from sin, calm our fears, and remind us that God is near.</p>"
+		"<p>The heart that holds God's Word is never truly alone.</p>",
+		"action": "Read today's verse slowly three times. Carry it with you all day, and ask God what He is saying "
+		"to you.",
 		"app_route": "/todayVerse",
-		"app_button": "Open today's verse",
-		"push_title": "❤️ Activity 4: Meditate on God's Word",
-		"push_body": "Read today's verse slowly three times. What is God showing you?",
+		"app_button": "Read today's verse",
+		"push_title": "❤️ Hide His Word in your heart",
+		"push_body": "\"Thy word have I hid in mine heart.\" Carry today's verse with you.",
 	},
 	{
-		"title": "🕊️ Walk in the Holy Spirit — let Him lead",
-		"subject": "Let the Holy Spirit guide you today 🕊️",
-		"preheader": "Activity 5 of 7: Walk in the Holy Spirit.",
-		"verse_ref": "Galatians 5:16",
-		"verse_text": "This I say then, Walk in the Spirit, and ye shall not fulfil the lust of the flesh.",
-		"body_html": "<p>We don't have to live the Christian life in our own strength. God gives us His Holy Spirit to "
-		"guide our thoughts, our words and our choices.</p><p>Walking in the Spirit is step by step: listening, "
-		"following, and turning back quickly when we go our own way.</p>",
-		"action": "Before you speak or decide something today, pause and pray: \"Holy Spirit, lead me.\"",
+		"title": "🕊️ Awake — the Spirit gives life",
+		"subject": "Awake, you who sleep",
+		"preheader": "God can bring a dead heart back to life.",
+		"verse_ref": "John 6:63",
+		"verse_text": "It is the spirit that quickeneth; the flesh profiteth nothing: the words that I speak unto you, "
+		"they are spirit, and they are life.",
+		"body_html": "<p>Many people are alive on the outside but asleep on the inside: busy, successful, yet empty "
+		"before God. The Bible calls out to them: <i>\"Awake thou that sleepest, and arise from the dead, and Christ "
+		"shall give thee light\"</i> (Ephesians 5:14).</p><p>We can't wake ourselves up. It is God's Holy Spirit who "
+		"gives life. He opens our eyes to see our need, turns our hearts back to Jesus, and leads us day by day.</p>"
+		"<p>If something in you is stirring as you read this, that may be Him calling you.</p>",
+		"action": "Pray today: \"Holy Spirit, wake me up. Open my eyes to Jesus, and lead me.\"",
 		"app_route": "/prayer",
 		"app_button": "Pray in the app",
-		"push_title": "🕊️ Activity 5: Walk in the Spirit",
-		"push_body": "Before you speak or decide today, pause and pray: \"Holy Spirit, lead me.\"",
+		"push_title": "🕊️ Awake, you who sleep",
+		"push_body": "\"It is the spirit that quickeneth.\" Ask the Holy Spirit to wake your heart today.",
 	},
 	{
-		"title": "✝️ Obey God's Word — love in action",
-		"subject": "Put God's teachings into practice ✝️",
-		"preheader": "Activity 6 of 7: Obey God's Word.",
-		"verse_ref": "John 14:15",
-		"verse_text": "If ye love me, keep my commandments.",
-		"body_html": "<p>Jesus connects love and obedience. Obeying God isn't about earning His love — we already have "
-		"it. It's how we show our love back to Him.</p><p>Every time we do what His Word says, our faith grows "
-		"stronger and more real.</p>",
-		"action": "Ask yourself: what is one thing God has already shown me to do? Do it this week.",
+		"title": "✝️ Don't just hear it — live it",
+		"subject": "Hearing God's Word is good. Doing it changes everything.",
+		"preheader": "Faith becomes real when we obey.",
+		"verse_ref": "James 1:22",
+		"verse_text": "But be ye doers of the word, and not hearers only, deceiving your own selves.",
+		"body_html": "<p>It's possible to hear sermons, read verses and still stay the same. The Bible says that's "
+		"deceiving ourselves.</p><p>God's Word comes alive when we do what it says: when we forgive because He "
+		"said forgive, when we stop what He told us to stop, when we trust Him enough to obey.</p><p>Obedience "
+		"isn't how we earn God's love. It's how we show we've truly received it.</p>",
+		"action": "Think of one thing God has already shown you to do, or to stop doing. Do it today.",
 		"app_route": "/courseList",
-		"app_button": "Continue a Bible course",
-		"push_title": "✝️ Activity 6: Put God's Word into practice",
-		"push_body": "\"If ye love me, keep my commandments.\" What is one thing God has shown you to do?",
+		"app_button": "Grow with a Bible course",
+		"push_title": "✝️ Don't just hear it — live it",
+		"push_body": "\"Be ye doers of the word, and not hearers only.\" Do one thing God has shown you today.",
 	},
 	{
-		"title": "🤝 Love & Serve Others — faith you can see",
-		"subject": "Forgive, help and encourage someone this week 🤝",
-		"preheader": "Activity 7 of 7: Love & Serve Others.",
-		"verse_ref": "Galatians 5:13",
-		"verse_text": "For, brethren, ye have been called unto liberty; only use not liberty for an occasion to the "
-		"flesh, but by love serve one another.",
-		"body_html": "<p>Our love for God shows in how we treat people. Forgiving, helping, encouraging and being kind "
-		"are all ways of serving Christ through others.</p><p>Small acts matter: a kind word, a phone call, a prayer "
-		"for someone who is struggling.</p>",
-		"action": "This week, forgive someone, help someone and encourage someone — and pray for someone on the "
+		"title": "🤝 From death to life — through love",
+		"subject": "The proof that you've passed from death to life",
+		"preheader": "Love is the sign of a heart God has awakened.",
+		"verse_ref": "1 John 3:14",
+		"verse_text": "We know that we have passed from death unto life, because we love the brethren. He that loveth "
+		"not his brother abideth in death.",
+		"body_html": "<p>How do we know a heart has truly come alive to God? The Bible gives a simple answer: love.</p>"
+		"<p>A heart that holds bitterness and unforgiveness is still living in death. But when Christ makes us "
+		"alive, He gives us His love for others: to forgive, to help, to encourage, to pray for those who are "
+		"hurting.</p><p>Somebody near you needs that love today.</p>",
+		"action": "Forgive someone, help someone, or pray for someone today. Start with a prayer request on the "
 		"Prayer Wall.",
 		"app_route": "/prayerWall",
-		"app_button": "Visit the Prayer Wall",
-		"push_title": "🤝 Activity 7: Love & serve others",
-		"push_body": "\"By love serve one another.\" Pray for someone on the Prayer Wall today.",
-	},
-	{
-		"title": "🌿 Abide in Me — the heart of it all",
-		"subject": "Abide in Him — the heart of all seven 🌿",
-		"preheader": "The ultimate goal: a closer relationship with Jesus every day.",
-		"verse_ref": "John 15:4",
-		"verse_text": "Abide in me, and I in you. As the branch cannot bear fruit of itself, except it abide in the "
-		"vine; no more can ye, except ye abide in me.",
-		"body_html": "<p>Over these weeks we've looked at seven daily activities:</p>" + _LIST + "<p>But the ultimate "
-		"goal isn't just doing spiritual activities. It's developing a closer relationship with Jesus Christ every "
-		"day. A branch bears fruit by staying joined to the vine — and we grow by staying close to Him.</p>",
-		"action": "Look back over the seven. Which one helped you most? Keep it going — and add one more.",
-		"app_route": "/readingPlans",
-		"app_button": "Start a reading plan",
-		"push_title": "🌿 Abide in Me",
-		"push_body": "\"Abide in me, and I in you.\" The heart of all seven daily activities.",
+		"app_button": "Pray for someone",
+		"push_title": "🤝 From death to life",
+		"push_body": "\"We have passed from death unto life, because we love.\" Pray for someone on the Prayer Wall.",
 	},
 ]

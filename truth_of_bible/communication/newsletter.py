@@ -1,7 +1,7 @@
-"""The weekly newsletter: once a week (TOB Newsletter Settings — day, hour, on/off) the next enabled
-TOB Newsletter Issue goes to every user as a Communication Center campaign (email and/or push), so delivery,
-opens and failures show in the admin app's Campaign history like any other campaign. After the last issue
-the series starts again from the first, so people who joined later get it from the beginning.
+"""The newsletter: every day, or once a week (TOB Newsletter Settings — on/off, how often, day, hour, how
+email is sent), the next enabled TOB Newsletter Issue — one topic each — goes to every user as a Communication
+Center campaign (email and/or push), so delivery, opens and failures show in the admin app's Campaign history
+like any other campaign. After the last issue it starts again from the first.
 
 The email has two app sections and campaign.personalize_email keeps one per recipient: an "Open in the
 app" button for users with the app (a registered FCM token), or a short "get the free app" invitation for
@@ -35,14 +35,17 @@ _APP_OPEN_LINK_BASE = "https://learn.truthofbible.org/open"
 # ─────────────────────────── Scheduler ───────────────────────────
 
 
-def weekly_check():
-	"""Hourly (hooks.py). Sends at most one issue a week: on the chosen day, at or after the chosen hour, once."""
+def scheduled_check():
+	"""Hourly (hooks.py). Sends at most one issue a day — every day, or only on the chosen weekday — at or after
+	the chosen hour."""
 	try:
 		s = frappe.get_single(_SETTINGS)
 		if not s.enabled or not (s.send_email or s.send_push):
 			return
 		now = now_datetime()
-		if _WEEKDAYS[now.weekday()] != s.send_weekday or now.hour < int(s.send_hour or 0):
+		if now.hour < int(s.send_hour or 0):
+			return
+		if s.frequency == "Weekly" and _WEEKDAYS[now.weekday()] != s.send_weekday:
 			return
 		if s.last_sent_on and getdate(s.last_sent_on) == now.date():
 			return
@@ -50,7 +53,7 @@ def weekly_check():
 		if issue:
 			_send_issue(s, issue)
 	except Exception:
-		frappe.log_error(title="Newsletter: weekly send failed", message=frappe.get_traceback())
+		frappe.log_error(title="Newsletter: scheduled send failed", message=frappe.get_traceback())
 
 
 def _next_issue(last_issue_no: int):
@@ -118,7 +121,7 @@ _TEMPLATE_HTML = """<!doctype html><html><body style="margin:0;background:#F5F1E
 <div style="margin-top:6px;font-size:13px;font-style:italic;color:#C8902E;">&mdash; {{ issue.verse_ref }} (KJV)</div></div>{% endif %}
 {{ issue.body_html or "" }}
 {% if issue.action %}<div style="background:#F3F4F6;border-radius:10px;padding:14px 18px;margin:18px 0;">
-<div style="font-weight:bold;color:#C8902E;margin-bottom:4px;">Try this week</div>{{ issue.action }}</div>{% endif %}
+<div style="font-weight:bold;color:#C8902E;margin-bottom:4px;">Your step today</div>{{ issue.action }}</div>{% endif %}
 <!--if_app--><div style="text-align:center;margin:24px 0 8px;"><a href="{{ app_link }}" style="display:inline-block;background:#C8902E;color:#ffffff;text-decoration:none;font-weight:bold;padding:12px 22px;border-radius:24px;">&#128241; {{ issue.app_button or "Open the app" }}</a></div><!--end_if_app-->
 <!--if_no_app--><div style="text-align:center;background:#FBF6EC;border-radius:12px;padding:18px;margin:24px 0 8px;">
 <div style="font-weight:bold;font-size:16px;margin-bottom:4px;">Grow every day with the free Truth of Bible app</div>
@@ -162,7 +165,7 @@ def render_text(issue) -> str:
 		parts += [f"“{issue.verse_text}” — {issue.verse_ref} (KJV)", ""]
 	parts += [_html_to_text(issue.body_html), ""]
 	if issue.action:
-		parts += [f"Try this week: {issue.action}", ""]
+		parts += [f"Your step today: {issue.action}", ""]
 	parts += [f"{issue.app_button or 'Open the app'}: {_open_link(issue.app_route)}", "", "Unsubscribe: {{unsubscribe_url}}"]
 	return "\n".join(parts)
 
@@ -182,11 +185,13 @@ def unsubscribe_url(user: str) -> str:
 
 @frappe.whitelist(allow_guest=True, methods=["GET", "POST"])
 def unsubscribe(u: str = "", k: str = "", confirm: str = ""):
-	"""GET shows a confirm button (mail scanners open links on their own); the POST it sends unsubscribes."""
+	"""GET shows a confirm button (mail scanners open links on their own); the POST it sends unsubscribes, and
+	so does a mail app's one-click unsubscribe (RFC 8058: a POST with List-Unsubscribe=One-Click)."""
 	if not (u and k and hmac.compare_digest(_sig(u), k) and frappe.db.exists("User", u)):
 		frappe.respond_as_web_page(_("Link not valid"), _("This unsubscribe link isn't valid."), indicator_color="red")
 		return
-	if frappe.request.method != "POST" or not confirm:
+	one_click = frappe.form_dict.get("List-Unsubscribe") == "One-Click"
+	if frappe.request.method != "POST" or not (confirm or one_click):
 		form = (
 			f'<form method="post"><input type="hidden" name="u" value="{escape_html(u)}">'
 			f'<input type="hidden" name="k" value="{escape_html(k)}"><input type="hidden" name="confirm" value="1">'
@@ -212,6 +217,7 @@ def unsubscribe(u: str = "", k: str = "", confirm: str = ""):
 def _settings_dict(s) -> dict:
 	return {
 		"enabled": int(s.enabled or 0),
+		"frequency": s.frequency or "Daily",
 		"send_weekday": s.send_weekday or "Sunday",
 		"send_hour": int(s.send_hour or 0),
 		"send_email": int(s.send_email or 0),
@@ -240,12 +246,23 @@ def get_newsletter() -> dict:
 
 @frappe.whitelist(methods=["POST"])
 def save_newsletter_settings(
-	enabled=None, send_weekday=None, send_hour=None, send_email=None, send_push=None, email_via=None, email_account=None
+	enabled=None,
+	frequency=None,
+	send_weekday=None,
+	send_hour=None,
+	send_email=None,
+	send_push=None,
+	email_via=None,
+	email_account=None,
 ) -> dict:
 	require_admin()
 	s = frappe.get_single(_SETTINGS)
 	if enabled is not None:
 		s.enabled = 1 if frappe.utils.cint(enabled) else 0
+	if frequency is not None:
+		if frequency not in ("Daily", "Weekly"):
+			frappe.throw(_("Choose Daily or Weekly."), frappe.ValidationError)
+		s.frequency = frequency
 	if send_weekday is not None:
 		if send_weekday not in _WEEKDAYS:
 			frappe.throw(_("Choose a day of the week."), frappe.ValidationError)
@@ -290,6 +307,7 @@ def send_test(issue_no=None) -> dict:
 		via=s.email_via or mailer.VIA_FRAPPE,
 		email_account=s.email_account,
 		now=True,
+		unsubscribe_url=unsubscribe_url(user),
 		to_email=row.get("email") or user,
 		to_name=row.get("full_name") or user,
 		subject="[Test] " + campaign.personalize_email(subject, user, values),

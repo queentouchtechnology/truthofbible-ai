@@ -170,7 +170,7 @@ scheduler_events = {
 	},
 	"hourly": [
 		# sends only on the chosen day/hour, once a week, while switched on (TOB Newsletter Settings)
-		"truth_of_bible.communication.newsletter.weekly_check",
+		"truth_of_bible.communication.newsletter.scheduled_check",
 		"truth_of_bible.notifications.reading.daily_scan",
 		"truth_of_bible.notifications.reading_plan.daily_scan",
 		"truth_of_bible.notifications.prayer.daily_scan",

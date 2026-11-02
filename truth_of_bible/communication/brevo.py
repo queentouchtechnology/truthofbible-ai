@@ -22,9 +22,11 @@ def send_email(
 	subject: str,
 	html_content: str,
 	text_content: str = "",
+	headers: dict | None = None,
 ) -> tuple[bool, str | None, str | None]:
 	"""Returns (ok, message_id, error). Never raises — a Brevo outage must
-	never break the campaign-processing batch calling this."""
+	never break the campaign-processing batch calling this. `headers` are
+	extra mail headers (e.g. List-Unsubscribe)."""
 	conf = frappe.get_site_config()
 	api_key = conf.get("brevo_api_key")
 	sender_email = conf.get("brevo_sender_email")
@@ -49,6 +51,8 @@ def send_email(
 	}
 	if text_content:
 		payload["textContent"] = text_content
+	if headers:
+		payload["headers"] = headers
 
 	try:
 		response = requests.post(
