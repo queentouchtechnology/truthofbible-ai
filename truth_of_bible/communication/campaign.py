@@ -14,6 +14,7 @@ Decision 12, never trust client-side UI visibility as the real boundary.
 """
 
 import json
+import re
 
 import frappe
 from frappe import _
@@ -473,8 +474,8 @@ def _process_recipient(doc, recipient_name: str):
 				to_email=user_row.get("email"),
 				to_name=recipient.user_name,
 				subject=_render_merge_tags(doc.email_subject or "", merge_values),
-				html_content=_render_merge_tags(doc.email_body_html or "", merge_values),
-				text_content=_render_merge_tags(doc.email_body_text or "", merge_values),
+				html_content=personalize_email(doc.email_body_html or "", user, merge_values),
+				text_content=personalize_email(doc.email_body_text or "", user, merge_values),
 			)
 			recipient.email_status = "SENT" if ok else "FAILED"
 			if message_id:
@@ -613,6 +614,28 @@ def _render_merge_tags(text: str, values: dict) -> str:
 	for key, value in values.items():
 		text = text.replace("{{" + key + "}}", value or "")
 	return text
+
+
+_APP_SECTION = re.compile(r"<!--if_app-->(.*?)<!--end_if_app-->", re.S)
+_NO_APP_SECTION = re.compile(r"<!--if_no_app-->(.*?)<!--end_if_no_app-->", re.S)
+
+
+def personalize_email(text: str, user: str, values: dict) -> str:
+	"""Merge tags plus two per-recipient extras, each only worked out when the body uses it:
+	`<!--if_app-->…<!--end_if_app-->` / `<!--if_no_app-->…<!--end_if_no_app-->` keep the section that fits
+	(the user has the app = a registered FCM token), and `{{unsubscribe_url}}` is their signed one-click
+	link (newsletter.unsubscribe)."""
+	if not text:
+		return text
+	if "<!--if_app-->" in text or "<!--if_no_app-->" in text:
+		has_app = bool(frappe.db.exists("User FCM Token", {"user": user}))
+		text = _APP_SECTION.sub(r"\1" if has_app else "", text)
+		text = _NO_APP_SECTION.sub("" if has_app else r"\1", text)
+	if "{{unsubscribe_url}}" in text:
+		from truth_of_bible.communication.newsletter import unsubscribe_url
+
+		text = text.replace("{{unsubscribe_url}}", unsubscribe_url(user))
+	return _render_merge_tags(text, values)
 
 
 def _already_sent(campaign_id: str, user: str, channel: str) -> bool:

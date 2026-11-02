@@ -1,0 +1,160 @@
+{
+ "doctype": "DocType",
+ "name": "TOB Newsletter Issue",
+ "module": "Truth Of Bible",
+ "custom": 0,
+ "istable": 0,
+ "issingle": 0,
+ "quick_entry": 0,
+ "track_changes": 1,
+ "autoname": "format:NL-{###}",
+ "naming_rule": "Expression",
+ "sort_field": "issue_no",
+ "sort_order": "ASC",
+ "title_field": "title",
+ "show_title_field_in_link": 1,
+ "description": "One issue of the weekly newsletter. Issues go out in Issue No order; unticked ones are skipped. Switch the newsletter on and set its day and hour in TOB Newsletter Settings.",
+ "engine": "InnoDB",
+ "field_order": [
+  "issue_no",
+  "enabled",
+  "title",
+  "column_break_1",
+  "times_sent",
+  "last_sent_on",
+  "section_email",
+  "subject",
+  "preheader",
+  "verse_ref",
+  "verse_text",
+  "body_html",
+  "action",
+  "section_app",
+  "app_route",
+  "app_button",
+  "column_break_2",
+  "push_title",
+  "push_body"
+ ],
+ "fields": [
+  {
+   "fieldname": "issue_no",
+   "fieldtype": "Int",
+   "label": "Issue No",
+   "reqd": 1,
+   "unique": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "enabled",
+   "fieldtype": "Check",
+   "label": "Include in the Series",
+   "default": "1",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "title",
+   "fieldtype": "Data",
+   "label": "Title",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "times_sent",
+   "fieldtype": "Int",
+   "label": "Times Sent",
+   "read_only": 1,
+   "default": "0"
+  },
+  {
+   "fieldname": "last_sent_on",
+   "fieldtype": "Date",
+   "label": "Last Sent On",
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "section_email",
+   "fieldtype": "Section Break",
+   "label": "Email"
+  },
+  {
+   "fieldname": "subject",
+   "fieldtype": "Data",
+   "label": "Subject",
+   "reqd": 1
+  },
+  {
+   "fieldname": "preheader",
+   "fieldtype": "Data",
+   "label": "Preview Text",
+   "description": "Shown after the subject in most inboxes."
+  },
+  {
+   "fieldname": "verse_ref",
+   "fieldtype": "Data",
+   "label": "Verse Reference"
+  },
+  {
+   "fieldname": "verse_text",
+   "fieldtype": "Small Text",
+   "label": "Verse Text (KJV)"
+  },
+  {
+   "fieldname": "body_html",
+   "fieldtype": "Text Editor",
+   "label": "Message"
+  },
+  {
+   "fieldname": "action",
+   "fieldtype": "Small Text",
+   "label": "Try This Week"
+  },
+  {
+   "fieldname": "section_app",
+   "fieldtype": "Section Break",
+   "label": "App Link"
+  },
+  {
+   "fieldname": "app_route",
+   "fieldtype": "Data",
+   "label": "App Screen",
+   "default": "/dashboard",
+   "description": "An app deep-link route, e.g. /readingPlans, /prayer, /todayVerse, /prayerWall, /courseList, /dashboard."
+  },
+  {
+   "fieldname": "app_button",
+   "fieldtype": "Data",
+   "label": "Button Text",
+   "default": "Open the app"
+  },
+  {
+   "fieldname": "column_break_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "push_title",
+   "fieldtype": "Data",
+   "label": "Push Title"
+  },
+  {
+   "fieldname": "push_body",
+   "fieldtype": "Small Text",
+   "label": "Push Message"
+  }
+ ],
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1
+  }
+ ],
+ "links": []
+}

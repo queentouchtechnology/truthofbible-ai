@@ -140,6 +140,7 @@ after_migrate = [
 	"truth_of_bible.install.ensure_social_worker_role",
 	"truth_of_bible.install.ensure_sunday_school_role",
 	"truth_of_bible.install.seed_social_content",
+	"truth_of_bible.communication.newsletter.seed",
 ]
 
 # Bible Battle's only background-job-shaped mechanism: a cron backstop for
@@ -168,6 +169,8 @@ scheduler_events = {
 		"0 0 * * 1": ["truth_of_bible.notifications.sunday_school.weekly_reset_scan"],
 	},
 	"hourly": [
+		# sends only on the chosen day/hour, once a week, while switched on (TOB Newsletter Settings)
+		"truth_of_bible.communication.newsletter.weekly_check",
 		"truth_of_bible.notifications.reading.daily_scan",
 		"truth_of_bible.notifications.reading_plan.daily_scan",
 		"truth_of_bible.notifications.prayer.daily_scan",
