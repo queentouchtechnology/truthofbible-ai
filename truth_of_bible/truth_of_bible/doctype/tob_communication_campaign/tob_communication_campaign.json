@@ -30,6 +30,8 @@
   "push_deeplink_route",
   "section_break_email",
   "email_enabled",
+  "email_via",
+  "email_account",
   "email_subject",
   "email_body_html",
   "email_body_text",
@@ -148,6 +150,20 @@
    "label": "Email Enabled"
   },
   {
+   "fieldname": "email_via",
+   "fieldtype": "Select",
+   "label": "Email Via",
+   "options": "Brevo\nFrappe Email Account",
+   "default": "Brevo"
+  },
+  {
+   "fieldname": "email_account",
+   "fieldtype": "Link",
+   "label": "Email Account",
+   "options": "Email Account",
+   "depends_on": "eval:doc.email_via === 'Frappe Email Account'"
+  },
+  {
    "fieldname": "email_subject",
    "fieldtype": "Data",
    "label": "Email Subject"
@@ -232,5 +248,6 @@
    "export": 1
   }
  ],
- "links": []
+ "links": [],
+ "modified": "2026-11-02 10:00:00.000000"
 }

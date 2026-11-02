@@ -21,7 +21,7 @@ from frappe import _
 from frappe.utils import get_datetime, now_datetime
 
 from truth_of_bible.communication import audience as audience_mod
-from truth_of_bible.communication import brevo, chatwoot
+from truth_of_bible.communication import chatwoot, mailer
 from truth_of_bible.communication.auth import require_admin
 from truth_of_bible.notifications import delivery
 from truth_of_bible.notifications.preferences import get_or_create_preference
@@ -74,6 +74,8 @@ def create_campaign(
 	# window rule; a campaign recipient may never have messaged first).
 	if whatsapp and not (whatsapp.get("template_name") and whatsapp.get("category") and whatsapp.get("language")):
 		frappe.throw(_("Choose a WhatsApp template."), frappe.ValidationError)
+	if email:
+		mailer.validate(email.get("via"), email.get("email_account"))
 
 	users = audience_mod.resolve_audience(audience_type, audience_user_ids, audience_ref)
 	if not users:
@@ -100,6 +102,8 @@ def create_campaign(
 			"email_subject": (email or {}).get("subject"),
 			"email_body_html": (email or {}).get("body_html"),
 			"email_body_text": (email or {}).get("body_text"),
+			"email_via": (email or {}).get("via") or mailer.VIA_BREVO,
+			"email_account": (email or {}).get("email_account") or None,
 			"whatsapp_enabled": 1 if whatsapp else 0,
 			"whatsapp_template_name": (whatsapp or {}).get("template_name"),
 			"whatsapp_template_category": (whatsapp or {}).get("category"),
@@ -470,7 +474,9 @@ def _process_recipient(doc, recipient_name: str):
 		if _already_sent(doc.name, user, "EMAIL"):
 			recipient.email_status = "SENT"
 		else:
-			ok, message_id, err = brevo.send_email(
+			ok, message_id, err = mailer.send_email(
+				via=doc.email_via,
+				email_account=doc.email_account,
 				to_email=user_row.get("email"),
 				to_name=recipient.user_name,
 				subject=_render_merge_tags(doc.email_subject or "", merge_values),

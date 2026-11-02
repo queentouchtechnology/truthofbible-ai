@@ -22,7 +22,7 @@ import frappe
 from frappe import _
 from frappe.utils import escape_html, get_url, getdate, now_datetime
 
-from truth_of_bible.communication import brevo, campaign
+from truth_of_bible.communication import campaign, mailer
 from truth_of_bible.communication.auth import require_admin
 
 _SETTINGS = "TOB Newsletter Settings"
@@ -65,7 +65,13 @@ def _send_issue(s, issue) -> str:
 	channels = {}
 	if s.send_email:
 		subject, html = render_email(issue)
-		channels["email"] = {"subject": subject, "body_html": html, "body_text": render_text(issue)}
+		channels["email"] = {
+			"subject": subject,
+			"body_html": html,
+			"body_text": render_text(issue),
+			"via": s.email_via or mailer.VIA_FRAPPE,
+			"email_account": s.email_account,
+		}
 	if s.send_push:
 		channels["push"] = {
 			"title": issue.push_title or issue.title,
@@ -210,6 +216,8 @@ def _settings_dict(s) -> dict:
 		"send_hour": int(s.send_hour or 0),
 		"send_email": int(s.send_email or 0),
 		"send_push": int(s.send_push or 0),
+		"email_via": s.email_via or mailer.VIA_FRAPPE,
+		"email_account": s.email_account,
 		"last_issue_no": s.last_issue_no or 0,
 		"last_sent_on": s.last_sent_on,
 		"last_campaign": s.last_campaign,
@@ -231,7 +239,9 @@ def get_newsletter() -> dict:
 
 
 @frappe.whitelist(methods=["POST"])
-def save_newsletter_settings(enabled=None, send_weekday=None, send_hour=None, send_email=None, send_push=None) -> dict:
+def save_newsletter_settings(
+	enabled=None, send_weekday=None, send_hour=None, send_email=None, send_push=None, email_via=None, email_account=None
+) -> dict:
 	require_admin()
 	s = frappe.get_single(_SETTINGS)
 	if enabled is not None:
@@ -249,6 +259,11 @@ def save_newsletter_settings(enabled=None, send_weekday=None, send_hour=None, se
 		s.send_email = 1 if frappe.utils.cint(send_email) else 0
 	if send_push is not None:
 		s.send_push = 1 if frappe.utils.cint(send_push) else 0
+	if email_via is not None:
+		s.email_via = email_via
+	if email_account is not None:
+		s.email_account = email_account or None
+	mailer.validate(s.email_via or mailer.VIA_FRAPPE, s.email_account)
 	s.save(ignore_permissions=True)
 	return get_newsletter()
 
@@ -270,7 +285,11 @@ def send_test(issue_no=None) -> dict:
 	row = frappe.db.get_value("User", user, ["email", "first_name", "last_name", "full_name"], as_dict=True) or {}
 	values = {"first_name": row.get("first_name") or "", "last_name": row.get("last_name") or "", "email": row.get("email") or ""}
 	subject, html = render_email(issue)
-	ok, _message_id, err = brevo.send_email(
+	s = frappe.get_single(_SETTINGS)
+	ok, _message_id, err = mailer.send_email(
+		via=s.email_via or mailer.VIA_FRAPPE,
+		email_account=s.email_account,
+		now=True,
 		to_email=row.get("email") or user,
 		to_name=row.get("full_name") or user,
 		subject="[Test] " + campaign.personalize_email(subject, user, values),

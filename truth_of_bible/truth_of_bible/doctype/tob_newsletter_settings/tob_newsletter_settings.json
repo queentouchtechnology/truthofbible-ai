@@ -15,6 +15,8 @@
   "send_hour",
   "column_break_1",
   "send_email",
+  "email_via",
+  "email_account",
   "send_push",
   "section_status",
   "last_issue_no",
@@ -53,6 +55,23 @@
    "label": "Send as Email",
    "default": "1",
    "description": "Users who have the app get an \"Open in the app\" button; the others are invited to get the free app."
+  },
+  {
+   "fieldname": "email_via",
+   "fieldtype": "Select",
+   "label": "Send Email Via",
+   "options": "Frappe Email Account\nBrevo",
+   "default": "Frappe Email Account",
+   "depends_on": "send_email",
+   "description": "Frappe Email Account sends through the site's mail server — the emails show in Email Queue."
+  },
+  {
+   "fieldname": "email_account",
+   "fieldtype": "Link",
+   "label": "Email Account",
+   "options": "Email Account",
+   "depends_on": "eval:doc.send_email && doc.email_via !== 'Brevo'",
+   "description": "Leave blank to use the default outgoing Email Account."
   },
   {
    "fieldname": "send_push",
@@ -97,5 +116,6 @@
    "create": 1
   }
  ],
- "links": []
+ "links": [],
+ "modified": "2026-11-02 10:00:00.000000"
 }
