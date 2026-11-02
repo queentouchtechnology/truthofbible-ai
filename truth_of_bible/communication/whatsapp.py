@@ -13,6 +13,7 @@ from frappe.utils import now_datetime
 
 from truth_of_bible.communication import chatwoot
 from truth_of_bible.communication.auth import require_admin
+from truth_of_bible import errors
 
 
 @frappe.whitelist(methods=["GET"])
@@ -254,7 +255,7 @@ def forward_message(message_id, target_conversation_id):
 			attachment_content_type = response.headers.get("Content-Type")
 			attachment_filename = source.attachment_url.rsplit("/", 1)[-1] or "attachment"
 		except Exception:
-			frappe.log_error(
+			errors.log_error(
 				title="Communication Center: forward download failed", message=frappe.get_traceback()
 			)
 			frappe.throw(_("Could not fetch the original file to forward."), frappe.ValidationError)

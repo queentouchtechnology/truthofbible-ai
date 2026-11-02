@@ -9,6 +9,7 @@ import frappe
 from frappe.utils import cint, get_fullname
 
 from truth_of_bible.rewards import engine
+from truth_of_bible import errors
 
 _MAX_WINDOW = 1000
 _SORTS = ("newest", "oldest", "high", "low")
@@ -175,7 +176,7 @@ def _legacy_wallet_rows(user: str, limit: int) -> list:
 			limit_page_length=limit,
 		)
 	except Exception:
-		frappe.log_error(title="Rewards wallet history (legacy)", message=frappe.get_traceback())
+		errors.log_error(title="Rewards wallet history (legacy)", message=frappe.get_traceback())
 		return []
 	out = []
 	for r in rows:

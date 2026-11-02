@@ -28,6 +28,7 @@ import math
 import frappe
 import requests
 from frappe import _
+from truth_of_bible import errors
 
 _SEARCH_URL = "https://places.googleapis.com/v1/places:searchText"
 _SEARCH_FIELD_MASK = ",".join(
@@ -74,7 +75,7 @@ def _config():
 
 
 def _log_not_configured():
-	frappe.log_error(
+	errors.log_error(
 		title="Church Finder: Google Maps API key not configured",
 		message="site_config.json is missing 'google_maps_api_key'.",
 	)
@@ -158,11 +159,11 @@ def search_churches(lat, lng, query=None, radius_m=5000, church_type=None, open_
 	try:
 		response = requests.post(_SEARCH_URL, headers=headers, json=payload, timeout=20)
 	except Exception:
-		frappe.log_error(title="Church Finder: search request failed", message=frappe.get_traceback())
+		errors.log_error(title="Church Finder: search request failed", message=frappe.get_traceback())
 		frappe.throw(_("Could not reach the places service. Try again."), frappe.ValidationError)
 
 	if response.status_code != 200:
-		frappe.log_error(
+		errors.log_error(
 			title="Church Finder: Places API search error",
 			message=f"HTTP {response.status_code}: {response.text[:2000]}",
 		)
@@ -205,11 +206,11 @@ def get_church_details(place_id):
 	try:
 		response = requests.get(url, headers=headers, timeout=20)
 	except Exception:
-		frappe.log_error(title="Church Finder: details request failed", message=frappe.get_traceback())
+		errors.log_error(title="Church Finder: details request failed", message=frappe.get_traceback())
 		frappe.throw(_("Could not reach the places service. Try again."), frappe.ValidationError)
 
 	if response.status_code != 200:
-		frappe.log_error(
+		errors.log_error(
 			title="Church Finder: Places API details error",
 			message=f"HTTP {response.status_code}: {response.text[:2000]}",
 		)

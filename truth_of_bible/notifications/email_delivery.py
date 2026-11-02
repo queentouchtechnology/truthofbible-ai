@@ -14,6 +14,7 @@ screen); nothing in this module decides which events matter.
 import urllib.parse
 
 import frappe
+from truth_of_bible import errors
 
 _WRAPPER_TEMPLATE = "TOB Notification Email"
 
@@ -35,7 +36,7 @@ def send_notification_email(user: str, title: str, body: str, route: str | None,
 	try:
 		_send(user, title, body, route, route_id)
 	except Exception:
-		frappe.log_error(
+		errors.log_error(
 			title=f"Notification engine: email failed ({event_code})",
 			message=frappe.get_traceback(),
 		)

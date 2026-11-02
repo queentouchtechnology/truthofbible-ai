@@ -11,6 +11,7 @@ from email.utils import formataddr
 import frappe
 
 from truth_of_bible.communication import brevo
+from truth_of_bible import errors
 
 VIA_BREVO = "Brevo"
 VIA_FRAPPE = "Frappe Email Account"
@@ -66,7 +67,7 @@ def send_email(
 			now=now,
 		)
 	except Exception:
-		frappe.log_error(title="Communication Center: Frappe email failed", message=frappe.get_traceback())
+		errors.log_error(title="Communication Center: Frappe email failed", message=frappe.get_traceback())
 		return False, None, "The mail server didn't accept the email (see Error Log)."
 	name = getattr(queued, "name", None)
 	if now and name:

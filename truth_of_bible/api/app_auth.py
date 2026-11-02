@@ -21,6 +21,7 @@ from frappe import _
 from frappe.rate_limiter import rate_limit
 from frappe.utils import add_to_date, cint, get_datetime, now_datetime, validate_email_address
 from frappe.utils.password import get_decrypted_password, set_encrypted_password, update_password
+from truth_of_bible import errors
 
 # Roles every self-registered app member gets (was chosen by the app itself;
 # same as Google sign-up). Not Blogger (a desk role) and not Customer (the
@@ -224,7 +225,7 @@ def _send(contact: str, channel: str, otp: str) -> None:
 		if conversation_id:
 			ok, _message_id, error = chatwoot.send_template_message(conversation_id, template, category, language, [otp])
 	if not ok:
-		frappe.log_error(title="App auth: WhatsApp OTP not sent", message=str(error))
+		errors.log_error(title="App auth: WhatsApp OTP not sent", message=str(error))
 		frappe.throw(_("Couldn't send the WhatsApp code right now. Please try again."))
 
 

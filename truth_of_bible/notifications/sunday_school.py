@@ -26,17 +26,18 @@ def daily_scan():
 	try:
 		engine.check_expiry_warnings()
 	except Exception:
-		frappe.log_error(title="Sunday School daily scan: expiry warnings failed", message=frappe.get_traceback())
+		errors.log_error(title="Sunday School daily scan: expiry warnings failed", message=frappe.get_traceback())
 	try:
 		engine.expire_stale_points()
 	except Exception:
-		frappe.log_error(title="Sunday School daily scan: expire_stale_points failed", message=frappe.get_traceback())
+		errors.log_error(title="Sunday School daily scan: expire_stale_points failed", message=frappe.get_traceback())
 
 import frappe
 from frappe.utils import add_days
 
 from truth_of_bible.notifications.engine import handle_event
 from truth_of_bible.sunday_school import engine
+from truth_of_bible import errors
 
 
 def weekly_reset_scan():

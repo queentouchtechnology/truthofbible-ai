@@ -17,6 +17,8 @@ default that could drift from the safety-reviewed prompt catalog.
 import frappe
 from frappe import _
 
+from truth_of_bible import errors
+
 from truth_of_bible.ai import service
 from truth_of_bible.ai.core.exceptions import AiProviderException
 from truth_of_bible.ai.core.request import AiMessage, AiRequest
@@ -65,7 +67,7 @@ def generate(task: str, subject: str, language: str, variant: str = "", structur
 	try:
 		response = service.generate(request)
 	except AiProviderException as exc:
-		frappe.throw(_("Could not generate content: {0}").format(str(exc)), frappe.ValidationError)
+		errors.ai_fail(_("AI content"), exc)
 
 	frappe.get_doc(
 		{

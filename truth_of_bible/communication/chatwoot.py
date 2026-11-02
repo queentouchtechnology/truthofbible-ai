@@ -49,6 +49,7 @@ import re
 
 import frappe
 import requests
+from truth_of_bible import errors
 
 
 def _config():
@@ -68,7 +69,7 @@ def _configured() -> bool:
 
 
 def _log_not_configured():
-	frappe.log_error(
+	errors.log_error(
 		title="Communication Center: Chatwoot not configured",
 		message=(
 			"site_config.json is missing one or more of 'chatwoot_base_url', "
@@ -125,7 +126,7 @@ def find_or_create_conversation(phone: str, contact_name: str) -> tuple[str | No
 				timeout=20,
 			)
 			if create.status_code not in (200, 201):
-				frappe.log_error(
+				errors.log_error(
 					title="Communication Center: Chatwoot contact create failed",
 					message=f"HTTP {create.status_code}: {create.text[:2000]}",
 				)
@@ -156,14 +157,14 @@ def find_or_create_conversation(phone: str, contact_name: str) -> tuple[str | No
 			timeout=20,
 		)
 		if convo.status_code not in (200, 201):
-			frappe.log_error(
+			errors.log_error(
 				title="Communication Center: Chatwoot conversation create failed",
 				message=f"HTTP {convo.status_code}: {convo.text[:2000]}",
 			)
 			return None, "Could not start a WhatsApp conversation."
 		return str(convo.json().get("id")), None
 	except Exception:
-		frappe.log_error(title="Communication Center: Chatwoot request failed", message=frappe.get_traceback())
+		errors.log_error(title="Communication Center: Chatwoot request failed", message=frappe.get_traceback())
 		return None, "Could not reach WhatsApp."
 
 
@@ -193,7 +194,7 @@ def _find_existing_conversation(base_url, headers, account_id, contact_id, inbox
 		chosen = (open_or_pending or candidates)[0]
 		return str(chosen.get("id")) if chosen.get("id") is not None else None
 	except Exception:
-		frappe.log_error(
+		errors.log_error(
 			title="Communication Center: Chatwoot existing-conversation lookup failed",
 			message=frappe.get_traceback(),
 		)
@@ -243,7 +244,7 @@ def send_message(
 				timeout=20,
 			)
 	except Exception:
-		frappe.log_error(title="Communication Center: Chatwoot send failed", message=frappe.get_traceback())
+		errors.log_error(title="Communication Center: Chatwoot send failed", message=frappe.get_traceback())
 		return False, None, None, "Could not reach WhatsApp."
 
 	if response.status_code in (200, 201):
@@ -252,7 +253,7 @@ def send_message(
 		attachment_url = attachments[0].get("data_url") if attachments else None
 		return True, str(body.get("id")), attachment_url, None
 
-	frappe.log_error(
+	errors.log_error(
 		title="Communication Center: Chatwoot send rejected",
 		message=f"HTTP {response.status_code}: {response.text[:2000]}",
 	)
@@ -278,11 +279,11 @@ def list_templates() -> tuple[list[dict] | None, str | None]:
 			f"{base_url}/api/v1/accounts/{account_id}/inboxes/{inbox_id}", headers=headers, timeout=20
 		)
 	except Exception:
-		frappe.log_error(title="Communication Center: Chatwoot templates request failed", message=frappe.get_traceback())
+		errors.log_error(title="Communication Center: Chatwoot templates request failed", message=frappe.get_traceback())
 		return None, "Could not reach WhatsApp."
 
 	if response.status_code != 200:
-		frappe.log_error(
+		errors.log_error(
 			title="Communication Center: Chatwoot templates fetch failed",
 			message=f"HTTP {response.status_code}: {response.text[:2000]}",
 		)
@@ -343,13 +344,13 @@ def send_template_message(
 			timeout=20,
 		)
 	except Exception:
-		frappe.log_error(title="Communication Center: Chatwoot template send failed", message=frappe.get_traceback())
+		errors.log_error(title="Communication Center: Chatwoot template send failed", message=frappe.get_traceback())
 		return False, None, "Could not reach WhatsApp."
 
 	if response.status_code in (200, 201):
 		return True, str(response.json().get("id")), None
 
-	frappe.log_error(
+	errors.log_error(
 		title="Communication Center: Chatwoot template send rejected",
 		message=f"HTTP {response.status_code}: {response.text[:2000]}",
 	)
@@ -375,5 +376,5 @@ def toggle_status(chatwoot_conversation_id: str, status: str) -> bool:
 		)
 		return response.status_code in (200, 201)
 	except Exception:
-		frappe.log_error(title="Communication Center: Chatwoot toggle_status failed", message=frappe.get_traceback())
+		errors.log_error(title="Communication Center: Chatwoot toggle_status failed", message=frappe.get_traceback())
 		return False

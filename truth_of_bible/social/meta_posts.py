@@ -28,6 +28,7 @@ from frappe.utils import cint
 
 from truth_of_bible.communication.auth import require_admin
 from truth_of_bible.social import meta_connection
+from truth_of_bible import errors
 
 _GRAPH = "https://graph.facebook.com/v23.0"
 _TIMEOUT = 30
@@ -70,7 +71,7 @@ def _graph(method, path, params=None, data=None):
 	if response.status_code >= 400 or "error" in body:
 		error = body.get("error") or {}
 		# Meta's error text never contains the token; the path has no secrets either.
-		frappe.log_error(title="Meta Graph API error", message=f"{method} {path}: {error or response.text[:1000]}")
+		errors.log_error(title="Meta Graph API error", message=f"{method} {path}: {error or response.text[:1000]}")
 		frappe.throw(_("Facebook said: {0}").format(error.get("message") or f"HTTP {response.status_code}"),
 			frappe.ValidationError)
 	return body

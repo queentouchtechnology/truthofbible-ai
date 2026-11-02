@@ -25,6 +25,7 @@ from truth_of_bible.communication import chatwoot, mailer
 from truth_of_bible.communication.auth import require_admin
 from truth_of_bible.notifications import delivery
 from truth_of_bible.notifications.preferences import get_or_create_preference
+from truth_of_bible import errors
 
 _CANCELLABLE = ("SCHEDULED", "QUEUED", "PROCESSING")
 _AUDIENCE_TYPES = (
@@ -370,7 +371,7 @@ def process_queue():
 		_promote_scheduled()
 		_process_batch()
 	except Exception:
-		frappe.log_error(title="Communication Center: process_queue failed", message=frappe.get_traceback())
+		errors.log_error(title="Communication Center: process_queue failed", message=frappe.get_traceback())
 
 
 def _promote_scheduled():
@@ -395,7 +396,7 @@ def _process_batch():
 		try:
 			_process_campaign(campaign_id)
 		except Exception:
-			frappe.log_error(
+			errors.log_error(
 				title=f"Communication Center: process_campaign failed ({campaign_id})",
 				message=frappe.get_traceback(),
 			)
@@ -425,7 +426,7 @@ def _process_campaign(campaign_id: str):
 def _process_recipient(doc, recipient_name: str):
 	recipient = frappe.get_doc("TOB Communication Campaign Recipient", recipient_name)
 	user = recipient.user
-	errors = []
+	failures = []
 
 	# Built once, reused by both Email and WhatsApp below — push needs no
 	# personalization, so it's skipped there to avoid an unnecessary query.
@@ -468,7 +469,7 @@ def _process_recipient(doc, recipient_name: str):
 			)
 			recipient.push_status = "SENT" if ok else "FAILED"
 			if not ok:
-				errors.append("push: delivery failed")
+				failures.append("push: delivery failed")
 
 	if doc.email_enabled and recipient.email_status == "QUEUED":
 		if _already_sent(doc.name, user, "EMAIL"):
@@ -494,7 +495,7 @@ def _process_recipient(doc, recipient_name: str):
 				recipient.email_message_id = message_id
 			_record_channel_send(doc.name, user, "EMAIL")
 			if not ok:
-				errors.append(f"email: {err}")
+				failures.append(f"email: {err}")
 
 	if doc.whatsapp_enabled and recipient.whatsapp_status == "QUEUED":
 		if _already_sent(doc.name, user, "WHATSAPP"):
@@ -531,10 +532,10 @@ def _process_recipient(doc, recipient_name: str):
 				recipient.whatsapp_message_id = message_id
 			_record_channel_send(doc.name, user, "WHATSAPP")
 			if not ok:
-				errors.append(f"whatsapp: {err}")
+				failures.append(f"whatsapp: {err}")
 
-	if errors:
-		recipient.error = "; ".join(errors)
+	if failures:
+		recipient.error = "; ".join(failures)
 	recipient.save(ignore_permissions=True)
 	frappe.db.commit()
 

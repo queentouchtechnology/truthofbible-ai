@@ -57,6 +57,7 @@ import frappe
 
 from truth_of_bible.marketplace.engine import sync_order_line_items
 from truth_of_bible.notifications.engine import handle_event
+from truth_of_bible import errors
 
 # WooCommerce order status -> (User-audience event, Admin-audience event).
 # Either side of the tuple may be None. Statuses not listed here
@@ -106,7 +107,7 @@ def _handle_order_updated(payload: dict) -> None:
 
 					rewards_engine.on_order_completed(user, order_id)
 				except Exception:
-					frappe.log_error(title="Rewards: order points failed", message=frappe.get_traceback())
+					errors.log_error(title="Rewards: order points failed", message=frappe.get_traceback())
 
 	if admin_event:
 		handle_event(admin_event, None, variables)
@@ -120,7 +121,7 @@ def _handle_order_updated(payload: dict) -> None:
 	try:
 		sync_order_line_items(payload)
 	except Exception:
-		frappe.log_error(title="Marketplace: sync_order_line_items failed", message=frappe.get_traceback())
+		errors.log_error(title="Marketplace: sync_order_line_items failed", message=frappe.get_traceback())
 
 
 def is_ping(signature: str | None, body: bytes, form_webhook_id=None) -> bool:
@@ -136,7 +137,7 @@ def is_ping(signature: str | None, body: bytes, form_webhook_id=None) -> bool:
 def _verify_signature() -> bool:
 	secret = frappe.get_site_config().get("woocommerce_webhook_secret")
 	if not secret:
-		frappe.log_error(
+		errors.log_error(
 			title="Notification engine: woocommerce_webhook_secret missing",
 			message="site_config.json has no 'woocommerce_webhook_secret' key — every WooCommerce webhook delivery is being rejected until this is set.",
 		)
@@ -150,7 +151,7 @@ def _verify_signature() -> bool:
 		# `frappe.throw(..., PermissionError)` is a clean 403 Frappe does
 		# NOT write to Error Log by default, so a wrong
 		# woocommerce_webhook_secret looks identical to "never fired".
-		frappe.log_error(
+		errors.log_error(
 			title="Notification engine: shop_webhook signature mismatch",
 			message=(
 				f"X-WC-Webhook-Signature present={bool(signature)}, topic={frappe.get_request_header('X-WC-Webhook-Topic') or '-'}, "

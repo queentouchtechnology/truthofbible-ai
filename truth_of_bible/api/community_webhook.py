@@ -53,6 +53,7 @@ import json
 import frappe
 
 from truth_of_bible.notifications.engine import handle_event
+from truth_of_bible import errors
 
 # Same integer values the in-app "My Activity" list already trusts and
 # renders correctly today (`CommunityNotification.verb`/`_icon` in the
@@ -106,7 +107,7 @@ def flag_created():
 	except Exception:
 		frappe.throw("Invalid payload", frappe.ValidationError)
 
-	frappe.log_error(
+	errors.log_error(
 		title="Notification engine: flag_created payload (shape discovery)",
 		message=f"Top-level keys: {sorted(payload.keys()) if isinstance(payload, dict) else type(payload).__name__}",
 	)
@@ -160,7 +161,7 @@ def _parse_data(raw) -> dict:
 
 
 def _log_unmapped_notification(notif_type, notification) -> None:
-	frappe.log_error(
+	errors.log_error(
 		title=f"Notification engine: unmapped Discourse notification_type {notif_type}",
 		message=(
 			f"Raw payload: {notification}\n\n"
@@ -173,7 +174,7 @@ def _log_unmapped_notification(notif_type, notification) -> None:
 def _verify_signature() -> bool:
 	secret = frappe.get_site_config().get("discourse_webhook_secret")
 	if not secret:
-		frappe.log_error(
+		errors.log_error(
 			title="Notification engine: discourse_webhook_secret missing",
 			message="site_config.json has no 'discourse_webhook_secret' key — every Discourse webhook delivery is being rejected until this is set.",
 		)
@@ -186,7 +187,7 @@ def _verify_signature() -> bool:
 		# A mismatch is otherwise silent — see chatwoot_webhook.py's
 		# `_verify_request` for why (a 403 from frappe.throw isn't
 		# Error-Logged by default).
-		frappe.log_error(
+		errors.log_error(
 			title="Notification engine: community_webhook signature mismatch",
 			message=f"X-Discourse-Event-Signature present={bool(signature)}. Check discourse_webhook_secret in site_config.json matches the secret set when this webhook was registered in Discourse.",
 		)

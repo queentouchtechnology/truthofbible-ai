@@ -11,6 +11,8 @@ from datetime import date
 import frappe
 from frappe import _
 
+from truth_of_bible import errors
+
 from truth_of_bible.ai import service
 from truth_of_bible.ai.core.exceptions import AiProviderException
 from truth_of_bible.ai.core.request import AiMessage, AiRequest
@@ -63,7 +65,7 @@ def explain(reference: str, language: str, explanation_type: str = "verse") -> d
 	try:
 		response = service.generate(request)
 	except AiProviderException as exc:
-		frappe.throw(_("Could not generate an explanation: {0}").format(str(exc)), frappe.ValidationError)
+		errors.ai_fail(_("The AI explanation"), exc)
 
 	frappe.get_doc(
 		{
@@ -144,7 +146,7 @@ def _ask(conversation_name: str, question: str, language: str) -> dict:
 	try:
 		response = service.generate(request)
 	except AiProviderException as exc:
-		frappe.throw(_("Could not answer that question: {0}").format(str(exc)), frappe.ValidationError)
+		errors.ai_fail(_("The AI answer"), exc)
 
 	frappe.get_doc(
 		{

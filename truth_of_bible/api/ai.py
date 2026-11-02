@@ -9,6 +9,8 @@ for guest-accessible endpoints, which this app has none of)."""
 import frappe
 from frappe import _
 
+from truth_of_bible import errors
+
 from truth_of_bible.ai import service
 from truth_of_bible.ai.core.exceptions import AiProviderException
 from truth_of_bible.ai.core.request import AiMessage, AiRequest
@@ -37,7 +39,7 @@ def generate(task: str, prompt: str, language: str | None = None, structured_out
 	try:
 		response = service.generate(request)
 	except AiProviderException as exc:
-		frappe.throw(_("AI generation failed: {0}").format(str(exc)), frappe.ValidationError)
+		errors.ai_fail(_("AI writing"), exc)
 
 	return {
 		"content": response.content,

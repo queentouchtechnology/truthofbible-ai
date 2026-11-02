@@ -24,6 +24,7 @@ from frappe.utils import get_datetime, nowdate
 from truth_of_bible.notifications import timeutils
 from truth_of_bible.notifications.engine import handle_event
 from truth_of_bible.notifications.preferences import get_or_create_preference
+from truth_of_bible import errors
 
 _ALL_PRAYER_EVENTS = (
 	"PRAYER_DAILY",
@@ -54,7 +55,7 @@ def daily_scan() -> None:
 		try:
 			_scan_one(user)
 		except Exception:
-			frappe.log_error(
+			errors.log_error(
 				title=f"Notification engine: prayer scan ({user})", message=frappe.get_traceback()
 			)
 

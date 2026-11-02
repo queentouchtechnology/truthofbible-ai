@@ -22,6 +22,7 @@ import frappe
 import requests
 
 from truth_of_bible.notifications.engine import handle_event
+from truth_of_bible import errors
 
 _BASE_URL = "https://www.edenza.org/wp-json/wc/v3"
 _TIMEOUT = 30
@@ -39,7 +40,7 @@ _DEFAULT_LOW_STOCK_THRESHOLD = 5
 def _auth_header():
 	value = frappe.get_site_config().get("woocommerce_api_auth")
 	if not value:
-		frappe.log_error(
+		errors.log_error(
 			title="Notification engine: woocommerce_api_auth missing",
 			message=(
 				"site_config.json has no 'woocommerce_api_auth' key — the stock poll is skipped "
@@ -65,13 +66,13 @@ def _fetch_products(stock_status: str) -> list[dict]:
 				timeout=_TIMEOUT,
 			)
 		except requests.RequestException as e:
-			frappe.log_error(
+			errors.log_error(
 				title="Notification engine: WooCommerce stock poll failed",
 				message=f"stock_status={stock_status} page={page}: {type(e).__name__}: {e}",
 			)
 			return products
 		if response.status_code != 200:
-			frappe.log_error(
+			errors.log_error(
 				title="Notification engine: WooCommerce stock poll rejected",
 				message=f"stock_status={stock_status} page={page}: HTTP {response.status_code}: {response.text[:1000]}",
 			)
@@ -113,7 +114,7 @@ def daily_check() -> None:
 	try:
 		_run()
 	except Exception:
-		frappe.log_error(title="Notification engine: stock check failed", message=frappe.get_traceback())
+		errors.log_error(title="Notification engine: stock check failed", message=frappe.get_traceback())
 
 
 def _run() -> None:

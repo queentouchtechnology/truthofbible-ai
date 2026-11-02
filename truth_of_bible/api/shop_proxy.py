@@ -14,6 +14,7 @@ import requests
 
 import frappe
 from frappe import _
+from truth_of_bible import errors
 
 # Roles allowed to use the Shopping admin screens' pass-through.
 SHOP_ADMIN_ROLES = {"System Manager", "Sales Manager"}
@@ -36,7 +37,7 @@ _STORE_URL = "https://www.edenza.org/wp-json"  # same store as marketplace/engin
 def _auth() -> str:
 	value = frappe.get_site_config().get("woocommerce_api_auth")
 	if not value:
-		frappe.log_error(title="Shop proxy: woocommerce_api_auth missing",
+		errors.log_error(title="Shop proxy: woocommerce_api_auth missing",
 			message="site_config.json has no 'woocommerce_api_auth' — the app's shop can't load.")
 		frappe.throw(_("The shop is not available right now"))
 	return value
@@ -56,7 +57,7 @@ def _wc(method: str, path: str, params: dict | None = None, data=None):
 			timeout=30,
 		)
 	except requests.RequestException:
-		frappe.log_error(title="Shop proxy: WooCommerce unreachable", message=frappe.get_traceback())
+		errors.log_error(title="Shop proxy: WooCommerce unreachable", message=frappe.get_traceback())
 		frappe.throw(_("The shop is not available right now"))
 	try:
 		body = r.json()

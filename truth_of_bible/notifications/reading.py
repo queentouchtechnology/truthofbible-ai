@@ -19,6 +19,7 @@ from frappe.utils import get_datetime, now_datetime
 from truth_of_bible.notifications import timeutils
 from truth_of_bible.notifications.engine import handle_event
 from truth_of_bible.notifications.preferences import get_or_create_preference
+from truth_of_bible import errors
 
 # Largest first: a user inactive 40 days must land on the 30-day tier, not
 # be caught by the 3-day check and stop there.
@@ -93,7 +94,7 @@ def daily_scan() -> None:
 		try:
 			_scan_one(row)
 		except Exception:
-			frappe.log_error(
+			errors.log_error(
 				title=f"Notification engine: reading scan ({row.user})",
 				message=frappe.get_traceback(),
 			)

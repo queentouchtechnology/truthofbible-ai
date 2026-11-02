@@ -53,6 +53,7 @@ from frappe.utils import get_datetime, now_datetime
 from frappe.utils.password import get_decrypted_password
 
 from truth_of_bible.notifications.engine import handle_event
+from truth_of_bible import errors
 
 _BASE_URL = "https://www.edenza.org/wp-json/wc/v3"
 _TIMEOUT = 30
@@ -70,7 +71,7 @@ _WC_STATUS_TO_CACHE = {"pending": "Pending", "publish": "Publish", "draft": "Dra
 def _admin_auth() -> str | None:
 	value = frappe.get_site_config().get("woocommerce_api_auth")
 	if not value:
-		frappe.log_error(
+		errors.log_error(
 			title="Marketplace: woocommerce_api_auth missing",
 			message=(
 				"site_config.json has no 'woocommerce_api_auth' key — marketplace admin-scope calls "
@@ -96,10 +97,10 @@ def _wc_request(method: str, path: str, auth: str | None, **kwargs):
 	try:
 		response = requests.request(method, f"{_BASE_URL}{path}", headers={"Authorization": auth}, timeout=_TIMEOUT, **kwargs)
 	except requests.RequestException as e:
-		frappe.log_error(title="Marketplace: WooCommerce request failed", message=f"{method} {path}: {type(e).__name__}: {e}")
+		errors.log_error(title="Marketplace: WooCommerce request failed", message=f"{method} {path}: {type(e).__name__}: {e}")
 		frappe.throw("Could not reach the shop right now. Please try again.")
 	if response.status_code >= 400:
-		frappe.log_error(title="Marketplace: WooCommerce request rejected", message=f"{method} {path}: HTTP {response.status_code}: {response.text[:1000]}")
+		errors.log_error(title="Marketplace: WooCommerce request rejected", message=f"{method} {path}: HTTP {response.status_code}: {response.text[:1000]}")
 		frappe.throw("The shop rejected that request. Please check the details and try again.")
 	return response.json() if response.content else {}
 
@@ -316,7 +317,7 @@ def poll_recent_orders() -> None:
 	try:
 		_poll_recent_orders()
 	except Exception:
-		frappe.log_error(title="Marketplace: poll_recent_orders failed", message=frappe.get_traceback())
+		errors.log_error(title="Marketplace: poll_recent_orders failed", message=frappe.get_traceback())
 
 
 def _poll_recent_orders() -> None:
@@ -334,10 +335,10 @@ def _poll_recent_orders() -> None:
 				params={"after": after, "per_page": 100, "page": page, "status": "any"}, timeout=_TIMEOUT,
 			)
 		except requests.RequestException as e:
-			frappe.log_error(title="Marketplace: order poll failed", message=f"page={page}: {type(e).__name__}: {e}")
+			errors.log_error(title="Marketplace: order poll failed", message=f"page={page}: {type(e).__name__}: {e}")
 			return
 		if response.status_code != 200:
-			frappe.log_error(title="Marketplace: order poll rejected", message=f"page={page}: HTTP {response.status_code}: {response.text[:1000]}")
+			errors.log_error(title="Marketplace: order poll rejected", message=f"page={page}: HTTP {response.status_code}: {response.text[:1000]}")
 			return
 		batch = response.json() or []
 		if not isinstance(batch, list) or not batch:
@@ -358,7 +359,7 @@ def check_low_stock() -> None:
 	try:
 		_check_low_stock()
 	except Exception:
-		frappe.log_error(title="Marketplace: check_low_stock failed", message=frappe.get_traceback())
+		errors.log_error(title="Marketplace: check_low_stock failed", message=frappe.get_traceback())
 
 
 def _check_low_stock() -> None:
@@ -381,10 +382,10 @@ def _check_low_stock() -> None:
 				params={"include": ",".join(str(x) for x in chunk), "per_page": 100}, timeout=_TIMEOUT,
 			)
 		except requests.RequestException as e:
-			frappe.log_error(title="Marketplace: low-stock fetch failed", message=f"{type(e).__name__}: {e}")
+			errors.log_error(title="Marketplace: low-stock fetch failed", message=f"{type(e).__name__}: {e}")
 			continue
 		if response.status_code != 200:
-			frappe.log_error(title="Marketplace: low-stock fetch rejected", message=f"HTTP {response.status_code}: {response.text[:1000]}")
+			errors.log_error(title="Marketplace: low-stock fetch rejected", message=f"HTTP {response.status_code}: {response.text[:1000]}")
 			continue
 		for product in response.json() or []:
 			ledger = by_id.get(product.get("id"))

@@ -14,6 +14,7 @@ import json
 import frappe
 import requests
 from frappe.utils.password import get_decrypted_password
+from truth_of_bible import errors
 
 _PROVIDER_KEY = "google"
 _DEFAULT_BASE_URL = "https://texttospeech.googleapis.com"
@@ -85,7 +86,7 @@ def list_voices(language_code: str | None = None) -> list[dict]:
 	except requests.RequestException as exc:
 		raise TtsProviderError(str(exc)) from exc
 	if response.status_code >= 400:
-		frappe.log_error(title="TTS list voices failed", message=response.text)
+		errors.log_error(title="TTS list voices failed", message=response.text)
 		raise TtsProviderError(f"Voice provider returned {response.status_code}.")
 	return response.json().get("voices") or []
 
@@ -169,7 +170,7 @@ def synthesize_speech(
 		raise TtsProviderError(str(exc)) from exc
 
 	if response.status_code >= 400:
-		frappe.log_error(title="TTS synthesize failed", message=response.text)
+		errors.log_error(title="TTS synthesize failed", message=response.text)
 		raise TtsProviderError(f"Voice provider returned {response.status_code}.")
 
 	audio_content = response.json().get("audioContent")

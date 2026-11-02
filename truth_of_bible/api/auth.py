@@ -4,6 +4,8 @@ import requests
 from frappe import _
 from frappe.utils.file_manager import save_file
 
+from truth_of_bible import errors
+
 from truth_of_bible.api.app_auth import APP_MEMBER_ROLES
 
 
@@ -21,7 +23,7 @@ def _token_is_for_this_app(access_token) -> bool:
 			return False
 		info = r.json()
 	except Exception:
-		frappe.log_error(title="Google login audience check failed", message=frappe.get_traceback())
+		errors.log_error(title="Google login audience check failed", message=frappe.get_traceback())
 		return False
 	audiences = {a for a in (info.get("aud"), info.get("azp")) if a}
 	allowed = {str(c) for c in (frappe.get_site_config().get("google_client_ids") or [])}
@@ -30,7 +32,7 @@ def _token_is_for_this_app(access_token) -> bool:
 		seen = ",".join(sorted(audiences)) or "(none)"
 		if not frappe.cache().get_value(f"google_aud_refused:{seen}"):
 			frappe.cache().set_value(f"google_aud_refused:{seen}", 1)
-			frappe.log_error(
+			errors.log_error(
 				title="Google login refused: audience not allowed",
 				message=f"Audience seen: {seen}. If this is your app, add it to google_client_ids in site_config.json.",
 			)
@@ -121,7 +123,7 @@ def google_login(access_token, referralCode=None):
 						user_doc.user_image = file_doc.file_url
 						user_doc.save(ignore_permissions=True)
 			except Exception:
-				frappe.log_error(frappe.get_traceback(), "Profile Image Error")
+				errors.log_error(frappe.get_traceback(), "Profile Image Error")
 
 		frappe.local.login_manager.login_as(email)
 
@@ -144,7 +146,7 @@ def google_login(access_token, referralCode=None):
 		frappe.db.commit()
 		return response
 
-	except Exception as e:
+	except Exception:
 		frappe.db.rollback()
-		frappe.log_error(frappe.get_traceback(), "Google Login Error")
-		return {"status": "error", "message": str(e)}
+		errors.log_error(frappe.get_traceback(), "Google Login Error")
+		return {"status": "error", "message": _("We couldn't sign you in with Google. Please try again.")}

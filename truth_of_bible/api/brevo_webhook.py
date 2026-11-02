@@ -18,6 +18,7 @@ import hmac
 import json
 
 import frappe
+from truth_of_bible import errors
 
 _EVENT_STATUS = {
 	"request": "SENT",
@@ -45,7 +46,7 @@ def receive():
 	try:
 		_handle_event(payload)
 	except Exception:
-		frappe.log_error(title="Communication Center: brevo_webhook", message=frappe.get_traceback())
+		errors.log_error(title="Communication Center: brevo_webhook", message=frappe.get_traceback())
 
 	return {"status": "ok"}
 
@@ -53,7 +54,7 @@ def receive():
 def _verify_request() -> bool:
 	secret = frappe.get_site_config().get("brevo_webhook_secret")
 	if not secret:
-		frappe.log_error(
+		errors.log_error(
 			title="Communication Center: brevo_webhook_secret missing",
 			message="site_config.json has no 'brevo_webhook_secret' key — every Brevo webhook delivery is being rejected until this is set.",
 		)
@@ -65,7 +66,7 @@ def _verify_request() -> bool:
 		# `frappe.throw` — so a mismatch was previously not just unlogged
 		# but literally indistinguishable from success. Logged here for
 		# the same reason as chatwoot_webhook.py's `_verify_request`.
-		frappe.log_error(
+		errors.log_error(
 			title="Communication Center: brevo_webhook token mismatch",
 			message=f"Provided token present={bool(provided)}. Check brevo_webhook_secret in site_config.json matches the token set when this webhook was registered in Brevo.",
 		)

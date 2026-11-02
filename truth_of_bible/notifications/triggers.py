@@ -40,6 +40,7 @@ for each field, same discipline as the Quiz/Ticket slice above.
 import frappe
 
 from truth_of_bible.notifications.engine import handle_event
+from truth_of_bible import errors
 
 # A single "new quiz" fan-out is capped — a large course shouldn't turn one
 # quiz save into thousands of pushes within one request/transaction. 200
@@ -59,7 +60,7 @@ def on_quiz_created(doc, method=None):
 	try:
 		_on_quiz_created(doc)
 	except Exception:
-		frappe.log_error(
+		errors.log_error(
 			title="Notification trigger: on_quiz_created", message=frappe.get_traceback()
 		)
 
@@ -87,7 +88,7 @@ def on_quiz_submission_created(doc, method=None):
 	try:
 		_on_quiz_submission_created(doc)
 	except Exception:
-		frappe.log_error(
+		errors.log_error(
 			title="Notification trigger: on_quiz_submission_created",
 			message=frappe.get_traceback(),
 		)
@@ -114,7 +115,7 @@ def on_communication_created(doc, method=None):
 	try:
 		_on_communication_created(doc)
 	except Exception:
-		frappe.log_error(
+		errors.log_error(
 			title="Notification trigger: on_communication_created",
 			message=frappe.get_traceback(),
 		)
@@ -175,14 +176,14 @@ def on_issue_created(doc, method=None):
 			{"ticket_id": doc.name, "subject": doc.get("subject") or ""},
 		)
 	except Exception:
-		frappe.log_error(title="Notification trigger: on_issue_created", message=frappe.get_traceback())
+		errors.log_error(title="Notification trigger: on_issue_created", message=frappe.get_traceback())
 
 
 def on_issue_updated(doc, method=None):
 	try:
 		_on_issue_updated(doc)
 	except Exception:
-		frappe.log_error(title="Notification trigger: on_issue_updated", message=frappe.get_traceback())
+		errors.log_error(title="Notification trigger: on_issue_updated", message=frappe.get_traceback())
 
 
 def _on_issue_updated(doc):
@@ -201,7 +202,7 @@ def on_user_created(doc, method=None):
 	try:
 		_on_user_created(doc)
 	except Exception:
-		frappe.log_error(title="Notification trigger: on_user_created", message=frappe.get_traceback())
+		errors.log_error(title="Notification trigger: on_user_created", message=frappe.get_traceback())
 
 
 def _on_user_created(doc):
@@ -222,7 +223,7 @@ def on_enrollment_created(doc, method=None):
 	try:
 		_on_enrollment_created(doc)
 	except Exception:
-		frappe.log_error(title="Notification trigger: on_enrollment_created", message=frappe.get_traceback())
+		errors.log_error(title="Notification trigger: on_enrollment_created", message=frappe.get_traceback())
 
 
 def _on_enrollment_created(doc):
@@ -254,7 +255,7 @@ def on_batch_enrollment_created(doc, method=None):
 	try:
 		_on_batch_enrollment_created(doc)
 	except Exception:
-		frappe.log_error(
+		errors.log_error(
 			title="Notification trigger: on_batch_enrollment_created", message=frappe.get_traceback()
 		)
 
@@ -272,7 +273,7 @@ def on_lesson_created(doc, method=None):
 	try:
 		_on_lesson_created(doc)
 	except Exception:
-		frappe.log_error(title="Notification trigger: on_lesson_created", message=frappe.get_traceback())
+		errors.log_error(title="Notification trigger: on_lesson_created", message=frappe.get_traceback())
 
 
 def _on_lesson_created(doc):
@@ -294,7 +295,7 @@ def on_batch_updated(doc, method=None):
 	try:
 		_on_batch_updated(doc)
 	except Exception:
-		frappe.log_error(title="Notification trigger: on_batch_updated", message=frappe.get_traceback())
+		errors.log_error(title="Notification trigger: on_batch_updated", message=frappe.get_traceback())
 
 
 def _on_batch_updated(doc):
@@ -330,7 +331,7 @@ def on_sunday_school_quiz_assigned(doc, method=None):
 	try:
 		_on_sunday_school_quiz_assigned(doc)
 	except Exception:
-		frappe.log_error(title="Notification trigger: on_sunday_school_quiz_assigned", message=frappe.get_traceback())
+		errors.log_error(title="Notification trigger: on_sunday_school_quiz_assigned", message=frappe.get_traceback())
 
 
 def _on_sunday_school_quiz_assigned(doc):
@@ -349,7 +350,7 @@ def on_sunday_school_verse_updated(doc, method=None):
 	try:
 		_on_sunday_school_verse_updated(doc)
 	except Exception:
-		frappe.log_error(title="Notification trigger: on_sunday_school_verse_updated", message=frappe.get_traceback())
+		errors.log_error(title="Notification trigger: on_sunday_school_verse_updated", message=frappe.get_traceback())
 
 
 def _on_sunday_school_verse_updated(doc):

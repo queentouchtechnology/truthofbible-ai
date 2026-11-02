@@ -20,6 +20,8 @@ from frappe import _
 from frappe.utils import add_days, get_first_day, getdate, now_datetime, nowdate
 from frappe.utils.file_manager import save_file
 
+from truth_of_bible import errors
+
 from truth_of_bible.ai.service import check_ai_access
 from truth_of_bible.communication.auth import require_admin
 from truth_of_bible.rewards import gate
@@ -28,6 +30,14 @@ from truth_of_bible.tts import service as tts_service
 from truth_of_bible.tts.usage import record_tts_usage
 
 _PROVIDER_KEY = "google"
+
+
+def _tts_fail(title: str, exc: Exception) -> None:
+	"""Premium voice switched off / not set up is already a friendly sentence, shown as it is. A provider
+	failure is logged (Error Log + GlitchTip) and the user only hears that the voice isn't available."""
+	if isinstance(exc, tts_service.TtsProviderDisabled):
+		frappe.throw(str(exc))
+	errors.fail(title, exc, _("Premium voice isn't available right now. Please try again in a little while."))
 
 
 def _hash(text: str, locale: str, voice_type: str | None, audio_encoding: str) -> str:
@@ -145,7 +155,7 @@ def synthesize(text: str, locale: str, task: str = "general"):
 			was_cache_hit=False, character_count=len(text), estimated_cost_usd=0, status="error",
 			error_message=str(exc),
 		)
-		frappe.throw(_("Could not generate speech: {0}").format(str(exc)))
+		_tts_fail("TTS: speech failed", exc)
 
 	character_count = len(text)
 	estimated_cost_usd = (character_count / 1_000_000) * settings.price_per_million_chars_usd
@@ -222,7 +232,7 @@ def get_tts_voice_catalog(language_code: str | None = None, refresh=None):
 	try:
 		voices = _all_voices()
 	except (tts_service.TtsProviderDisabled, tts_service.TtsProviderError) as exc:
-		frappe.throw(_("Could not load voices: {0}").format(str(exc)))
+		_tts_fail("TTS: loading voices failed", exc)
 
 	names = _language_names()
 	languages: dict[str, dict] = {}
@@ -297,7 +307,7 @@ def preview_tts_voice(voice_name: str, language_code: str, text: str):
 		return {"audio_url": existing.audio_file, "cached": True}
 
 	try:
-		audio_bytes, _ = tts_service.synthesize_speech(
+		audio_bytes, _voice = tts_service.synthesize_speech(
 			text, language_code, voice_name=voice_name, require_enabled=False
 		)
 	except (tts_service.TtsProviderDisabled, tts_service.TtsProviderError) as exc:
@@ -306,7 +316,7 @@ def preview_tts_voice(voice_name: str, language_code: str, text: str):
 			was_cache_hit=False, character_count=len(text), estimated_cost_usd=0, status="error",
 			error_message=str(exc),
 		)
-		frappe.throw(_("Could not generate speech: {0}").format(str(exc)))
+		_tts_fail("TTS: speech failed", exc)
 
 	cache_doc = frappe.get_doc(
 		{

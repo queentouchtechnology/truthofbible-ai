@@ -45,6 +45,7 @@ from datetime import timedelta
 import frappe
 import requests
 from frappe.utils import add_days, flt, get_datetime, getdate, now_datetime, nowdate
+from truth_of_bible import errors
 
 _WC_BASE = "https://www.edenza.org/wp-json/wc/v3"
 _TIMEOUT = 20
@@ -511,10 +512,10 @@ def redeem(user: str, tier_id: str, country: str | None = None) -> dict:
 			timeout=_TIMEOUT,
 		)
 	except requests.RequestException:
-		frappe.log_error(title="Rewards: coupon request failed", message=frappe.get_traceback())
+		errors.log_error(title="Rewards: coupon request failed", message=frappe.get_traceback())
 		frappe.throw(frappe._("Couldn't create your coupon right now. No points were spent."), frappe.ValidationError)
 	if response.status_code not in (200, 201):
-		frappe.log_error(
+		errors.log_error(
 			title="Rewards: coupon rejected by the shop",
 			message=f"HTTP {response.status_code}: {response.text[:1500]}",
 		)

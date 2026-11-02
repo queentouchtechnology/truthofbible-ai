@@ -11,10 +11,11 @@ that fired it.
 import frappe
 
 from truth_of_bible.sunday_school import engine
+from truth_of_bible import errors
 
 
 def on_submission_created(doc, method=None):
 	try:
 		engine.on_lms_quiz_submission(doc.member, doc.quiz, doc.score)
 	except Exception:
-		frappe.log_error(title="Sunday School: on_lms_quiz_submission failed", message=frappe.get_traceback())
+		errors.log_error(title="Sunday School: on_lms_quiz_submission failed", message=frappe.get_traceback())

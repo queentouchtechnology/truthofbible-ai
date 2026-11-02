@@ -23,6 +23,8 @@ import frappe
 from frappe import _
 from frappe.utils import add_days, getdate, nowdate
 
+from truth_of_bible import errors
+
 from truth_of_bible.ai import service
 from truth_of_bible.ai.core.exceptions import AiProviderException
 from truth_of_bible.ai.core.request import AiMessage, AiRequest
@@ -152,7 +154,7 @@ def translate_field(source_doctype, source_name, field, target_language):
 	try:
 		doc = _upsert_translation(source_doctype, source_name, field, target_language, source_text)
 	except AiProviderException as exc:
-		frappe.throw(_("Could not translate: {0}").format(str(exc)), frappe.ValidationError)
+		errors.ai_fail(_("Translation"), exc)
 	return {"name": doc.name, "translated_text": doc.translated_text, "translation_status": doc.translation_status}
 
 
@@ -170,7 +172,7 @@ def _bulk_translate_job(source_doctype, docs, fields, target_languages):
 				try:
 					_upsert_translation(source_doctype, doc_name, field, language, source_text)
 				except Exception:
-					frappe.log_error(title="Bulk translation row failed", message=frappe.get_traceback())
+					errors.log_error(title="Bulk translation row failed", message=frappe.get_traceback())
 
 
 @frappe.whitelist(methods=["POST"])

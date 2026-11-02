@@ -16,6 +16,8 @@ from frappe import _
 from PIL import Image, ImageOps
 from frappe.utils import get_system_timezone, now_datetime
 
+from truth_of_bible import errors
+
 SITE = "https://truthofbible.org"
 _GH = "https://api.github.com/repos/"
 
@@ -183,7 +185,11 @@ def _commit(repo: str, branch: str, token: str, files: dict[str, bytes], message
 		r = requests.request(method, _GH + repo + path, json=body, timeout=60, headers={
 			"Authorization": f"Bearer {token}", "Accept": "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28"})
 		if r.status_code >= 400:
-			frappe.throw(_("GitHub said {0}: {1}").format(r.status_code, r.text[:300]))
+			errors.fail(
+				"Articles: GitHub publish failed", None,
+				_("GitHub didn't accept the publish (HTTP {0}). The details are in Error Log.").format(r.status_code),
+				request=f"{method} {path}", status=r.status_code, response=r.text[:2000],
+			)
 		return r.json()
 
 	head = gh("GET", f"/git/ref/heads/{branch}")["object"]["sha"]
@@ -211,4 +217,4 @@ def _open_discussion(name: str) -> None:
 		requests.post(s.community_webhook_url, timeout=30, headers=headers, json={
 			"title": doc.title, "link": doc.url, "questions": [q for q in (doc.questions or "").splitlines() if q.strip()]})
 	except requests.RequestException:
-		frappe.log_error(title="TOB Article: community discussion failed")
+		errors.log_error(title="TOB Article: community discussion failed")

@@ -28,6 +28,7 @@ from frappe.utils import now_datetime
 from truth_of_bible.notifications import timeutils
 from truth_of_bible.notifications.engine import handle_event
 from truth_of_bible.notifications.preferences import get_or_create_preference
+from truth_of_bible import errors
 
 _EVENT = "DAILY_ENCOURAGEMENT"
 
@@ -40,7 +41,7 @@ def daily_scan() -> None:
 		try:
 			_scan_one(user)
 		except Exception:
-			frappe.log_error(
+			errors.log_error(
 				title=f"Notification engine: encouragement scan ({user})", message=frappe.get_traceback()
 			)
 
@@ -84,7 +85,7 @@ def _scan_one(user: str) -> None:
 		)
 		frappe.db.commit()
 	except Exception:
-		frappe.log_error(
+		errors.log_error(
 			title="Notification engine: encouragement bookkeeping failed", message=frappe.get_traceback()
 		)
 

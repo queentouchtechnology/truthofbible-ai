@@ -33,6 +33,8 @@ import frappe
 from frappe import _
 from frappe.utils import add_days, cint, get_datetime, getdate, now_datetime, today
 
+from truth_of_bible import errors
+
 from truth_of_bible.communication.auth import require_admin
 from truth_of_bible.social import meta_connection, verse_reference
 
@@ -649,7 +651,7 @@ def generate_content_drafts(content_type, count=3, brief=""):
 	try:
 		response = service.generate(request)
 	except AiProviderException as exc:
-		frappe.throw(_("The AI couldn't write drafts: {0}").format(str(exc)), frappe.ValidationError)
+		errors.ai_fail(_("AI drafts"), exc)
 
 	created = []
 	for item in _parse_items(response.content)[:count]:

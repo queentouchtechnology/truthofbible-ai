@@ -27,6 +27,8 @@ import json
 import frappe
 from frappe import _
 
+from truth_of_bible import errors
+
 from truth_of_bible.ai import service
 from truth_of_bible.ai.core.exceptions import AiProviderException
 from truth_of_bible.ai.core.request import AiMessage, AiRequest
@@ -72,7 +74,7 @@ def generate_quiz(course: str, topic: str, language: str, count: int = 5, diffic
 	try:
 		response = service.generate(request)
 	except AiProviderException as exc:
-		frappe.throw(_("Could not generate quiz questions: {0}").format(str(exc)), frappe.ValidationError)
+		errors.ai_fail(_("Quiz generation"), exc)
 
 	questions = _parse_quiz_response(response.content)
 

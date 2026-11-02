@@ -18,6 +18,7 @@ from truth_of_bible.ai.core.routing import (
 	resolve_fallback_provider,
 	resolve_routing,
 )
+from truth_of_bible import errors
 
 #: Deliberately no backoff delay — favor fast fallback over slow
 #: same-provider retries, matching qtt_platform's own reasoning.
@@ -90,4 +91,4 @@ class AiGateway:
 			except Exception:
 				# A usage-recording failure must never mask the real
 				# generate()/error outcome — log and move on.
-				frappe.log_error(title="Truth of Bible AI gateway on_call recorder failed", message=frappe.get_traceback())
+				errors.log_error(title="Truth of Bible AI gateway on_call recorder failed", message=frappe.get_traceback())

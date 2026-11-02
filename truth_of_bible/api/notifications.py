@@ -10,6 +10,7 @@ import frappe
 
 from truth_of_bible.notifications import preferences
 from truth_of_bible.notifications import reading
+from truth_of_bible import errors
 
 
 @frappe.whitelist(methods=["POST"])
@@ -26,7 +27,7 @@ def record_reading_activity(book: str | None = None, chapter=None, verse=None, b
 		reading.record_reading(frappe.session.user, book, chapter, verse, book_id=book_id)
 		return {"ok": True}
 	except Exception:
-		frappe.log_error(title="record_reading_activity", message=frappe.get_traceback())
+		errors.log_error(title="record_reading_activity", message=frappe.get_traceback())
 		return {"ok": False}
 
 

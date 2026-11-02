@@ -27,6 +27,7 @@ import frappe
 import requests
 
 from truth_of_bible.rewards import engine
+from truth_of_bible import errors
 
 _API = "https://api.razorpay.com/v1"
 _TIMEOUT = 20
@@ -66,10 +67,10 @@ def _call(method: str, path: str, **kwargs):
 	try:
 		response = requests.request(method, f"{_API}{path}", auth=(key_id, secret), timeout=_TIMEOUT, **kwargs)
 	except requests.RequestException:
-		frappe.log_error(title="Rewards top-up: Razorpay unreachable", message=frappe.get_traceback())
+		errors.log_error(title="Rewards top-up: Razorpay unreachable", message=frappe.get_traceback())
 		frappe.throw(frappe._("Couldn't reach the payment service. Please try again."), frappe.ValidationError)
 	if response.status_code not in (200, 201):
-		frappe.log_error(
+		errors.log_error(
 			title="Rewards top-up: Razorpay rejected the request",
 			message=f"{method} {path} -> HTTP {response.status_code}: {response.text[:1500]}",
 		)
@@ -153,7 +154,7 @@ def verify_topup(user: str, order_id: str, payment_id: str, signature: str) -> d
 		frappe.throw(frappe._("Adding money isn't available yet."), frappe.ValidationError)
 	expected = hmac.new(key_secret.encode(), f"{order_id}|{payment_id}".encode(), hashlib.sha256).hexdigest()
 	if not hmac.compare_digest(expected, signature or ""):
-		frappe.log_error(title="Rewards top-up: bad signature", message=f"user={user} order={order_id} payment={payment_id}")
+		errors.log_error(title="Rewards top-up: bad signature", message=f"user={user} order={order_id} payment={payment_id}")
 		frappe.throw(frappe._("We couldn't verify that payment."), frappe.ValidationError)
 	return _settle(order_id, payment_id, expected_user=user)
 

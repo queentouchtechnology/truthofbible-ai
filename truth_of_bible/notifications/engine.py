@@ -35,6 +35,7 @@ from frappe.utils import get_system_timezone, now_datetime
 from truth_of_bible.notifications import delivery, email_delivery, timeutils
 from truth_of_bible.notifications.admin_audience import admin_users
 from truth_of_bible.notifications.preferences import get_or_create_preference
+from truth_of_bible import errors
 
 _CATEGORY_PREFERENCE_FIELD = {
 	"Bible Reading": "bible_reading",
@@ -82,7 +83,7 @@ def handle_event(event_code: str, user: str | None = None, variables: dict | Non
 	try:
 		return _handle_event(event_code, user, variables or {}, force)
 	except Exception:
-		frappe.log_error(title=f"Notification engine: {event_code}", message=frappe.get_traceback())
+		errors.log_error(title=f"Notification engine: {event_code}", message=frappe.get_traceback())
 		return False
 
 
@@ -119,7 +120,7 @@ def _handle_event(event_code: str, user: str | None, variables: dict, force: boo
 				if _send_one(template, admin, variables, event_code):
 					sent_any = True
 			except Exception:
-				frappe.log_error(
+				errors.log_error(
 					title=f"Notification engine: admin fan-out ({event_code}, {admin})",
 					message=frappe.get_traceback(),
 				)
@@ -154,7 +155,7 @@ def _send_one(template: dict, user: str, variables: dict, event_code: str) -> bo
 	try:
 		_write_notification_log(user, title, body, route, route_id)
 	except Exception:
-		frappe.log_error(
+		errors.log_error(
 			title=f"Notification engine: writing Notification Log failed ({event_code})",
 			message=frappe.get_traceback(),
 		)

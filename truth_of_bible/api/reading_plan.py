@@ -32,6 +32,7 @@ from frappe import _
 from frappe.utils import add_days, date_diff, get_time, getdate, now_datetime, nowdate
 
 from truth_of_bible.reading_plans.catalog import reflection_for
+from truth_of_bible import errors
 
 # Best row to show for a plan when a user has several runs of it.
 _STATUS_RANK = {"Active": 0, "Completed": 1, "Abandoned": 2}
@@ -439,7 +440,7 @@ def _reward_day(user: str, enrollment, day_number: int, finished: bool) -> dict:
 		out["badges"] = [b["title"] for b in progress.check_badges(user)]
 		progress.missions(user)
 	except Exception:
-		frappe.log_error(title="Reading plan rewards", message=frappe.get_traceback())
+		errors.log_error(title="Reading plan rewards", message=frappe.get_traceback())
 	return out
 
 

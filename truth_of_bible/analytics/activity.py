@@ -26,6 +26,7 @@ import frappe
 from frappe.utils import get_datetime, now_datetime
 
 from truth_of_bible.communication.auth import require_admin
+from truth_of_bible import errors
 
 # Kept in lockstep with ActivityQueueService's own curated list in the
 # Flutter app — add to both sides together. Silently rejecting anything
@@ -155,7 +156,7 @@ def record_batch(events):
 
 				rewards_engine.on_activity(user, event_name, event_time)
 			except Exception:
-				frappe.log_error(title="Rewards: awarding from activity failed", message=frappe.get_traceback())
+				errors.log_error(title="Rewards: awarding from activity failed", message=frappe.get_traceback())
 		except Exception:
 			# One entry per BATCH, not per event — a systemic failure (like
 			# the timezone bug this replaced) used to write up to 100
@@ -166,7 +167,7 @@ def record_batch(events):
 			continue
 
 	if failed:
-		frappe.log_error(
+		errors.log_error(
 			title=f"analytics.record_batch: {failed} event(s) failed to insert",
 			message=last_traceback,
 		)

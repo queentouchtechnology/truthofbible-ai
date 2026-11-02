@@ -25,6 +25,7 @@ an OAuth access token), never hardcoded, never logged.
 
 import frappe
 import requests
+from truth_of_bible import errors
 
 _GRAPHQL_URL = "https://api.buffer.com"
 # A real production timeout (confirmed via Buffer's own request log:
@@ -98,12 +99,12 @@ def _graphql(query: str, variables: dict = None) -> dict:
 		if status == 429:
 			if not frappe.cache().get_value("tob_buffer_429_logged"):
 				frappe.cache().set_value("tob_buffer_429_logged", 1, expires_in_sec=600)
-				frappe.log_error(
+				errors.log_error(
 					title="Buffer GraphQL request failed (rate limited)",
 					message=f"Status: 429\nBody: {body[:2000]}\n(Further 429s are not logged for 10 minutes.)",
 				)
 		else:
-			frappe.log_error(
+			errors.log_error(
 				title="Buffer GraphQL request failed",
 				message=f"Status: {status}\nBody: {body[:2000]}",
 			)
@@ -114,7 +115,7 @@ def _graphql(query: str, variables: dict = None) -> dict:
 		# GraphQL returns HTTP 200 even for query-level errors — log and
 		# surface them as a real exception so callers' except blocks catch
 		# this the same way they'd catch a transport-level failure.
-		frappe.log_error(
+		errors.log_error(
 			title="Buffer GraphQL returned errors",
 			message=str(payload["errors"])[:2000],
 		)

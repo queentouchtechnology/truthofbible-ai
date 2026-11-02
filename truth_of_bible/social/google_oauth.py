@@ -38,6 +38,7 @@ from frappe.utils import add_to_date, get_datetime, get_url, now_datetime
 from google.auth.transport.requests import Request
 from google.oauth2 import service_account
 import requests
+from truth_of_bible import errors
 
 _TOKEN_URL = "https://oauth2.googleapis.com/token"
 _AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth"
@@ -129,7 +130,7 @@ def oauth_callback(code=None, state=None, error=None):
 		response.raise_for_status()
 		tokens = response.json()
 	except requests.RequestException:
-		frappe.log_error(title="Google OAuth token exchange failed")
+		errors.log_error(title="Google OAuth token exchange failed")
 		frappe.respond_as_web_page(
 			"Google connection failed",
 			"Something went wrong completing the connection. Please try again from the app.",

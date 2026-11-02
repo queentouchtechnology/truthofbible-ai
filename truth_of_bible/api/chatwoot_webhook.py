@@ -51,6 +51,7 @@ import frappe
 from frappe.utils import now_datetime
 
 from truth_of_bible.notifications.engine import handle_event
+from truth_of_bible import errors
 
 _STATUS_VALUES = ("OPEN", "PENDING", "RESOLVED")
 _MESSAGE_STATUS_MAP = {
@@ -89,7 +90,7 @@ def receive():
 		elif event == "message_updated":
 			_handle_message_updated(payload)
 	except Exception:
-		frappe.log_error(
+		errors.log_error(
 			title=f"Communication Center: chatwoot_webhook ({event})", message=frappe.get_traceback()
 		)
 	return {"status": "ok"}
@@ -98,7 +99,7 @@ def receive():
 def _verify_request() -> bool:
 	secret = frappe.get_site_config().get("chatwoot_webhook_secret")
 	if not secret:
-		frappe.log_error(
+		errors.log_error(
 			title="Communication Center: chatwoot_webhook_secret missing",
 			message="site_config.json has no 'chatwoot_webhook_secret' key — every Chatwoot webhook delivery is being rejected until this is set.",
 		)
@@ -128,7 +129,7 @@ def _verify_request() -> bool:
 		# the raw query string is logged instead, which proves whether
 		# Chatwoot is even sending `?secret=...` at all (if it's missing
 		# from here too, the gap is Chatwoot/the reverse proxy, not Frappe).
-		frappe.log_error(
+		errors.log_error(
 			title="Communication Center: chatwoot_webhook signature mismatch",
 			message=(
 				f"Provided secret ({len(provided)} chars, empty={not provided}) does not match "
@@ -169,7 +170,7 @@ def _handle_message_created(payload: dict) -> None:
 		# so an unrecognized message_type means this Chatwoot version
 		# represents incoming/outgoing differently than 0/1 — logged so it
 		# can be corrected rather than silently dropping messages forever.
-		frappe.log_error(
+		errors.log_error(
 			title="Communication Center: chatwoot message_created unrecognized message_type",
 			message=f"message_type={raw_message_type!r}. Raw payload: {payload}",
 		)
@@ -179,7 +180,7 @@ def _handle_message_created(payload: dict) -> None:
 	chatwoot_conversation_id = str(conversation.get("id") or payload.get("conversation_id") or "").strip()
 	chatwoot_message_id = str(payload.get("id") or "").strip()
 	if not chatwoot_conversation_id or not chatwoot_message_id:
-		frappe.log_error(
+		errors.log_error(
 			title="Communication Center: chatwoot message_created missing id(s)",
 			message=f"conversation_id={chatwoot_conversation_id!r}, message_id={chatwoot_message_id!r}. Raw payload: {payload}",
 		)
@@ -205,7 +206,7 @@ def _handle_message_created(payload: dict) -> None:
 			# at all (no prior inbound message ever mirrored it) — too rare
 			# to fabricate a conversation row with no real contact info for;
 			# logged so it can be investigated rather than silently dropped.
-			frappe.log_error(
+			errors.log_error(
 				title="Communication Center: chatwoot outbound message on unknown conversation",
 				message=f"chatwoot_conversation_id={chatwoot_conversation_id!r}. Raw payload: {payload}",
 			)
@@ -234,7 +235,7 @@ def _handle_message_created(payload: dict) -> None:
 		file_type = attachments[0].get("file_type")
 		message_type = _CONTENT_TYPE_MAP.get(file_type, "UNSUPPORTED")
 		if message_type == "UNSUPPORTED":
-			frappe.log_error(
+			errors.log_error(
 				title="Communication Center: chatwoot attachment unrecognized file_type",
 				message=f"file_type={file_type!r}. Raw payload: {payload}",
 			)

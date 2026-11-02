@@ -15,6 +15,7 @@ import requests
 from frappe.utils import cint, flt
 
 from truth_of_bible.rewards import engine
+from truth_of_bible import errors
 
 _CLOSED = ("cancelled", "refunded", "failed", "trash")
 
@@ -28,10 +29,10 @@ def _wc(method: str, path: str, **kwargs) -> dict:
 			method, f"{engine._WC_BASE}{path}", headers={"Authorization": auth}, timeout=engine._TIMEOUT, **kwargs
 		)
 	except requests.RequestException:
-		frappe.log_error(title="Rewards shop: WooCommerce unreachable", message=frappe.get_traceback())
+		errors.log_error(title="Rewards shop: WooCommerce unreachable", message=frappe.get_traceback())
 		frappe.throw(frappe._("Couldn't reach the shop. Please try again."), frappe.ValidationError)
 	if response.status_code not in (200, 201):
-		frappe.log_error(
+		errors.log_error(
 			title="Rewards shop: WooCommerce rejected the request",
 			message=f"{method} {path} -> HTTP {response.status_code}: {response.text[:1500]}",
 		)
@@ -43,7 +44,7 @@ def _cancel(order_id: int) -> None:
 	try:
 		_wc("PUT", f"/orders/{order_id}", json={"status": "cancelled"})
 	except Exception:
-		frappe.log_error(title="Rewards shop: couldn't cancel unpaid order", message=f"order {order_id}")
+		errors.log_error(title="Rewards shop: couldn't cancel unpaid order", message=f"order {order_id}")
 
 
 def pay_order(user: str, order_id) -> dict:

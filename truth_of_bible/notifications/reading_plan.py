@@ -24,6 +24,7 @@ from frappe.utils import get_datetime, getdate
 from truth_of_bible.notifications import timeutils
 from truth_of_bible.notifications.engine import handle_event
 from truth_of_bible.notifications.preferences import get_or_create_preference
+from truth_of_bible import errors
 
 STALE_DAYS = 3
 
@@ -71,7 +72,7 @@ def daily_scan() -> None:
 				titles[row.plan] = frappe.db.get_value("TOB Reading Plan", row.plan, "title") or ""
 			_scan_one(row, titles[row.plan])
 		except Exception:
-			frappe.log_error(
+			errors.log_error(
 				title=f"Notification engine: reading plan scan ({row.user})", message=frappe.get_traceback()
 			)
 
@@ -122,4 +123,4 @@ def on_plan_completed(user: str, plan: str) -> None:
 		title = frappe.db.get_value("TOB Reading Plan", plan, "title") or ""
 		handle_event("READING_PLAN_COMPLETED", user, {"plan": plan, "plan_title": title})
 	except Exception:
-		frappe.log_error(title="Notification engine: reading plan completed", message=frappe.get_traceback())
+		errors.log_error(title="Notification engine: reading plan completed", message=frappe.get_traceback())

@@ -17,6 +17,7 @@ import re
 
 import frappe
 import requests
+from truth_of_bible import errors
 
 SETTINGS = "TOB Meta Connection"
 _API_VERSION = "v21.0"
@@ -109,14 +110,14 @@ def send_template(to: str, template_name: str, language: str, params: list, copy
 			timeout=20,
 		)
 	except Exception:
-		frappe.log_error(title="WhatsApp Cloud: template send failed", message=frappe.get_traceback())
+		errors.log_error(title="WhatsApp Cloud: template send failed", message=frappe.get_traceback())
 		return False, None, "Could not reach WhatsApp."
 
 	if response.status_code == 200:
 		messages = response.json().get("messages") or [{}]
 		return True, messages[0].get("id"), None
 
-	frappe.log_error(
+	errors.log_error(
 		title="WhatsApp Cloud: template send rejected",
 		message=f"HTTP {response.status_code} ({template_name}): {response.text[:2000]}",
 	)

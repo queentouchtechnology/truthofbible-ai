@@ -18,6 +18,7 @@ import frappe
 
 from truth_of_bible.games.arcade.content.books import BOOKS
 from truth_of_bible.reading_plans.verse_counts import VERSE_COUNTS
+from truth_of_bible import errors
 
 BOOK_NAMES = {b["id"]: b["en"] for b in BOOKS}
 
@@ -251,4 +252,4 @@ def seed_catalog_plans():
 			frappe.db.commit()
 		except Exception:
 			frappe.db.rollback()
-			frappe.log_error(title=f"Reading plan seed: {entry.get('title')}", message=frappe.get_traceback())
+			errors.log_error(title=f"Reading plan seed: {entry.get('title')}", message=frappe.get_traceback())

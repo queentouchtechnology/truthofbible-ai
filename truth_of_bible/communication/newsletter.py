@@ -24,6 +24,7 @@ from frappe.utils import escape_html, get_url, getdate, now_datetime
 
 from truth_of_bible.communication import campaign, mailer
 from truth_of_bible.communication.auth import require_admin
+from truth_of_bible import errors
 
 _SETTINGS = "TOB Newsletter Settings"
 _ISSUE = "TOB Newsletter Issue"
@@ -53,7 +54,7 @@ def scheduled_check():
 		if issue:
 			_send_issue(s, issue)
 	except Exception:
-		frappe.log_error(title="Newsletter: scheduled send failed", message=frappe.get_traceback())
+		errors.log_error(title="Newsletter: scheduled send failed", message=frappe.get_traceback())
 
 
 def _next_issue(last_issue_no: int):

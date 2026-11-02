@@ -22,6 +22,7 @@ import frappe
 from frappe.utils import add_days, getdate, now_datetime, nowdate
 
 from truth_of_bible.games.arcade.rounds import GAMES
+from truth_of_bible import errors
 
 #: A player earns XP from at most this many rounds of each game per day;
 #: more rounds are practice (still scored, 0 XP) so the leaderboard can't
@@ -345,7 +346,7 @@ def on_battle_finished(battle) -> None:
 			check_badges(user)
 			missions(user)
 		except Exception:
-			frappe.log_error(title="Bible Battle progress", message=frappe.get_traceback())
+			errors.log_error(title="Bible Battle progress", message=frappe.get_traceback())
 
 
 # --- leaderboard ------------------------------------------------------------

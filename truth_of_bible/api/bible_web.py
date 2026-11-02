@@ -14,6 +14,7 @@ from frappe.rate_limiter import rate_limit
 
 from truth_of_bible.bible_web import ai_search as A
 from truth_of_bible.bible_web import queries as Q
+from truth_of_bible import errors
 
 _lock = threading.Lock()
 _con = None
@@ -179,7 +180,7 @@ def unified(q: str, version: str = "KJV", lang: str = ""):
 	try:
 		entities = _entities()
 	except Exception:
-		frappe.log_error(title="Web Bible: entity lists for search failed", message=frappe.get_traceback())
+		errors.log_error(title="Web Bible: entity lists for search failed", message=frappe.get_traceback())
 		entities = {}
 	return _call(Q.unified, q, version, entities, 6, lang)
 
@@ -217,7 +218,7 @@ def ai_search(q: str, version: str = "KJV"):
 			answer = A.ask(norm, _ai_text)
 		except Exception:
 			# An error status, not a 200: nginx caches this API's 200s for a day.
-			frappe.log_error(title="Bible AI search failed", message=frappe.get_traceback())
+			errors.log_error(title="Bible AI search failed", message=frappe.get_traceback())
 			frappe.throw(_("AI search is unavailable right now."), frappe.ValidationError)
 		frappe.cache().set_value(key, answer, expires_in_sec=7 * 86400)
 	return _call(A.resolve, answer, version)

@@ -19,6 +19,7 @@ import frappe
 import requests
 from google.auth.transport.requests import Request
 from google.oauth2 import service_account
+from truth_of_bible import errors
 
 _SCOPES = ["https://www.googleapis.com/auth/firebase.messaging"]
 
@@ -31,7 +32,7 @@ def _access_token():
 	already written by the time this runs)."""
 	firebase_config = frappe.get_site_config().get("firebase_service_account")
 	if not firebase_config:
-		frappe.log_error(
+		errors.log_error(
 			title="Notification engine: firebase_service_account missing",
 			message="site_config.json has no 'firebase_service_account' key — cannot send FCM push.",
 		)
@@ -109,7 +110,7 @@ def send_push(
 		try:
 			response = requests.post(url, headers=headers, json=payload, timeout=20)
 		except Exception:
-			frappe.log_error(
+			errors.log_error(
 				title=f"Notification engine: FCM request failed ({notif_type})",
 				message=f"User: {user}\n{frappe.get_traceback()}",
 			)
@@ -138,7 +139,7 @@ def send_push(
 			reasons.append("Device token was malformed (removed)")
 		else:
 			reasons.append(_failure_reason(response))
-			frappe.log_error(
+			errors.log_error(
 				title=f"Notification engine: FCM send failed ({notif_type})",
 				message=f"User: {user}\nHTTP {response.status_code}: {response.text[:2000]}",
 			)
@@ -174,7 +175,7 @@ def _record_result(send_id, reached: int, failed: int, reason: str) -> None:
 			update_modified=False,
 		)
 	except Exception:
-		frappe.log_error(title="Notification engine: recording delivery result failed", message=frappe.get_traceback())
+		errors.log_error(title="Notification engine: recording delivery result failed", message=frappe.get_traceback())
 
 
 def _is_invalid_token(response) -> bool:

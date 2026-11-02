@@ -20,6 +20,7 @@ import frappe
 from frappe.utils import add_to_date, now_datetime
 
 from truth_of_bible.notifications.engine import handle_event
+from truth_of_bible import errors
 
 _WINDOW_HOURS = 24
 _THRESHOLD = 10
@@ -39,11 +40,11 @@ def daily_check() -> None:
 	try:
 		_run()
 	except Exception:
-		frappe.log_error(title="Notification engine: self-check failed", message=frappe.get_traceback())
+		errors.log_error(title="Notification engine: self-check failed", message=frappe.get_traceback())
 
 
 def _run() -> None:
-	# `frappe.log_error(title=..., message=...)` stores `title` on Error
+	# `errors.log_error(title=..., message=...)` stores `title` on Error
 	# Log's `method` field (`error` holds the traceback/message) — stable,
 	# long-documented core Frappe behavior, same confidence tier as
 	# shop_webhook.py's WooCommerce payload assumptions (not fresh-verified

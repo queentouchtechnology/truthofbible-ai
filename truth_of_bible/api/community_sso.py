@@ -27,6 +27,7 @@ import requests
 from frappe import _
 from frappe.utils import get_fullname
 from frappe.utils.password import get_decrypted_password, set_encrypted_password
+from truth_of_bible import errors
 
 _TIMEOUT = 15
 _KEY_FIELD = "discourse_api_key"
@@ -42,7 +43,7 @@ def _config() -> dict:
 	admin_key = conf.get("discourse_api_key")
 	secret = conf.get("discourse_connect_secret")
 	if not (url and admin_key and secret):
-		frappe.log_error(
+		errors.log_error(
 			title="Community SSO config",
 			message="site_config.json needs discourse_url, discourse_api_key and discourse_connect_secret.",
 		)
@@ -124,7 +125,7 @@ def _sync_user(cfg: dict, user: str) -> dict:
 		timeout=_TIMEOUT,
 	)
 	if r.status_code != 200:
-		frappe.log_error(title="Community SSO sync", message=f"user={user} | {r.status_code}: {r.text[:1000]}")
+		errors.log_error(title="Community SSO sync", message=f"user={user} | {r.status_code}: {r.text[:1000]}")
 		frappe.throw(_("Could not link your community account. Please try again later."))
 	data = r.json()
 	if not data.get("id"):
@@ -141,7 +142,7 @@ def _revoke_key(cfg: dict, key_id) -> None:
 	try:
 		requests.post(f"{cfg['url']}/admin/api/keys/{key_id}/revoke", headers=_admin_headers(cfg), timeout=_TIMEOUT)
 	except Exception:
-		frappe.log_error(title="Community SSO revoke key", message=frappe.get_traceback())
+		errors.log_error(title="Community SSO revoke key", message=frappe.get_traceback())
 
 
 def _issue_key(cfg: dict, user: str, username: str) -> str:
@@ -152,7 +153,7 @@ def _issue_key(cfg: dict, user: str, username: str) -> str:
 		timeout=_TIMEOUT,
 	)
 	if r.status_code != 200:
-		frappe.log_error(title="Community SSO key", message=f"user={user} | {r.status_code}: {r.text[:1000]}")
+		errors.log_error(title="Community SSO key", message=f"user={user} | {r.status_code}: {r.text[:1000]}")
 		frappe.throw(_("Could not open your community session. Please try again later."))
 	key = r.json().get("key", {})
 	old_id = get_decrypted_password("User", user, _KEY_ID_FIELD, raise_exception=False)
@@ -223,7 +224,7 @@ def get_admin_community_credentials() -> dict:
 	from the Frappe admin role)."""
 	roles = set(frappe.get_roles())
 	if not roles & _ADMIN_ROLES:
-		frappe.log_error(
+		errors.log_error(
 			title="Community admin credentials denied",
 			message=f"user={frappe.session.user} roles={sorted(roles)} (needs one of {sorted(_ADMIN_ROLES)})",
 		)
@@ -247,16 +248,16 @@ def _own_username(cfg: dict) -> str:
 def _admin_request(cfg: dict, method: str, path: str, **kwargs):
 	r = requests.request(method, f"{cfg['url']}{path}", headers=_admin_headers(cfg), timeout=_TIMEOUT, **kwargs)
 	if r.status_code != 200:
-		frappe.log_error(title="Community edit", message=f"{method} {path} -> {r.status_code}: {r.text[:500]}")
+		errors.log_error(title="Community edit", message=f"{method} {path} -> {r.status_code}: {r.text[:500]}")
 		# 422 carries a user-facing reason from Discourse (e.g. a tag not allowed
 		# in this category) — show it instead of a generic retry message.
-		errors = []
+		reasons = []
 		if r.status_code == 422:
 			try:
-				errors = r.json().get("errors") or []
+				reasons = r.json().get("errors") or []
 			except ValueError:
 				pass
-		frappe.throw(" ".join(errors) if errors else _("Could not save your changes. Please try again."))
+		frappe.throw(" ".join(reasons) if reasons else _("Could not save your changes. Please try again."))
 	return r.json()
 
 
