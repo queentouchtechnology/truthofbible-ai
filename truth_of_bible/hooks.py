@@ -34,6 +34,10 @@ required_apps = ["lms"]
 fixtures = ["Custom Field"]
 
 doc_events = {
+	# Every Error Log entry also goes to QTT's GlitchTip — see errors.forward_to_glitchtip.
+	"Error Log": {
+		"after_insert": "truth_of_bible.errors.forward_to_glitchtip",
+	},
 	"Language": {
 		"validate": "truth_of_bible.language.enforce_single_default",
 	},

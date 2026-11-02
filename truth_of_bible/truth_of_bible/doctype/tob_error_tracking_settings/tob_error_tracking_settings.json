@@ -1,0 +1,59 @@
+{
+ "doctype": "DocType",
+ "name": "TOB Error Tracking Settings",
+ "module": "Truth Of Bible",
+ "custom": 0,
+ "istable": 0,
+ "issingle": 1,
+ "quick_entry": 0,
+ "track_changes": 1,
+ "description": "Sends errors to QTT's GlitchTip (errors.queentouchtech.in). Every new Error Log entry on this site is forwarded to the Server DSN project. The app reads the App DSN at start-up and reports its crashes and failures there (a newly set DSN takes effect from the app's next launch). Leave the App DSN blank to use the same project as the server.",
+ "engine": "InnoDB",
+ "field_order": [
+  "enabled",
+  "environment",
+  "column_break_1",
+  "server_dsn",
+  "app_dsn"
+ ],
+ "fields": [
+  {
+   "fieldname": "enabled",
+   "fieldtype": "Check",
+   "label": "Send Errors to GlitchTip",
+   "default": "0"
+  },
+  {
+   "fieldname": "environment",
+   "fieldtype": "Data",
+   "label": "Environment",
+   "default": "production"
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "server_dsn",
+   "fieldtype": "Data",
+   "label": "Server DSN",
+   "description": "From GlitchTip → Project → Settings → Client Keys (DSN), e.g. https://<key>@errors.queentouchtech.in/7"
+  },
+  {
+   "fieldname": "app_dsn",
+   "fieldtype": "Data",
+   "label": "App DSN",
+   "description": "Optional — a separate GlitchTip project for the mobile and web app. Blank uses the Server DSN."
+  }
+ ],
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1
+  }
+ ],
+ "links": [],
+ "modified": "2026-11-02 12:00:00.000000"
+}
