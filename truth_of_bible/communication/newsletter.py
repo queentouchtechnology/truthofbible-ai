@@ -14,7 +14,9 @@ communication_center_email_opt_out that Brevo's own unsubscribe webhook sets.
 
 import hashlib
 import hmac
+import re
 import urllib.parse
+from html import unescape
 
 import frappe
 from frappe import _
@@ -140,11 +142,19 @@ def render_email(issue) -> tuple[str, str]:
 	return frappe.render_template(subject_src or _TEMPLATE_SUBJECT, context), frappe.render_template(html_src or _TEMPLATE_HTML, context)
 
 
+def _html_to_text(html: str | None) -> str:
+	"""Body HTML as plain text, keeping a blank line between paragraphs and list items."""
+	text = re.sub(r"(?i)<br\s*/?>|</(p|li|h[1-6]|div)>", "\n", html or "")
+	text = re.sub(r"(?i)<li[^>]*>", "• ", text)
+	text = unescape(frappe.utils.strip_html(text))
+	return re.sub(r"\n{2,}", "\n\n", "\n".join(line.strip() for line in text.splitlines())).strip()
+
+
 def render_text(issue) -> str:
 	parts = [issue.title, ""]
 	if issue.verse_text:
 		parts += [f"“{issue.verse_text}” — {issue.verse_ref} (KJV)", ""]
-	parts += [frappe.utils.html2text(issue.body_html or "").strip(), ""]
+	parts += [_html_to_text(issue.body_html), ""]
 	if issue.action:
 		parts += [f"Try this week: {issue.action}", ""]
 	parts += [f"{issue.app_button or 'Open the app'}: {_open_link(issue.app_route)}", "", "Unsubscribe: {{unsubscribe_url}}"]
