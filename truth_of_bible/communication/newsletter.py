@@ -286,9 +286,12 @@ def save_newsletter_settings(
 
 
 @frappe.whitelist(methods=["POST"])
-def send_test(issue_no=None) -> dict:
-	"""Emails one issue (default: the next one) to the admin asking, personalised as for them. Doesn't count as sent."""
+def send_test(issue_no=None, to=None) -> dict:
+	"""Emails one issue (default: the next one) exactly as users get it, personalised as for the admin asking, to
+	them or to `to` (e.g. a mail-tester.com address, to check spam scoring). Doesn't count as sent."""
 	require_admin()
+	if to:
+		to = frappe.utils.validate_email_address(to.strip(), throw=True)
 	if issue_no:
 		name = frappe.db.get_value(_ISSUE, {"issue_no": frappe.utils.cint(issue_no)})
 		if not name:
@@ -308,15 +311,15 @@ def send_test(issue_no=None) -> dict:
 		email_account=s.email_account,
 		now=True,
 		unsubscribe_url=unsubscribe_url(user),
-		to_email=row.get("email") or user,
+		to_email=to or row.get("email") or user,
 		to_name=row.get("full_name") or user,
-		subject="[Test] " + campaign.personalize_email(subject, user, values),
+		subject=campaign.personalize_email(subject, user, values),
 		html_content=campaign.personalize_email(html, user, values),
 		text_content=campaign.personalize_email(render_text(issue), user, values),
 	)
 	if not ok:
 		frappe.throw(_("The test email wasn't sent: {0}").format(err or "unknown error"))
-	return {"sent_to": row.get("email") or user, "issue_no": issue.issue_no}
+	return {"sent_to": to or row.get("email") or user, "issue_no": issue.issue_no}
 
 
 @frappe.whitelist(methods=["POST"])
