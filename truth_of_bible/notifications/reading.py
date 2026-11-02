@@ -40,27 +40,39 @@ def record_reading(user: str, book: str | None, chapter, verse=None, book_id=Non
 	pref = get_or_create_preference(user)
 	today_local = timeutils.local_now(pref.timezone).date()
 
-	existing = frappe.db.exists("TOB User Reading State", {"user": user})
-	doc = frappe.get_doc("TOB User Reading State", existing) if existing else frappe.new_doc("TOB User Reading State")
-	doc.user = user
-	is_new_day = doc.get("last_read_date") != today_local
-	doc.last_book = book
+	values = {
+		"last_book": book,
+		"last_chapter": chapter,
+		"last_verse": str(verse) if verse is not None else None,
+		"last_read_at": now_datetime(),
+		"last_read_date": today_local,
+		# They're reading again right now — whatever inactivity tier they were
+		# previously flagged at is over. This is what makes Phase 12's rule
+		# ("never notify inactivity if they already returned") actually hold.
+		"inactive_tier_notified": "None",
+	}
 	if book_id is not None:
-		doc.last_book_id = book_id
-	doc.last_chapter = chapter
-	doc.last_verse = str(verse) if verse is not None else None
-	doc.last_read_at = now_datetime()
-	doc.last_read_date = today_local
-	if is_new_day:
-		doc.reading_days = (doc.reading_days or 0) + 1
-	# They're reading again right now — whatever inactivity tier they were
-	# previously flagged at is over. This is what makes Phase 12's rule
-	# ("never notify inactivity if they already returned") actually hold.
-	doc.inactive_tier_notified = "None"
-	if existing:
-		doc.save(ignore_permissions=True)
-	else:
-		doc.insert(ignore_permissions=True)
+		values["last_book_id"] = book_id
+
+	existing = frappe.db.exists("TOB User Reading State", {"user": user})
+	if not existing:
+		try:
+			frappe.get_doc({"doctype": "TOB User Reading State", "user": user, "reading_days": 1, **values}).insert(
+				ignore_permissions=True
+			)
+			return
+		except frappe.DuplicateEntryError:
+			# another request for the same user (the app can send two within
+			# milliseconds) created the row first — update it instead
+			existing = frappe.db.exists("TOB User Reading State", {"user": user})
+
+	# A plain column update, not doc.save(): two of these racing would
+	# otherwise fail save()'s "modified since you opened it" check
+	# (TimestampMismatchError) — this row is only a mirror, last write wins.
+	row = frappe.db.get_value("TOB User Reading State", existing, ["last_read_date", "reading_days"], as_dict=True)
+	if row.last_read_date != today_local:
+		values["reading_days"] = (row.reading_days or 0) + 1
+	frappe.db.set_value("TOB User Reading State", existing, values)
 
 
 def daily_scan() -> None:
