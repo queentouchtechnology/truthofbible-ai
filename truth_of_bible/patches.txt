@@ -9,3 +9,4 @@ truth_of_bible.patches.v1_0.app_member_permissions
 truth_of_bible.patches.v1_0.app_member_ticket_delete
 truth_of_bible.patches.v1_0.newsletter_one_topic_messages
 truth_of_bible.patches.v1_0.newsletter_default_frequency
+truth_of_bible.patches.v1_0.article_image_prompts
