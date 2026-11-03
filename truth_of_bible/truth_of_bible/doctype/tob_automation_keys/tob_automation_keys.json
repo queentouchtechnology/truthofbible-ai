@@ -1,0 +1,74 @@
+{
+ "doctype": "DocType",
+ "name": "TOB Automation Keys",
+ "module": "Truth Of Bible",
+ "custom": 0,
+ "istable": 0,
+ "issingle": 1,
+ "quick_entry": 0,
+ "track_changes": 1,
+ "description": "Keys for updating the n8n automations (e.g. the article autopilot) when you're away from the computer. Enter the keys and Save, then press Create Pickup Code and send only that code to Claude. The code works once, for 30 minutes.",
+ "engine": "InnoDB",
+ "field_order": [
+  "n8n_api_key",
+  "frappe_api_key",
+  "frappe_api_secret",
+  "pickup_section",
+  "pickup_code",
+  "pickup_expires",
+  "last_picked_up"
+ ],
+ "fields": [
+  {
+   "fieldname": "n8n_api_key",
+   "fieldtype": "Password",
+   "label": "n8n API Key",
+   "length": 1000,
+   "description": "n8n.queentouchtech.in → Settings → n8n API"
+  },
+  {
+   "fieldname": "frappe_api_key",
+   "fieldtype": "Data",
+   "label": "Frappe API Key",
+   "description": "Optional — only needed if n8n's Frappe credential has to be created again"
+  },
+  {
+   "fieldname": "frappe_api_secret",
+   "fieldtype": "Password",
+   "label": "Frappe API Secret"
+  },
+  {
+   "fieldname": "pickup_section",
+   "fieldtype": "Section Break",
+   "label": "Pickup"
+  },
+  {
+   "fieldname": "pickup_code",
+   "fieldtype": "Data",
+   "label": "Pickup Code",
+   "read_only": 1
+  },
+  {
+   "fieldname": "pickup_expires",
+   "fieldtype": "Datetime",
+   "label": "Code Expires",
+   "read_only": 1
+  },
+  {
+   "fieldname": "last_picked_up",
+   "fieldtype": "Datetime",
+   "label": "Last Picked Up",
+   "read_only": 1
+  }
+ ],
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1
+  }
+ ],
+ "links": [],
+ "modified": "2026-11-03 12:00:00.000000"
+}
