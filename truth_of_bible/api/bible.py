@@ -6,12 +6,13 @@ result is honestly AI-generated content, never presented as Scripture
 text itself.
 """
 
-from datetime import date
+from datetime import date, timedelta
 
 import frappe
 from frappe import _
+from frappe.utils import getdate, today
 
-from truth_of_bible import errors
+from truth_of_bible import errors, verse_of_the_day
 
 from truth_of_bible.ai import service
 from truth_of_bible.ai.core.exceptions import AiProviderException
@@ -167,38 +168,38 @@ def _ask(conversation_name: str, question: str, language: str) -> dict:
 
 
 @frappe.whitelist(allow_guest=True, methods=["GET", "POST"])
-def get_blessing_verse() -> dict:
-	"""One reference from the curated TOB Blessing Verse bank -- the same
-	pick for every user on a given day (deterministic by day-of-year), so
-	it reads as a real "verse of the day" rather than a fresh random pick
-	per request. Never returns verse text -- the client resolves that
-	on-device from whatever Bible translation it has installed (see the
-	doctype's own description for why). Used by the Daily Verse screen and
-	as the anchor reference the daily_devotional AI task writes around.
-	"""
-	verse = blessing_of_the_day()
+def get_blessing_verse(date: str | None = None) -> dict:
+	"""The Verse of the Day (see truth_of_bible.verse_of_the_day): the same pinned verse for every user on a
+	date, with its background, other backgrounds for the picker, and the day's app feature line. `date` is the
+	phone's own local date (YYYY-MM-DD); it may be a day either side of the server's, never further. Never
+	returns verse text -- the client resolves that on-device from its own Bible translation. Also the anchor
+	reference the daily_devotional AI task writes around."""
+	verse = verse_of_the_day.for_date(_local_day(date))
 	if not verse:
 		frappe.throw(_("No blessing verses are configured yet."))
 	return verse
 
 
+@frappe.whitelist(allow_guest=True, methods=["GET", "POST"])
+def get_verse_history(before: str | None = None, limit: int = 30) -> list[dict]:
+	"""Past Verses of the Day, newest first, for the Verse Wallpapers screen. `before` is exclusive (a date);
+	blank means up to and including today. Pages of at most 60."""
+	start = getdate(before) if before else getdate(today()) + timedelta(days=1)
+	return verse_of_the_day.history(start, min(max(int(limit or 30), 1), 60))
+
+
 def blessing_of_the_day() -> dict | None:
-	"""Today's verse from the published TOB Blessing Verse bank (None when there is none). Shared by
-	get_blessing_verse and the website popup (truth_of_bible.api.website.popup)."""
-	names = frappe.get_all(
-		"TOB Blessing Verse", filters={"status": "Published"}, order_by="creation asc", pluck="name"
-	)
-	if not names:
-		return None
+	"""Today's Verse of the Day (None when there is none). Shared by the website popup
+	(truth_of_bible.api.website.popup)."""
+	return verse_of_the_day.for_date(getdate(today()))
 
-	index = date.today().timetuple().tm_yday % len(names)
-	verse = frappe.get_doc("TOB Blessing Verse", names[index])
 
-	return {
-		"reference": verse.reference,
-		"bible_book": verse.bible_book,
-		"chapter": verse.chapter,
-		"verse_start": verse.verse_start,
-		"verse_end": verse.verse_end,
-		"theme": verse.theme,
-	}
+def _local_day(value: str | None) -> date:
+	server = getdate(today())
+	if not value:
+		return server
+	try:
+		day = getdate(value)
+	except Exception:
+		return server
+	return day if abs((day - server).days) <= 1 else server

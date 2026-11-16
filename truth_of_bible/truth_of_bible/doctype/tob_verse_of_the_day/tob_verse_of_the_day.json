@@ -1,0 +1,86 @@
+{
+ "doctype": "DocType",
+ "name": "TOB Verse of the Day",
+ "module": "Truth Of Bible",
+ "custom": 0,
+ "istable": 0,
+ "issingle": 0,
+ "autoname": "field:date",
+ "naming_rule": "By fieldname",
+ "sort_field": "date",
+ "sort_order": "DESC",
+ "track_changes": 1,
+ "description": "The verse, background and app feature for each day — the app's Verse of the Day popup, Home card, Daily Verse screen and wallpapers, the website popup and the Verse Wallpapers history all read this row, so everyone sees the same verse on the same date. Filled automatically 30 days ahead; change a future day's verse or background here and every phone follows.",
+ "engine": "InnoDB",
+ "field_order": [
+  "date",
+  "blessing_verse",
+  "reference",
+  "theme",
+  "column_break_1",
+  "background",
+  "feature"
+ ],
+ "fields": [
+  {
+   "fieldname": "date",
+   "fieldtype": "Date",
+   "label": "Date",
+   "reqd": 1,
+   "unique": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "blessing_verse",
+   "fieldtype": "Link",
+   "options": "TOB Blessing Verse",
+   "label": "Blessing Verse",
+   "reqd": 1
+  },
+  {
+   "fieldname": "reference",
+   "fieldtype": "Data",
+   "label": "Reference",
+   "fetch_from": "blessing_verse.reference",
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "theme",
+   "fieldtype": "Data",
+   "label": "Theme",
+   "fetch_from": "blessing_verse.theme",
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "background",
+   "fieldtype": "Link",
+   "options": "TOB Verse Background",
+   "label": "Background",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "feature",
+   "fieldtype": "Link",
+   "options": "TOB App Feature",
+   "label": "App Feature",
+   "description": "The feature line shown under the verse in the popup."
+  }
+ ],
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1
+  }
+ ],
+ "links": [],
+ "modified": "2026-11-17 10:00:00.000000"
+}

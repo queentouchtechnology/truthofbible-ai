@@ -11,3 +11,4 @@ truth_of_bible.patches.v1_0.newsletter_one_topic_messages
 truth_of_bible.patches.v1_0.newsletter_default_frequency
 truth_of_bible.patches.v1_0.website_popup_defaults
 truth_of_bible.patches.v1_0.verse_background_text_position
+truth_of_bible.patches.v1_0.verse_of_the_day_and_app_features

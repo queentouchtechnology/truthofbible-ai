@@ -1,0 +1,113 @@
+{
+ "doctype": "DocType",
+ "name": "TOB App Feature",
+ "module": "Truth Of Bible",
+ "custom": 0,
+ "istable": 0,
+ "issingle": 0,
+ "autoname": "field:title",
+ "naming_rule": "By fieldname",
+ "title_field": "title",
+ "sort_field": "sort_order",
+ "sort_order": "ASC",
+ "track_changes": 1,
+ "description": "The app's features, each with the screen it opens. The Verse of the Day popup shows one feature line a day (those ticked Show in Verse Popup, in Sort Order) and tapping it opens the App Route. Other places that promote a feature can use this list too.",
+ "engine": "InnoDB",
+ "field_order": [
+  "title",
+  "enabled",
+  "show_in_verse_popup",
+  "sort_order",
+  "column_break_1",
+  "app_route",
+  "route_id",
+  "section_lines",
+  "feature_line",
+  "feature_line_ta",
+  "description"
+ ],
+ "fields": [
+  {
+   "fieldname": "title",
+   "fieldtype": "Data",
+   "label": "Feature",
+   "reqd": 1,
+   "unique": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "enabled",
+   "fieldtype": "Check",
+   "label": "Enabled",
+   "default": "1",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "show_in_verse_popup",
+   "fieldtype": "Check",
+   "label": "Show in Verse Popup",
+   "default": "0",
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "sort_order",
+   "fieldtype": "Int",
+   "label": "Sort Order",
+   "default": "100",
+   "description": "Popup features take turns in this order, one per day."
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "app_route",
+   "fieldtype": "Data",
+   "label": "App Route",
+   "reqd": 1,
+   "in_list_view": 1,
+   "description": "The app screen it opens, e.g. /bibleQa, /readingPlans, /prayerWall (the same routes notifications use)."
+  },
+  {
+   "fieldname": "route_id",
+   "fieldtype": "Data",
+   "label": "Route ID",
+   "description": "Optional — a specific item on that screen (e.g. a course name)."
+  },
+  {
+   "fieldname": "section_lines",
+   "fieldtype": "Section Break",
+   "label": "Text"
+  },
+  {
+   "fieldname": "feature_line",
+   "fieldtype": "Data",
+   "label": "Feature Line (English)",
+   "reqd": 1,
+   "description": "One short line, about 45 characters."
+  },
+  {
+   "fieldname": "feature_line_ta",
+   "fieldtype": "Data",
+   "label": "Feature Line (Tamil)",
+   "description": "Shown to people reading a Tamil Bible. Blank uses the English line."
+  },
+  {
+   "fieldname": "description",
+   "fieldtype": "Small Text",
+   "label": "Description"
+  }
+ ],
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1
+  }
+ ],
+ "links": [],
+ "modified": "2026-11-17 10:00:00.000000"
+}

@@ -190,6 +190,8 @@ scheduler_events = {
 	# expiry (see social/meta_connection.py).
 	"daily": [
 		"truth_of_bible.social.meta_connection.check_connection",
+		# Keeps the next 30 Verses of the Day pinned (verse, background, feature) — see verse_of_the_day.py.
+		"truth_of_bible.verse_of_the_day.pin_ahead",
 		# NOTIFICATION_ENGINE_PLAN.md "What's still open" items 3/4 — a
 		# slow-moving trend signal each, daily is enough for both (see each
 		# module's own docstring for why).
