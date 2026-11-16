@@ -20,6 +20,7 @@
   "status",
   "column_break_1",
   "shows_jesus",
+  "text_position",
   "image",
   "section_prompt",
   "prompt",
@@ -66,6 +67,15 @@
    "in_standard_filter": 1
   },
   {
+   "fieldname": "text_position",
+   "fieldtype": "Select",
+   "label": "Text Position",
+   "options": "Middle\nTop\nBottom",
+   "default": "Middle",
+   "in_list_view": 1,
+   "description": "Where the verse goes on this picture: the plain part (usually sky), never over a face or a figure."
+  },
+  {
    "fieldname": "image",
    "fieldtype": "Attach Image",
    "label": "Image",
@@ -99,5 +109,5 @@
   }
  ],
  "links": [],
- "modified": "2026-11-16 22:00:00.000000"
+ "modified": "2026-11-16 23:30:00.000000"
 }

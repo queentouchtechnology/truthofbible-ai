@@ -18,6 +18,7 @@
   "column_break_ref",
   "theme",
   "status",
+  "background",
   "section_break_location",
   "bible_book",
   "chapter",
@@ -63,6 +64,13 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "search_index": 1
+  },
+  {
+   "fieldname": "background",
+   "fieldtype": "Link",
+   "options": "TOB Verse Background",
+   "label": "Preferred Background",
+   "description": "Optional. The picture the Verse of the Day popup uses for this verse (e.g. the Shepherd picture for Psalm 23). Blank picks one by theme."
   },
   {
    "fieldname": "section_break_location",
@@ -154,5 +162,6 @@
    "export": 1
   }
  ],
- "links": []
+ "links": [],
+ "modified": "2026-11-16 23:30:00.000000"
 }
