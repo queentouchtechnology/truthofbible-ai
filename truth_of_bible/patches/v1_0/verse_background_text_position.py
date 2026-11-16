@@ -15,6 +15,9 @@ SHEPHERD = "Golden-Hour Shepherd's Journey"
 
 
 def execute():
+	# Patches run before the doctype sync, so the new columns have to be loaded here first.
+	frappe.reload_doc("truth_of_bible", "doctype", "tob_verse_background")
+	frappe.reload_doc("truth_of_bible", "doctype", "tob_blessing_verse")
 	for name in frappe.get_all("TOB Verse Background", pluck="name"):
 		position = "Top" if name in TOP else "Middle"
 		frappe.db.set_value("TOB Verse Background", name, "text_position", position, update_modified=False)
