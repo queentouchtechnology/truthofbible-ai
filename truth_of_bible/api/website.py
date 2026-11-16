@@ -103,3 +103,23 @@ def _email_enquiry(name: str) -> None:
 			reference_name=doc.name,
 			now=True,
 		)
+
+
+@frappe.whitelist(allow_guest=True, methods=["GET"])
+def popup() -> dict:
+	"""The truthofbible.org popup (TOB Website Settings → Website Popup): whether it is on, when to show it,
+	and today's blessing verse as a reference -- the site shows its text in the reader's own Bible.
+	Not under the cached bible_web prefix, so switching it off takes effect at once."""
+	from truth_of_bible.api.bible import blessing_of_the_day
+
+	s = frappe.get_cached_doc("TOB Website Settings")
+	if not s.get("popup_enabled"):
+		return {"enabled": False}
+	return {
+		"enabled": True,
+		"title": (s.get("popup_title") or "").strip()[:120],
+		"delay": max(int(s.get("popup_delay_seconds") or 0), 3),
+		"every_days": max(int(s.get("popup_every_days") or 1), 1),
+		"show_app": bool(s.get("popup_show_app")),
+		"verse": blessing_of_the_day(),
+	}

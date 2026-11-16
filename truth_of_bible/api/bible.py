@@ -176,11 +176,20 @@ def get_blessing_verse() -> dict:
 	doctype's own description for why). Used by the Daily Verse screen and
 	as the anchor reference the daily_devotional AI task writes around.
 	"""
+	verse = blessing_of_the_day()
+	if not verse:
+		frappe.throw(_("No blessing verses are configured yet."))
+	return verse
+
+
+def blessing_of_the_day() -> dict | None:
+	"""Today's verse from the published TOB Blessing Verse bank (None when there is none). Shared by
+	get_blessing_verse and the website popup (truth_of_bible.api.website.popup)."""
 	names = frappe.get_all(
 		"TOB Blessing Verse", filters={"status": "Published"}, order_by="creation asc", pluck="name"
 	)
 	if not names:
-		frappe.throw(_("No blessing verses are configured yet."))
+		return None
 
 	index = date.today().timetuple().tm_yday % len(names)
 	verse = frappe.get_doc("TOB Blessing Verse", names[index])

@@ -27,7 +27,14 @@
   "column_break_articles",
   "community_webhook_url",
   "community_webhook_header",
-  "community_webhook_secret"
+  "community_webhook_secret",
+  "section_popup",
+  "popup_enabled",
+  "popup_title",
+  "popup_show_app",
+  "column_break_popup",
+  "popup_delay_seconds",
+  "popup_every_days"
  ],
  "fields": [
   {
@@ -136,6 +143,50 @@
    "fieldtype": "Password",
    "label": "Webhook Header Value",
    "depends_on": "community_webhook_url"
+  },
+  {
+   "fieldname": "section_popup",
+   "fieldtype": "Section Break",
+   "label": "Website Popup",
+   "description": "A popup on every page of truthofbible.org with today's blessing verse (from TOB Blessing Verse, shown in the reader's own Bible), the website's features and the app. Turn it off here and it stops within a minute."
+  },
+  {
+   "fieldname": "popup_enabled",
+   "fieldtype": "Check",
+   "label": "Show the Website Popup",
+   "default": "0"
+  },
+  {
+   "fieldname": "popup_title",
+   "fieldtype": "Data",
+   "label": "Popup Title",
+   "default": "A blessing for you today",
+   "description": "Shown above the verse. Leave empty for the default."
+  },
+  {
+   "fieldname": "popup_show_app",
+   "fieldtype": "Check",
+   "label": "Show the App Section",
+   "default": "1",
+   "description": "App features and the Google Play button (the link carries utm_source=website, utm_medium=popup)."
+  },
+  {
+   "fieldname": "column_break_popup",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "popup_delay_seconds",
+   "fieldtype": "Int",
+   "label": "Show After (Seconds on a Page)",
+   "default": "12",
+   "description": "Never immediately: Google ranks pages lower on phones when a popup covers them right after a visitor arrives."
+  },
+  {
+   "fieldname": "popup_every_days",
+   "fieldtype": "Int",
+   "label": "Show Again After (Days)",
+   "default": "1",
+   "description": "How often one visitor sees it. 1 = at most once a day."
   }
  ],
  "permissions": [
