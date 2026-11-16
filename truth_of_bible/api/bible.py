@@ -177,7 +177,7 @@ def get_blessing_verse(date: str | None = None) -> dict:
 	verse = verse_of_the_day.for_date(_local_day(date))
 	if not verse:
 		frappe.throw(_("No blessing verses are configured yet."))
-	return verse
+	return {**verse, "popup": _verse_popup_on()}
 
 
 @frappe.whitelist(allow_guest=True, methods=["GET", "POST"])
@@ -192,6 +192,15 @@ def blessing_of_the_day() -> dict | None:
 	"""Today's Verse of the Day (None when there is none). Shared by the website popup
 	(truth_of_bible.api.website.popup)."""
 	return verse_of_the_day.for_date(getdate(today()))
+
+
+def _verse_popup_on() -> bool:
+	"""TOB Website Settings → Show the Verse of the Day popup: Everyone, Admins only (System Managers, to try it
+	first; also when the field was never saved) or Off."""
+	mode = frappe.db.get_single_value("TOB Website Settings", "app_verse_popup") or "Admins only"
+	if mode == "Everyone":
+		return True
+	return mode == "Admins only" and "System Manager" in frappe.get_roles()
 
 
 def _local_day(value: str | None) -> date:

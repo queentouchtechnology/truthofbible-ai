@@ -34,7 +34,9 @@
   "popup_show_app",
   "column_break_popup",
   "popup_delay_seconds",
-  "popup_every_days"
+  "popup_every_days",
+  "section_app_verse_popup",
+  "app_verse_popup"
  ],
  "fields": [
   {
@@ -187,6 +189,19 @@
    "label": "Show Again After (Days)",
    "default": "1",
    "description": "How often one visitor sees it. 1 = at most once a day."
+  },
+  {
+   "fieldname": "section_app_verse_popup",
+   "fieldtype": "Section Break",
+   "label": "App: Verse of the Day popup"
+  },
+  {
+   "fieldname": "app_verse_popup",
+   "fieldtype": "Select",
+   "label": "Show the Verse of the Day popup",
+   "options": "Admins only\nEveryone\nOff",
+   "default": "Admins only",
+   "description": "Once a day, on the first app open after 5 am. Admins only = System Managers see it, to try it before members do."
   }
  ],
  "permissions": [
@@ -197,5 +212,6 @@
    "create": 1
   }
  ],
- "links": []
+ "links": [],
+ "modified": "2026-11-17 12:00:00.000000"
 }
