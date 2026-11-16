@@ -1,0 +1,103 @@
+{
+ "doctype": "DocType",
+ "name": "TOB Verse Background",
+ "module": "Truth Of Bible",
+ "custom": 0,
+ "istable": 0,
+ "issingle": 0,
+ "autoname": "field:title",
+ "naming_rule": "By fieldname",
+ "title_field": "title",
+ "image_field": "image",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "track_changes": 1,
+ "description": "Background pictures for the Verse of the Day popup and wallpapers. Each row keeps the image and the prompt that made it, so a lost or worn-out picture can be made again in the same style. A row with a prompt but no image is an idea for a future picture: generate it from the prompt, attach the image and set Status to Active. Portrait 9:19.5 (e.g. 1024×1536 or larger); the app crops it to the phone and dims it under the verse.",
+ "engine": "InnoDB",
+ "field_order": [
+  "title",
+  "theme",
+  "status",
+  "column_break_1",
+  "shows_jesus",
+  "image",
+  "section_prompt",
+  "prompt",
+  "notes"
+ ],
+ "fields": [
+  {
+   "fieldname": "title",
+   "fieldtype": "Data",
+   "label": "Title",
+   "reqd": 1,
+   "unique": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "theme",
+   "fieldtype": "Select",
+   "label": "Theme",
+   "options": "\nBlessing\nComfort\nCourage\nGrace\nGuidance\nHope\nJoy\nLove\nPeace\nPerseverance\nProtection\nRenewal\nRest\nStrength",
+   "description": "Same themes as TOB Blessing Verse — the popup prefers a background that matches the day's verse.",
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Idea\nActive\nRetired",
+   "default": "Idea",
+   "description": "Idea = prompt only, no picture yet. Active = used by the app. Retired = kept for the record, not used.",
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "shows_jesus",
+   "fieldtype": "Check",
+   "label": "Shows Jesus",
+   "default": "0",
+   "description": "The picture shows Jesus (otherwise a landscape). Lets the app mix them, e.g. Jesus on Sundays.",
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "image",
+   "fieldtype": "Attach Image",
+   "label": "Image",
+   "description": "Public file — the app downloads it for guests too."
+  },
+  {
+   "fieldname": "section_prompt",
+   "fieldtype": "Section Break",
+   "label": "Prompt"
+  },
+  {
+   "fieldname": "prompt",
+   "fieldtype": "Long Text",
+   "label": "Image Prompt",
+   "reqd": 1,
+   "description": "The full prompt, ready to paste into the image generator — scene first, then the shared style line."
+  },
+  {
+   "fieldname": "notes",
+   "fieldtype": "Small Text",
+   "label": "Notes"
+  }
+ ],
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1
+  }
+ ],
+ "links": [],
+ "modified": "2026-11-16 22:00:00.000000"
+}
