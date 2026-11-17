@@ -209,7 +209,7 @@
    "fieldname": "section_festival_themes",
    "fieldtype": "Section Break",
    "label": "Festival Themes",
-   "description": "Christmas, Easter, Pentecost … looks for the app's Home and truthofbible.org. Each festival, with its own On switch and Start/End, is a TOB Festival Theme."
+   "description": "Christmas, Easter, Pentecost … looks for the app's Home and truthofbible.org. Each festival has its own On switch and Start/End: <a href=\"/app/tob-festival-theme\"><b>Edit festivals (On, Start, End) →</b></a>"
   },
   {
    "fieldname": "festival_themes",
@@ -229,5 +229,5 @@
   }
  ],
  "links": [],
- "modified": "2026-11-17 18:00:00.000000"
+ "modified": "2026-11-17 19:00:00.000000"
 }
