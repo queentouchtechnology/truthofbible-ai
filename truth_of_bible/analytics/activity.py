@@ -80,6 +80,15 @@ _ALLOWED_EVENTS = {
 	# but the only way to notice this is actually happening to real users
 	# instead of being silently indistinguishable from the real thing.
 	"daily_verse_fallback_used",
+	# Verse of the Day popup (verse_of_day/verse_popup.dart) — ids and themes only, never verse text.
+	"verse_popup_shown",
+	"verse_popup_turned_off",
+	"verse_wallpaper_set",
+	"verse_image_saved",
+	"verse_shared",
+	"verse_read_chapter",
+	"verse_feature_opened",
+	"verse_wallpapers_opened",
 }
 
 _MAX_BATCH_SIZE = 100
