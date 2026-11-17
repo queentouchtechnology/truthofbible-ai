@@ -123,3 +123,66 @@ def popup() -> dict:
 		"show_app": bool(s.get("popup_show_app")),
 		"verse": blessing_of_the_day(),
 	}
+
+
+# --- Festival themes -----------------------------------------------------------------------------------------------
+
+_FESTIVAL_FIELDS = ["name", "scene", "start", "end", "show_in_app", "show_on_website", "app_intro", "motion", "greeting",
+	"greeting_ta", "message", "message_ta", "verse_reference", "bible_book", "chapter", "verse_start", "verse_end",
+	"modified"]
+_SCENE_IDS = {"Advent": "advent", "Christmas": "christmas", "New Year": "new_year", "Palm Sunday": "palm_sunday",
+	"Good Friday": "good_friday", "Easter": "easter", "Ascension": "ascension", "Pentecost": "pentecost",
+	"Harvest Thanksgiving": "harvest"}
+_FESTIVAL_AHEAD_DAYS = 60
+
+
+@frappe.whitelist(allow_guest=True, methods=["GET"])
+def festival_theme(client: str = "app", preview: str = "") -> dict:
+	"""The festival looks (TOB Festival Theme) for the app's Home and truthofbible.org.
+
+	Sends the one showing now and those starting in the next 60 days, each with its Start/End as an exact moment,
+	so a phone switches by itself at the right time even offline. TOB Website Settings → Festival Themes is the
+	master switch: Off, Admins only (System Managers; the website, which has no sign-in, then shows nothing) or
+	Everyone. preview=<scene id> (e.g. christmas) returns that scene's latest festival whatever the switch and the
+	dates, so the look can be tried on the website. Not under the cached bible_web prefix: a change shows at once."""
+	from zoneinfo import ZoneInfo
+
+	from frappe.utils import add_days, get_system_timezone, now_datetime
+
+	tz = ZoneInfo(get_system_timezone())
+
+	def payload(r) -> dict:
+		return {
+			"id": r.name,
+			"scene": _SCENE_IDS.get(r.scene, "christmas"),
+			"start": r.start.replace(tzinfo=tz).isoformat(),
+			"end": r.end.replace(tzinfo=tz).isoformat(),
+			"intro": bool(r.app_intro),
+			"motion": (r.motion or "Normal").lower(),
+			"greeting": r.greeting or "",
+			"greeting_ta": r.greeting_ta or "",
+			"message": r.message or "",
+			"message_ta": r.message_ta or "",
+			"verse": {"reference": r.verse_reference, "book": r.bible_book, "chapter": r.chapter,
+				"verse_start": r.verse_start, "verse_end": r.verse_end or r.verse_start} if r.bible_book and r.chapter else None,
+			"version": str(r.modified),
+		}
+
+	scene = next((name for name, sid in _SCENE_IDS.items() if sid == (preview or "").strip().lower()), None)
+	if scene:
+		rows = frappe.get_all("TOB Festival Theme", filters={"scene": scene}, fields=_FESTIVAL_FIELDS,
+			order_by="start desc", limit=1)
+		return {"on": True, "preview": True, "festivals": [payload(r) for r in rows]}
+
+	mode = frappe.db.get_single_value("TOB Website Settings", "festival_themes") or "Admins only"
+	website = client == "website"
+	on = mode == "Everyone" or (mode == "Admins only" and not website and "System Manager" in frappe.get_roles())
+	if not on:
+		return {"on": False, "festivals": []}
+
+	now = now_datetime()
+	where = {"show_on_website": 1} if website else {"show_in_app": 1}
+	rows = frappe.get_all("TOB Festival Theme",
+		filters={"enabled": 1, "end": [">", now], "start": ["<", add_days(now, _FESTIVAL_AHEAD_DAYS)], **where},
+		fields=_FESTIVAL_FIELDS, order_by="start asc", limit=10)
+	return {"on": True, "festivals": [payload(r) for r in rows]}

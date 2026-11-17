@@ -1,0 +1,211 @@
+{
+ "doctype": "DocType",
+ "name": "TOB Festival Theme",
+ "module": "Truth Of Bible",
+ "custom": 0,
+ "istable": 0,
+ "issingle": 0,
+ "autoname": "field:title",
+ "naming_rule": "By fieldname",
+ "title_field": "title",
+ "sort_field": "start",
+ "sort_order": "DESC",
+ "track_changes": 1,
+ "description": "Festival looks for the app's Home and truthofbible.org (Christmas, Easter, Pentecost, …): a moving scene with a greeting and a verse, shown from Start to End when it is On. The master switch is TOB Website Settings → Festival Themes (Off / Admins only / Everyone). Read by truth_of_bible.api.website.festival_theme.",
+ "engine": "InnoDB",
+ "field_order": [
+  "title",
+  "enabled",
+  "scene",
+  "column_break_when",
+  "start",
+  "end",
+  "section_where",
+  "show_in_app",
+  "app_intro",
+  "column_break_where",
+  "show_on_website",
+  "motion",
+  "section_greeting",
+  "greeting",
+  "message",
+  "column_break_greeting",
+  "greeting_ta",
+  "message_ta",
+  "section_verse",
+  "verse_reference",
+  "bible_book",
+  "column_break_verse",
+  "chapter",
+  "verse_start",
+  "verse_end"
+ ],
+ "fields": [
+  {
+   "fieldname": "title",
+   "fieldtype": "Data",
+   "label": "Title",
+   "reqd": 1,
+   "unique": 1,
+   "in_list_view": 1,
+   "description": "For you, e.g. Christmas 2026."
+  },
+  {
+   "fieldname": "enabled",
+   "fieldtype": "Check",
+   "label": "On",
+   "default": "1",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "description": "Off = never shown, whatever the dates."
+  },
+  {
+   "fieldname": "scene",
+   "fieldtype": "Select",
+   "label": "Scene",
+   "reqd": 1,
+   "options": "Advent\nChristmas\nNew Year\nPalm Sunday\nGood Friday\nEaster\nAscension\nPentecost\nHarvest Thanksgiving",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "description": "The moving picture behind the greeting. Good Friday is quiet on purpose: no celebration effects."
+  },
+  {
+   "fieldname": "column_break_when",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "start",
+   "fieldtype": "Datetime",
+   "label": "Start",
+   "reqd": 1,
+   "in_list_view": 1,
+   "description": "India time. Phones switch it on by themselves at this moment, even offline."
+  },
+  {
+   "fieldname": "end",
+   "fieldtype": "Datetime",
+   "label": "End",
+   "reqd": 1,
+   "in_list_view": 1,
+   "description": "India time. The normal look returns by itself."
+  },
+  {
+   "fieldname": "section_where",
+   "fieldtype": "Section Break",
+   "label": "Where"
+  },
+  {
+   "fieldname": "show_in_app",
+   "fieldtype": "Check",
+   "label": "Show in the App",
+   "default": "1"
+  },
+  {
+   "fieldname": "app_intro",
+   "fieldtype": "Check",
+   "label": "Opening Moment in the App",
+   "default": "1",
+   "description": "The first time the app opens during the festival: the scene full-screen with the greeting for a few seconds (tap to skip). Once per festival."
+  },
+  {
+   "fieldname": "column_break_where",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "show_on_website",
+   "fieldtype": "Check",
+   "label": "Show on truthofbible.org",
+   "default": "1",
+   "description": "The scene behind the home page's top and a greeting ribbon on every page."
+  },
+  {
+   "fieldname": "motion",
+   "fieldtype": "Select",
+   "label": "Motion",
+   "options": "Gentle\nNormal\nRich",
+   "default": "Normal",
+   "description": "How much moves (snow, light, petals). People can still turn motion off for themselves, and phones that ask for reduced motion get a still picture."
+  },
+  {
+   "fieldname": "section_greeting",
+   "fieldtype": "Section Break",
+   "label": "Greeting"
+  },
+  {
+   "fieldname": "greeting",
+   "fieldtype": "Data",
+   "label": "Greeting",
+   "reqd": 1,
+   "description": "e.g. Merry Christmas"
+  },
+  {
+   "fieldname": "message",
+   "fieldtype": "Small Text",
+   "label": "Message",
+   "description": "One short line under the greeting (optional)."
+  },
+  {
+   "fieldname": "column_break_greeting",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "greeting_ta",
+   "fieldtype": "Data",
+   "label": "Greeting (Tamil)"
+  },
+  {
+   "fieldname": "message_ta",
+   "fieldtype": "Small Text",
+   "label": "Message (Tamil)"
+  },
+  {
+   "fieldname": "section_verse",
+   "fieldtype": "Section Break",
+   "label": "Verse",
+   "description": "Shown in each reader's own Bible, so only the place is stored here."
+  },
+  {
+   "fieldname": "verse_reference",
+   "fieldtype": "Data",
+   "label": "Reference",
+   "description": "As shown, e.g. Luke 2:11"
+  },
+  {
+   "fieldname": "bible_book",
+   "fieldtype": "Int",
+   "label": "Book Number",
+   "description": "1 = Genesis … 66 = Revelation"
+  },
+  {
+   "fieldname": "column_break_verse",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "chapter",
+   "fieldtype": "Int",
+   "label": "Chapter"
+  },
+  {
+   "fieldname": "verse_start",
+   "fieldtype": "Int",
+   "label": "Verse From"
+  },
+  {
+   "fieldname": "verse_end",
+   "fieldtype": "Int",
+   "label": "Verse To",
+   "description": "Same as Verse From for one verse."
+  }
+ ],
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1
+  }
+ ],
+ "links": [],
+ "modified": "2026-11-17 18:00:00.000000"
+}

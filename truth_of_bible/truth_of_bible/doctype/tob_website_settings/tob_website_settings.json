@@ -36,7 +36,9 @@
   "popup_delay_seconds",
   "popup_every_days",
   "section_app_verse_popup",
-  "app_verse_popup"
+  "app_verse_popup",
+  "section_festival_themes",
+  "festival_themes"
  ],
  "fields": [
   {
@@ -202,6 +204,20 @@
    "options": "Admins only\nEveryone\nOff",
    "default": "Admins only",
    "description": "Once a day, on the first app open after 5 am. Admins only = System Managers see it, to try it before members do."
+  },
+  {
+   "fieldname": "section_festival_themes",
+   "fieldtype": "Section Break",
+   "label": "Festival Themes",
+   "description": "Christmas, Easter, Pentecost … looks for the app's Home and truthofbible.org. Each festival, with its own On switch and Start/End, is a TOB Festival Theme."
+  },
+  {
+   "fieldname": "festival_themes",
+   "fieldtype": "Select",
+   "label": "Festival Themes",
+   "options": "Admins only\nEveryone\nOff",
+   "default": "Admins only",
+   "description": "Admins only = System Managers see them in the app (to try a festival before members do); the website shows them only for Everyone, or with ?festival=christmas (any scene) in the address to preview."
   }
  ],
  "permissions": [
@@ -213,5 +229,5 @@
   }
  ],
  "links": [],
- "modified": "2026-11-17 12:00:00.000000"
+ "modified": "2026-11-17 18:00:00.000000"
 }
