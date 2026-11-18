@@ -15,7 +15,7 @@ from frappe.utils import get_url, getdate, today
 DOCTYPE = "TOB Verse of the Day"
 DAYS_AHEAD = 30
 HISTORY_PAGE = 30
-ALTERNATIVES = 4
+ALTERNATIVES = None  # every active picture (TOB Verse Background); a number would cap the picker
 
 
 def for_date(day: date) -> dict | None:
@@ -102,10 +102,10 @@ def _image(name: str | None) -> dict | None:
 
 
 def _alternatives(chosen: str | None, theme: str | None) -> list[dict]:
-	"""Other pictures for the popup's background picker: same theme first, then landscapes."""
+	"""Every other active picture for the background picker: same theme first, then landscapes, then those showing Jesus."""
 	active = [b for b in _active_backgrounds() if b.name != chosen]
 	active.sort(key=lambda b: (b.theme != theme, bool(b.shows_jesus), b.name))
-	return [i for i in (_image(b.name) for b in active[:ALTERNATIVES]) if i]
+	return [i for i in (_image(b.name) for b in (active if ALTERNATIVES is None else active[:ALTERNATIVES])) if i]
 
 
 def _payload(row) -> dict:
