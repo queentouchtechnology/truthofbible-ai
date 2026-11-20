@@ -88,12 +88,16 @@ def google_login(access_token, referralCode=None):
 					"send_welcome_email": 0,
 				}
 			)
-			user.insert(ignore_permissions=True)
-
-			for role in APP_MEMBER_ROLES:
-				user.append("roles", {"role": role})
-
-			user.save(ignore_permissions=True)
+			try:
+				user.insert(ignore_permissions=True)
+			except frappe.DuplicateEntryError:
+				# A second sign-in request (double tap, network retry) created the account a moment
+				# earlier — it exists now, so carry on and sign in.
+				frappe.db.rollback()
+			else:
+				for role in APP_MEMBER_ROLES:
+					user.append("roles", {"role": role})
+				user.save(ignore_permissions=True)
 
 		# ===============================
 		# SAVE PROFILE IMAGE
